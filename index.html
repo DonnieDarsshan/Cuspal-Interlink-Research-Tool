@@ -486,6 +486,208 @@ drawD1();
 
 
 
+<!-- =========================================================
+     PART X : RETRO COUNTER TABLE (FINAL – PIVOT LOCKED TO 1)
+     ========================================================= -->
+
+<style>
+#retroCounterWrap{
+    display:flex;
+    justify-content:center;
+    margin-top:25px;
+}
+
+#retroCounter{
+    background:#120606;
+    border:1px solid #a86b17;
+    box-shadow:0 0 18px rgba(255,159,28,.35);
+    padding:12px;
+    margin-left:25px;
+}
+
+#retroCounter h3{
+    text-align:center;
+    color:#ff9f1c;
+    letter-spacing:1px;
+    margin-bottom:10px;
+    text-shadow:0 0 8px rgba(255,159,28,.6);
+}
+
+#retroCounter table{
+    border-collapse:collapse;
+    min-width:220px;
+}
+
+#retroCounter th,
+#retroCounter td{
+    border:1px solid #3a1a12;
+    padding:6px 10px;
+    text-align:center;
+}
+
+#retroCounter th{
+    background:linear-gradient(180deg,#2a0f0f,#140707);
+    color:#ffd27d;
+}
+</style>
+
+<script>
+/* =========================================================
+   RETRO COUNTER – FINAL CORRECT ENGINE
+   ========================================================= */
+
+/* ---------- Absolute degree of Lagna / planet ---------- */
+function getAbsEntityRC(name){
+    if(name === "Lagna"){
+        return absoluteDeg(
+            signs.indexOf(document.getElementById("c1_sign").value),
+            document.getElementById("c1_deg").value,
+            document.getElementById("c1_min").value,
+            document.getElementById("c1_sec").value
+        );
+    }
+    return getPlanetAbsDeg(name);
+}
+
+/* =========================================================
+   RETRO HOUSE CALCULATION
+   (DO NOT CALL FOR PIVOT ITSELF)
+   ========================================================= */
+function getRetroHouseRC(absPlanet, absPivot){
+
+    let vedic = document.getElementById("vedicModeK")?.checked;
+
+    /* KP → exact pivot
+       VEDIC → pivot − 15° (reference only) */
+    let start = vedic ? absPivot - 15 : absPivot;
+    if(start < 0) start += 360;
+
+    /* backward distance */
+    let diff = start - absPlanet;
+    if(diff < 0) diff += 360;
+
+    /* 30° per house */
+    let h = Math.floor(diff / 30) + 1;
+    if(h > 12) h -= 12;
+
+    return h;
+}
+
+/* =========================================================
+   PIVOT ORDER (SAME AS OTHER TABLES)
+   ========================================================= */
+function getPivotOrderedPlanetsRC(){
+
+    let pivot = document.getElementById("kPivot")?.value || "Lagna";
+    let list = [...planets];
+
+    if(pivot === "Lagna") return list;
+
+    let idx = list.indexOf(pivot);
+    if(idx === -1) return list;
+
+    return list.slice(idx).concat(list.slice(0, idx));
+}
+
+/* =========================================================
+   BUILD RETRO COUNTER TABLE
+   ========================================================= */
+function buildRetroCounterTable(){
+
+    document.getElementById("retroCounterWrap")?.remove();
+
+    let pivot = document.getElementById("kPivot")?.value || "Lagna";
+    let pivotAbs = getAbsEntityRC(pivot);
+
+    let wrap = document.createElement("div");
+    wrap.id = "retroCounterWrap";
+
+    let box = document.createElement("div");
+    box.id = "retroCounter";
+
+    box.innerHTML = `
+        <h3>Retro Counter Table</h3>
+        <table>
+            <tr>
+                <th>Planet</th>
+                <th>Counter</th>
+            </tr>
+        </table>
+    `;
+
+    let table = box.querySelector("table");
+
+    let ordered = getPivotOrderedPlanetsRC();
+
+    ordered.forEach(p=>{
+
+        /* 🔒 HARD RULE: Pivot is ALWAYS 1 */
+        let counter;
+
+        if(p === pivot){
+            counter = 1;
+        }else{
+            let pAbs = getPlanetAbsDeg(p);
+            counter = getRetroHouseRC(pAbs, pivotAbs);
+        }
+
+        let row = document.createElement("tr");
+        row.innerHTML = `
+            <td><b>${p}</b></td>
+            <td>${counter}</td>
+        `;
+        table.appendChild(row);
+    });
+
+    wrap.appendChild(box);
+    document.getElementById("kundaliZone")?.appendChild(wrap);
+}
+
+/* =========================================================
+   AUTO REFRESH (SAFE)
+   ========================================================= */
+(function(){
+    const _draw = drawD1;
+    drawD1 = function(){
+        _draw();
+        buildRetroCounterTable();
+    };
+})();
+
+/* react to all relevant controls */
+["kPivot","kpModeK","vedicModeK","retroModeK"].forEach(id=>{
+    document.getElementById(id)
+        ?.addEventListener("change", buildRetroCounterTable);
+});
+
+/* initial draw */
+setTimeout(buildRetroCounterTable,0);
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
