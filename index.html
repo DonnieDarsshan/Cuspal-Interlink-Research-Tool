@@ -486,6 +486,16 @@ drawD1();
 
 
 
+
+
+
+
+
+
+
+
+
+
 <!-- =========================================================
      PART X : RETRO COUNTER TABLE (FINAL – PIVOT LOCKED TO 1)
      ========================================================= -->
@@ -550,28 +560,57 @@ function getAbsEntityRC(name){
 }
 
 /* =========================================================
-   RETRO HOUSE CALCULATION
-   (DO NOT CALL FOR PIVOT ITSELF)
+   RETRO HOUSE CALCULATION (FIXED FOR VEDIC ±15°)
    ========================================================= */
 function getRetroHouseRC(absPlanet, absPivot){
 
     let vedic = document.getElementById("vedicModeK")?.checked;
 
-    /* KP → exact pivot
-       VEDIC → pivot − 15° (reference only) */
-    let start = vedic ? absPivot - 15 : absPivot;
-    if(start < 0) start += 360;
+    /* ===============================
+       KP MODE → OLD LOGIC (UNCHANGED)
+       =============================== */
+    if(!vedic){
 
-    /* backward distance */
-    let diff = start - absPlanet;
-    if(diff < 0) diff += 360;
+        let diff = absPivot - absPlanet;
+        if(diff < 0) diff += 360;
 
-    /* 30° per house */
-    let h = Math.floor(diff / 30) + 1;
+        let h = Math.floor(diff / 30) + 1;
+        if(h > 12) h -= 12;
+
+        return h;
+    }
+
+    /* ===============================
+       VEDIC MODE → CENTERED LOGIC
+       =============================== */
+
+    /* signed angular distance */
+    let delta = absPlanet - absPivot;
+
+    /* normalize to -180 ... +180 */
+    if(delta > 180) delta -= 360;
+    if(delta < -180) delta += 360;
+
+    /* ±15° → FIRST HOUSE */
+    if(delta >= -15 && delta <= 15){
+        return 1;
+    }
+
+    /* backward counting AFTER first house */
+    let back;
+
+    if(delta > 15){
+        back = delta - 15;
+    }else{
+        back = delta + 15;
+    }
+
+    let h = Math.floor(Math.abs(back) / 30) + 2;
     if(h > 12) h -= 12;
 
     return h;
 }
+
 
 /* =========================================================
    PIVOT ORDER (SAME AS OTHER TABLES)
@@ -2208,4 +2247,7 @@ function buildTable6(){
 
 </body>
 </html>
+
+
+
 
