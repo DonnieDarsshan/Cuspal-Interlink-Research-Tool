@@ -179,6 +179,12 @@ hr{
 
 
 
+
+
+
+
+
+
 <h2>DARSSHAN T.N RESEARCH TOOL FOR CUSPAL INTERLINK</h2>
 
 <label style="display:block;margin:10px 0;font-weight:600">
@@ -209,11 +215,88 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
 </tr>
 </table>
 
+
+<!-- =========================================================
+     C1–C200 : BASE DATE & TIME (PRE-BUILD – LOCK ONLY)
+     ========================================================= -->
+
+<style>
+#baseTimeBox{
+    background:#120606;
+    border:2px solid #a86b17;
+    padding:14px 18px;
+    margin:16px 0 14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    align-items:center;
+    color:#f3e8d0;
+    font-weight:700;
+}
+#baseTimeBox input{
+    background:#070303;
+    color:#ff9f1c;
+    border:1px solid #a86b17;
+    padding:6px 10px;
+    font-weight:700;
+}
+</style>
+
+<div id="baseTimeBox">
+    <div>
+        📅 Date of Birth<br>
+        <input type="date" id="baseDate">
+    </div>
+    <div>
+        ⏱ Time of Birth<br>
+        <input type="time" id="baseTimeLock" step="1">
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   C210 : BASE DATE–TIME STORE
+   ========================================================= */
+let BASE_EPOCH = null;
+
+/* =========================================================
+   C220 : LOCK BASE DATE–TIME (CALLED BY BUILD)
+   ========================================================= */
+
+function lockBaseDateTime(){
+
+    /* do nothing if already locked */
+    if(BASE_EPOCH) return true;
+
+    let d = document.getElementById("baseDate").value;
+    let t = document.getElementById("baseTimeLock").value;
+
+    /* OPTIONAL: only store if both exist */
+    if(d && t){
+        BASE_EPOCH = new Date(d + "T" + t);
+
+        /* lock only if filled */
+        document.getElementById("baseDate").disabled = true;
+        document.getElementById("baseTimeLock").disabled = true;
+    }
+
+    /* ALWAYS allow build */
+    return true;
+}
+
+
+</script>
+
+<!-- =========================================================
+     BUILD BUTTONS (UNCHANGED)
+     ========================================================= -->
+
 <button onclick="buildCuspalChart()">Build Cuspal Chart</button>
 <button onclick="saveJSON()">Save JSON</button>
 <button onclick="loadJSON()">Load JSON</button>
 <button onclick="clearAll()">Clear All</button>
 
+<!-- REQUIRED OUTPUT CONTAINER -->
 <div id="output"></div>
 
 
@@ -235,8 +318,24 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- =========================================================
-     D1 RĀŚI KUNDALI – FINAL
+     D1 RĀŚI KUNDALI – FINAL (CUSPS ADD-ON SAFE)
      ========================================================= -->
 
 <style>
@@ -287,11 +386,13 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
     </label>
     <label><input type="checkbox" id="kpModeK"> KP (0°)</label>
     <label><input type="checkbox" id="vedicModeK"> Vedic (15°)</label>
-
-    <!-- ===============================
-         RETRO OPTION (KUNDALI ONLY)
-         =============================== -->
     <label><input type="checkbox" id="retroModeK"> Retro</label>
+
+    <!-- 🔥 ADDITION ONLY -->
+    <label>
+        <input type="checkbox" id="showCuspsD1">
+        Show Cusps (2–12)
+    </label>
 </div>
 
 <div id="kundaliZone">
@@ -309,7 +410,7 @@ const SI_SIGNS=[
  "Sagittarius","Scorpio","Libra","Virgo"
 ];
 const HOUSE_FLOW=[12,1,2,3,11,0,0,4,10,0,0,5,9,8,7,6];
-const DESC_SIGNS=["Sagittarius","Capricorn","Aquarius","Pisces"];
+const DESC_SIGNS=["Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 
 function initChart(){
     let el=document.getElementById("D1Chart"); el.innerHTML="";
@@ -339,29 +440,8 @@ function splitDMS(abs){
     return {d,m,s};
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* =========================================================
    RETRO HOUSE LOGIC (KUNDALI ONLY)
-   - DOES NOT TOUCH SIGNS
-   - DOES NOT MOVE PLANETS
-   - HOUSE COUNT ONLY
    ========================================================= */
 function retroHouse(h){
     return ((14 - h - 1) % 12) + 1;
@@ -373,10 +453,6 @@ function drawD1(){
 
     let pivot=kPivot.value;
     let showNums=kpModeK.checked||vedicModeK.checked;
-
-    /* ===============================
-       RETRO FLAG (KUNDALI ONLY)
-       =============================== */
     let retro=retroModeK.checked;
 
     let pSign,pAbs;
@@ -398,9 +474,6 @@ function drawD1(){
         pivotAbs=pAbs;
     }
 
-    /* ===============================
-       HOUSE NUMBER DRAW (RETRO SAFE)
-       =============================== */
     if(showNums){
         let lagIdx=[...document.querySelectorAll("#D1Chart [data-sign]")]
             .find(c=>c.dataset.sign===pSign)?.dataset.idx;
@@ -408,8 +481,6 @@ function drawD1(){
             let b=HOUSE_FLOW[c.dataset.idx];
             if(b){
                 let h=((b-HOUSE_FLOW[lagIdx]+12)%12)+1;
-
-                /* RETRO AFFECTS ONLY HOUSE COUNT */
                 c.querySelector(".hnum").textContent =
                     retro ? retroHouse(h) : h;
             }
@@ -445,6 +516,22 @@ function drawD1(){
 
     if(pivot==="Lagna") place("Lagna",absDeg("c1"),true);
 
+    /* ===============================
+       CUSP DISPLAY (ADD-ON ONLY)
+       =============================== */
+    if(document.getElementById("showCuspsD1")?.checked){
+        for(let i=2;i<=12;i++){
+            let abs = absDeg("c"+i);
+            let sign = signs[Math.floor(((abs%360)+360)%360/30)+1];
+            let {d,m,s} = splitDMS(abs);
+            buckets[sign]=buckets[sign]||[];
+            buckets[sign].push({
+                deg:d,
+                text:`Cusp ${i} ${d}°${m}'${s}"`
+            });
+        }
+    }
+
     Object.keys(buckets).forEach(sign=>{
         let list=buckets[sign];
         list.sort((a,b)=>DESC_SIGNS.includes(sign)?b.deg-a.deg:a.deg-b.deg);
@@ -458,7 +545,7 @@ function drawD1(){
 }
 
 initChart();
-[kPivot,kpModeK,vedicModeK,retroModeK].forEach(e=>{
+[kPivot,kpModeK,vedicModeK,retroModeK,showCuspsD1].forEach(e=>{
     e.onchange=()=>{
         if(e===kpModeK) vedicModeK.checked=false;
         if(e===vedicModeK) kpModeK.checked=false;
@@ -470,7 +557,6 @@ document.querySelector("button[onclick='buildCuspalChart()']")
 
 drawD1();
 </script>
-
 
 
 
@@ -732,6 +818,22 @@ setTimeout(buildRetroCounterTable,0);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
 /* =========================================================
    PART 1 : INPUT SYSTEM ONLY (NO KP LOGIC)
@@ -923,11 +1025,17 @@ function saveJSON(){
         document.getElementById("personName")?.value.trim() || "UNKNOWN";
 
     let data={
-        personName: personName,
-        manualMode: manualMode.checked,
-        cusps:{},
-        planets:{}
-    };
+    personName: personName,
+    manualMode: manualMode.checked,
+
+    /* 🔥 DOB / TOB SAVE */
+    baseDate: document.getElementById("baseDate").value || "",
+    baseTime: document.getElementById("baseTimeLock").value || "",
+
+    cusps:{},
+    planets:{}
+	};
+
 
     for(let i=1;i<=12;i++){
         data.cusps[i]={
@@ -968,9 +1076,18 @@ function loadJSON(){
         r.onload=()=>{
             let d=JSON.parse(r.result);
 
-            if(d.personName && document.getElementById("personName")){
-                document.getElementById("personName").value=d.personName;
-            }
+			if(d.personName && document.getElementById("personName")){
+			document.getElementById("personName").value=d.personName;
+		}
+
+		/* 🔥 DOB / TOB RESTORE */
+		if(d.baseDate){
+			document.getElementById("baseDate").value = d.baseDate;
+		}
+		if(d.baseTime){
+			document.getElementById("baseTimeLock").value = d.baseTime;
+		}
+
 
             manualMode.checked=d.manualMode;
             manualMode.onchange();
@@ -998,29 +1115,52 @@ function loadJSON(){
 /* =========================================================
    CLEAR ALL (UNCHANGED)
    ========================================================= */
+
+
+
 function clearAll(){
 
-    manualMode.checked=true;
-    manualMode.onchange();
-	
-	document.getElementById("personName").value = "";
+    /* RESET BASE TIME STATE */
+    BASE_EPOCH = null;
 
+    /* ENABLE + CLEAR DATE & TIME */
+    document.getElementById("baseDate").disabled = false;
+    document.getElementById("baseTimeLock").disabled = false;
+    document.getElementById("baseDate").value = "";
+    document.getElementById("baseTimeLock").value = "";
+
+    /* RESET MODES */
+    manualMode.checked = true;
+    manualMode.onchange();
+
+    /* CLEAR NAME */
+    document.getElementById("personName").value = "";
+
+    /* CLEAR CUSPS */
     for(let i=1;i<=12;i++){
-        document.getElementById("c"+i+"_sign").selectedIndex=0;
-        document.getElementById("c"+i+"_deg").value="";
-        document.getElementById("c"+i+"_min").value="";
-        document.getElementById("c"+i+"_sec").value="";
+        document.getElementById("c"+i+"_sign").selectedIndex = 0;
+        document.getElementById("c"+i+"_deg").value = "";
+        document.getElementById("c"+i+"_min").value = "";
+        document.getElementById("c"+i+"_sec").value = "";
     }
 
+    /* CLEAR PLANETS */
     planets.forEach(p=>{
-        document.getElementById(p+"_sign").selectedIndex=0;
-        document.getElementById(p+"_deg").value="";
-        document.getElementById(p+"_min").value="";
-        document.getElementById(p+"_sec").value="";
+        document.getElementById(p+"_sign").selectedIndex = 0;
+        document.getElementById(p+"_deg").value = "";
+        document.getElementById(p+"_min").value = "";
+        document.getElementById(p+"_sec").value = "";
     });
 
-    document.getElementById("output").innerHTML="";
+    /* CLEAR OUTPUT */
+    document.getElementById("output").innerHTML = "";
 }
+
+
+
+
+
+
 
 /* ---------- FILL ALL SECONDS = 0 ---------- */
 function fillAllSeconds(){
@@ -1047,38 +1187,29 @@ function fillAllSeconds(){
 
 
 
-
-<!-- =========================================================
-     PART 2 : KP CORE LOGIC (CUSPS ONLY – DBA FIXED)
-     (BHAVA DISPLAY ORDER FIXED — FINAL)
-     ========================================================= -->
 <script>
 /* =========================================================
    KP CONSTANTS (DBA NAMES)
    ========================================================= */
 
-/* ---------- SIGN LORDS ---------- */
 const signLords = {
-    Aries: "Mangala", Taurus: "Venus", Gemini: "Budha",
-    Cancer: "Chandra", Leo: "Surya", Virgo: "Budha",
-    Libra: "Venus", Scorpio: "Mangala",
-    Sagittarius: "Jupiter", Capricorn: "Saturn",
-    Aquarius: "Saturn", Pisces: "Jupiter"
+    Aries:"Mangala", Taurus:"Venus", Gemini:"Budha",
+    Cancer:"Chandra", Leo:"Surya", Virgo:"Budha",
+    Libra:"Venus", Scorpio:"Mangala",
+    Sagittarius:"Jupiter", Capricorn:"Saturn",
+    Aquarius:"Saturn", Pisces:"Jupiter"
 };
 
-/* ---------- STAR ORDER ---------- */
 const starCycle = [
     "Ketu","Venus","Surya","Chandra",
     "Mangala","Rahu","Jupiter","Saturn","Budha"
 ];
 
-/* ---------- VIMSHOTTARI YEARS ---------- */
 const vimYears = {
     Ketu:7, Venus:20, Surya:6, Chandra:10,
     Mangala:7, Rahu:18, Jupiter:16, Saturn:19, Budha:17
 };
 
-/* ---------- STORAGE (ALWAYS DEGREE SORTED) ---------- */
 let cuspsData = [];
 
 /* =========================================================
@@ -1095,9 +1226,6 @@ function getStarIndex(absDeg){
     return Math.floor(absDeg / 13.3333333333) % 9;
 }
 
-/* =========================================================
-   SUB LORD
-   ========================================================= */
 function getSubIndex(starIndex, degInsideStar){
     let start = 0;
     for(let i=0;i<9;i++){
@@ -1111,9 +1239,6 @@ function getSubIndex(starIndex, degInsideStar){
     return starIndex;
 }
 
-/* =========================================================
-   SUB-SUB LORD
-   ========================================================= */
 function getSSLIndex(subIndex, d){
     let start = 0;
     for(let i=0;i<9;i++){
@@ -1128,11 +1253,14 @@ function getSSLIndex(subIndex, d){
 }
 
 /* =========================================================
-   BUILD KP CUSPS (LOGIC SAFE)
+   BUILD KP CUSPS (ONLY PLACE IT EXISTS)
    ========================================================= */
 function buildCuspalChart(){
 
+    if(!lockBaseDateTime()) return;
+
     cuspsData = [];
+
     let manual = manualMode.checked;
 
     let lagnaSign = document.getElementById("c1_sign").selectedIndex;
@@ -1151,46 +1279,62 @@ function buildCuspalChart(){
             sec = document.getElementById("c"+i+"_sec").value;
         }else{
             signIndex = (lagnaSign + (i-1)) % 12;
-            if(signIndex===0) signIndex=12;
+            if(signIndex === 0) signIndex = 12;
             deg = lagnaDeg; min = lagnaMin; sec = lagnaSec;
         }
 
-        let absDeg = absoluteDeg(signIndex,deg,min,sec);
-        let starIndex = getStarIndex(absDeg);
-        let degInsideStar = absDeg % 13.3333333333;
-        let subIndex = getSubIndex(starIndex,degInsideStar);
+        let abs = absoluteDeg(signIndex,deg,min,sec);
+        let star = getStarIndex(abs);
+        let inside = abs % 13.3333333333;
+        let sub = getSubIndex(star,inside);
 
-        let subSpan = (vimYears[starCycle[subIndex]]/120)*13.3333333333;
-        let subStart = 0;
+        let span = (vimYears[starCycle[sub]]/120)*13.3333333333;
+        let start = 0;
         for(let k=0;k<9;k++){
-            let lord = starCycle[(starIndex+k)%9];
-            if((starIndex+k)%9===subIndex) break;
-            subStart += (vimYears[lord]/120)*13.3333333333;
+            let lord = starCycle[(star+k)%9];
+            if((star+k)%9===sub) break;
+            start += (vimYears[lord]/120)*13.3333333333;
         }
 
-        let sslIndex = getSSLIndex(subIndex,{
-            offset:degInsideStar-subStart,
-            totalSpan:subSpan
+        let ssl = getSSLIndex(sub,{
+            offset:inside-start,
+            totalSpan:span
         });
 
         cuspsData.push({
             bhava:i,
             sign:signs[signIndex],
-            deg, min, sec,
-            absDeg,
+            deg,min,sec,
+            absDeg:abs,
             signLord:signLords[signs[signIndex]],
-            starLord:starCycle[starIndex],
-            subLord:starCycle[subIndex],
-            sslLord:starCycle[sslIndex]
+            starLord:starCycle[star],
+            subLord:starCycle[sub],
+            sslLord:starCycle[ssl]
         });
     }
 
-    /* DEGREE SORT — REQUIRED FOR KP HOUSE ENGINE */
     cuspsData.sort((a,b)=>a.absDeg-b.absDeg);
-
     renderCuspalTable();
 }
+</script>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
 /* =========================================================
    RENDER KP TABLE-2 (BHAVA ORDER ONLY)
    ========================================================= */
@@ -1213,7 +1357,7 @@ function renderCuspalTable(){
         </tr>`;
 
     view.forEach(c=>{
-        html+=`
+        html += `
         <tr>
             <td>${c.bhava}</td>
             <td>${c.sign}</td>
@@ -1227,7 +1371,7 @@ function renderCuspalTable(){
         </tr>`;
     });
 
-    html+=`</table>`;
+    html += `</table>`;
     document.getElementById("output").innerHTML = html;
 }
 </script>
