@@ -196,7 +196,7 @@ hr{
 
 
 
-<h2>DARSSHAN T.N RESEARCH TOOL FOR CUSPAL INTERLINK</h2>
+<h2>DONNIE DARSSHAN RESEARCH TOOL FOR CUSPAL INTERLINK</h2>
 
 <label style="display:block;margin:10px 0;font-weight:600">
 Person Name :
@@ -1043,8 +1043,14 @@ manualMode.onchange=()=>{
     }
 };
 manualMode.onchange();
+
+
+
+
+
+
 /* =========================================================
-   SAVE JSON (UPDATED – NAME ONLY)
+   SAVE JSON (UPDATED – WITH VIMSHOTTARI EVENTS)
    ========================================================= */
 function saveJSON(){
 
@@ -1052,18 +1058,18 @@ function saveJSON(){
         document.getElementById("personName")?.value.trim() || "UNKNOWN";
 
     let data={
-    personName: personName,
-    manualMode: manualMode.checked,
+        personName: personName,
+        manualMode: manualMode.checked,
 
-    /* 🔥 DOB / TOB SAVE */
-    baseDate: document.getElementById("baseDate").value || "",
-    baseTime: document.getElementById("baseTimeLock").value || "",
+        /* 🔥 DOB / TOB SAVE */
+        baseDate: document.getElementById("baseDate").value || "",
+        baseTime: document.getElementById("baseTimeLock").value || "",
 
-    cusps:{},
-    planets:{}
-	};
+        cusps:{},
+        planets:{}
+    };
 
-
+    /* ---------- SAVE CUSPS ---------- */
     for(let i=1;i<=12;i++){
         data.cusps[i]={
             sign:document.getElementById("c"+i+"_sign").value,
@@ -1073,6 +1079,7 @@ function saveJSON(){
         };
     }
 
+    /* ---------- SAVE PLANETS ---------- */
     planets.forEach(p=>{
         data.planets[p]={
             sign:document.getElementById(p+"_sign").value,
@@ -1082,6 +1089,17 @@ function saveJSON(){
         };
     });
 
+    /* ---------- SAVE VIMSHOTTARI EVENTS (ONLY 5) ---------- */
+    data.vimshottariEvents = [];
+
+    for(let i=1;i<=5;i++){
+        data.vimshottariEvents.push({
+            name: document.getElementById(`en${i}`)?.value || "",
+            date: document.getElementById(`ed${i}`)?.value || ""
+        });
+    }
+
+    /* ---------- DOWNLOAD ---------- */
     let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     let a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
@@ -1089,8 +1107,16 @@ function saveJSON(){
     a.click();
 }
 
+
+
+
+
+
+
+
+
 /* =========================================================
-   LOAD JSON (UPDATED – NAME RESTORE)
+   LOAD JSON (UPDATED – WITH VIMSHOTTARI EVENTS)
    ========================================================= */
 function loadJSON(){
 
@@ -1101,24 +1127,27 @@ function loadJSON(){
     f.onchange=e=>{
         let r=new FileReader();
         r.onload=()=>{
+
             let d=JSON.parse(r.result);
 
-			if(d.personName && document.getElementById("personName")){
-			document.getElementById("personName").value=d.personName;
-		}
+            /* ---------- NAME ---------- */
+            if(d.personName && document.getElementById("personName")){
+                document.getElementById("personName").value=d.personName;
+            }
 
-		/* 🔥 DOB / TOB RESTORE */
-		if(d.baseDate){
-			document.getElementById("baseDate").value = d.baseDate;
-		}
-		if(d.baseTime){
-			document.getElementById("baseTimeLock").value = d.baseTime;
-		}
+            /* ---------- DOB / TOB ---------- */
+            if(d.baseDate){
+                document.getElementById("baseDate").value=d.baseDate;
+            }
+            if(d.baseTime){
+                document.getElementById("baseTimeLock").value=d.baseTime;
+            }
 
-
+            /* ---------- MODE ---------- */
             manualMode.checked=d.manualMode;
             manualMode.onchange();
 
+            /* ---------- RESTORE CUSPS ---------- */
             for(let i=1;i<=12;i++){
                 document.getElementById("c"+i+"_sign").value=d.cusps[i].sign;
                 document.getElementById("c"+i+"_deg").value=d.cusps[i].deg;
@@ -1126,17 +1155,41 @@ function loadJSON(){
                 document.getElementById("c"+i+"_sec").value=d.cusps[i].sec;
             }
 
+            /* ---------- RESTORE PLANETS ---------- */
             planets.forEach(p=>{
                 document.getElementById(p+"_sign").value=d.planets[p].sign;
                 document.getElementById(p+"_deg").value=d.planets[p].deg;
                 document.getElementById(p+"_min").value=d.planets[p].min;
                 document.getElementById(p+"_sec").value=d.planets[p].sec;
             });
+
+            /* ---------- RESTORE VIMSHOTTARI EVENTS (ONLY 5) ---------- */
+            if(d.vimshottariEvents){
+                d.vimshottariEvents.forEach((ev,i)=>{
+                    let idx=i+1;
+                    if(document.getElementById(`en${idx}`)){
+                        document.getElementById(`en${idx}`).value=ev.name||"";
+                    }
+                    if(document.getElementById(`ed${idx}`)){
+                        document.getElementById(`ed${idx}`).value=ev.date||"";
+                    }
+                });
+            }
         };
         r.readAsText(e.target.files[0]);
     };
     f.click();
 }
+
+
+
+
+
+
+
+
+
+
 
 
 /* =========================================================
@@ -1648,8 +1701,26 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- =========================================================
-     PART 4 : KP PLANETARY TABLE-3 (PIVOT-ORDERED)
+     PART 4 : KP PLANETARY TABLE-4 (PIVOT-ORDERED)
      (RAHU / KETU SIGN-LORD DISPOSITOR PATCH – FINAL)
      ========================================================= -->
 <script>
@@ -1798,7 +1869,7 @@ anchor.before(wrapper);
 
 <script>
 /* =========================================================
-   TABLE-X : PIVOT BASED CUSPAL INTERLINK (DYNAMIC)
+   TABLE-3 : PIVOT BASED CUSPAL INTERLINK (DYNAMIC)
    (SAFE – NEW TABLE ONLY)
    ========================================================= */
 function buildPivotCuspalTable(){
@@ -1865,9 +1936,261 @@ function buildPivotCuspalTable(){
 
 
 
+
+
+
+
+
+
+
+
+
+
 <!-- =========================================================
-     PART 5 : KP TABLE-4 (PIVOT ORDER + SORT FIX FINAL)
+     SYNTHETIC TIME SHIFT + DATE–TIME CONTROL (SINGLE BOX)
+     ========================================================= -->
+
+<style>
+.kpShiftBox{
+  margin:30px 0;
+  padding:18px;
+  border:2px solid #a86b17;
+  background:#120606;
+  box-shadow:0 0 18px rgba(255,159,28,.45);
+}
+.kpShiftTitle{
+  text-align:center;
+  color:#ff9f1c;
+  font-weight:900;
+  letter-spacing:1.6px;
+  margin-bottom:14px;
+}
+.kpShiftGrid{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:28px;
+  flex-wrap:wrap;
+}
+.kpLeft,.kpRight{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.kpShiftBox input,
+.kpShiftBox select{
+  background:#020617;
+  color:#f5e9c6;
+  border:1px solid #ca8a04;
+  padding:6px 8px;
+  border-radius:6px;
+  font-weight:700;
+}
+.kpShiftBox input[type="date"]::-webkit-calendar-picker-indicator,
+.kpShiftBox input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+}
+.kpShiftBox button{
+  background:linear-gradient(135deg,#ff9f1c,#b11226);
+  border:none;
+  color:#1a0606;
+  padding:7px 16px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 0 12px rgba(255,159,28,.4);
+}
+.kpShiftBox button:hover{
+  background:linear-gradient(135deg,#ffb347,#d4142a);
+}
+#shiftCounter{
+  color:#facc15;
+  font-weight:900;
+  letter-spacing:.8px;
+  white-space:nowrap;
+}
+</style>
+
+<script>
+let SHIFT_SECONDS = 0;
+let BASE_MASTER_DATETIME = null;
+
+/* ============================
+   MEAN MOTION (deg/sec)
+   ============================ */
+const RATE_SEC = {
+  Lagna:15/3600, Surya:0.9856/86400, Chandra:13.176/86400,
+  Mangala:0.524/86400, Budha:1.2/86400, Venus:1.2/86400,
+  Jupiter:0.083/86400, Saturn:0.033/86400,
+  Rahu:-0.053/86400, Ketu:-0.053/86400
+};
+
+function absFromInput(s,d,m,ss){
+  let si=document.getElementById(s).selectedIndex;
+  if(si<=0)return null;
+  return (si-1)*30+
+    (+document.getElementById(d).value||0)+
+    (+document.getElementById(m).value||0)/60+
+    (+document.getElementById(ss).value||0)/3600;
+}
+
+function writeAbs(abs,s,d,m,ss){
+  abs=((abs%360)+360)%360;
+  let si=Math.floor(abs/30)+1;
+  let inside=abs%30;
+  let dd=Math.floor(inside);
+  let mf=(inside-dd)*60;
+  let mm=Math.floor(mf);
+  let sec=Math.round((mf-mm)*60);
+  if(sec===60){sec=0;mm++;}
+  if(mm===60){mm=0;dd++;}
+  if(dd===30){dd=0;si++;}
+  if(si>12)si=1;
+  document.getElementById(s).selectedIndex=si;
+  document.getElementById(d).value=dd;
+  document.getElementById(m).value=mm;
+  document.getElementById(ss).value=sec;
+}
+
+function shiftEntity(n,s,d,m,ss,dt){
+  let a=absFromInput(s,d,m,ss);
+  if(a===null)return;
+  writeAbs(a+RATE_SEC[n]*dt,s,d,m,ss);
+}
+
+function applyShift(dt){
+  SHIFT_SECONDS+=dt;
+
+  /* HARD LIMIT ±3000 MINUTES */
+  let LIM=3000*60;
+  if(SHIFT_SECONDS>LIM)SHIFT_SECONDS=LIM;
+  if(SHIFT_SECONDS<-LIM)SHIFT_SECONDS=-LIM;
+
+  for(let i=1;i<=12;i++){
+    shiftEntity("Lagna",
+      "c"+i+"_sign","c"+i+"_deg","c"+i+"_min","c"+i+"_sec",dt);
+  }
+
+  planets.forEach(p=>{
+    shiftEntity(p,p+"_sign",p+"_deg",p+"_min",p+"_sec",dt);
+  });
+
+  buildCuspalChart();
+  drawD1();
+  updateShiftDisplay();
+  syncDateTimeTool();
+}
+
+function shiftStep(dir){
+  let j=+jumpVal.value||0;
+  let dt=(jumpMode.value==="sec"?j:j*60)*dir;
+  if(dt)applyShift(dt);
+}
+
+function updateShiftDisplay(){
+  let a=Math.abs(SHIFT_SECONDS);
+  let m=Math.floor(a/60);
+  let s=a%60;
+  let sg=SHIFT_SECONDS>0?"+":SHIFT_SECONDS<0?"−":"";
+  shiftCounter.textContent=
+    `Current Shift : ${sg}${m} min ${s} sec`;
+}
+
+/* ============================
+   DATE–TIME TOOL (TIME PRIMARY)
+   ============================ */
+function captureBaseDateTime(){
+  if(baseDate.value && baseTimeLock.value){
+    BASE_MASTER_DATETIME =
+      new Date(baseDate.value+"T"+baseTimeLock.value);
+    dateCtrl.value = baseDate.value;
+    timeCtrl.value = baseTimeLock.value;
+  }
+}
+
+function applyDateTimeChange(){
+  if(!BASE_MASTER_DATETIME)return;
+  let n=new Date(dateCtrl.value+"T"+timeCtrl.value);
+  let diff=(n-BASE_MASTER_DATETIME)/1000;
+  applyShift(diff-SHIFT_SECONDS);
+}
+
+function syncDateTimeTool(){
+  if(!BASE_MASTER_DATETIME)return;
+  let d=new Date(
+    BASE_MASTER_DATETIME.getTime()+SHIFT_SECONDS*1000
+  );
+  dateCtrl.value=d.toISOString().slice(0,10);
+  timeCtrl.value=d.toTimeString().slice(0,8);
+}
+</script>
+
+<div class="kpShiftBox">
+  <div class="kpShiftTitle">
+    Synthetic Time Shift &nbsp; | &nbsp; Date–Time Control
+  </div>
+
+  <div class="kpShiftGrid">
+
+    <!-- LEFT : SYNTHETIC SHIFT -->
+    <div class="kpLeft">
+      Jump :
+      <input id="jumpVal" type="number" value="30" style="width:70px">
+      <select id="jumpMode">
+        <option value="sec">Seconds</option>
+        <option value="min">Minutes</option>
+      </select>
+
+      <button onclick="shiftStep(-1)">◀</button>
+      <button onclick="shiftStep(1)">▶</button>
+
+      <div id="shiftCounter">
+        Current Shift : 0 min 0 sec
+      </div>
+    </div>
+
+    <!-- RIGHT : DATE–TIME TOOL -->
+    <div class="kpRight">
+      📅 <input type="date" id="dateCtrl" onchange="applyDateTimeChange()">
+      ⏱ <input type="time" id="timeCtrl" step="1"
+               onchange="applyDateTimeChange()">
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.querySelector("button[onclick='buildCuspalChart()']")
+ ?.addEventListener("click",()=>setTimeout(captureBaseDateTime,0));
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     PART 5 : KP TABLE-5 (PIVOT ORDER + SORT FIX FINAL)
      + VISUAL NUMBER / ROW BLANKING (SAFE)
+     + STAR OF SUB / STAR OF SUB-SUB (KP-CORRECTED)
      ========================================================= -->
 <script>
 /* =========================================================
@@ -1879,7 +2202,7 @@ function sortHouseString(str){
 }
 
 /* =========================================================
-   REQUIRED : PLANET KP LORDS
+   REQUIRED : PLANET KP LORDS (UNCHANGED)
    ========================================================= */
 function getPlanetKPLords(p){
 
@@ -1912,191 +2235,219 @@ function getPlanetKPLords(p){
     });
 
     return {
-        planet: p,
-        star:   starCycle[starIndex],
-        sub:    starCycle[subIndex],
-        ssl:    starCycle[sslIndex]
+        planet:p,
+        star:starCycle[starIndex],
+        sub:starCycle[subIndex],
+        ssl:starCycle[sslIndex]
     };
 }
 
 /* =========================================================
-   BUILD TABLE-4
+   BUILD TABLE-5 (KP LOGIC FIXED — NO FEATURE REMOVED)
    ========================================================= */
 function buildTable4(){
 
-    let old = document.getElementById("table4");
-    if(old) old.remove();
+    document.getElementById("table4")?.remove();
 
     let t3Table = document.querySelector("#table3 table");
     if(!t3Table) return;
 
-    /* ---------- READ TABLE-3 ---------- */
+    /* ---------- READ TABLE-3 (UNCHANGED) ---------- */
     window.__T3_CACHE__ = {};
     let t3 = window.__T3_CACHE__;
 
     t3Table.querySelectorAll("tr").forEach((r,i)=>{
-        if(i === 0) return;
-        let c = r.children;
-        t3[c[0].innerText] = {
-            sub:   sortHouseString(c[1].innerText),
-            ssl:   sortHouseString(c[2].innerText),
-            star:  sortHouseString(c[3].innerText),
-            sign:  sortHouseString(c[4].innerText),
-            place: c[5].innerText
+        if(i===0) return;
+        let c=r.children;
+        t3[c[0].innerText]={
+            sub:sortHouseString(c[1].innerText),
+            ssl:sortHouseString(c[2].innerText),
+            star:sortHouseString(c[3].innerText),
+            sign:sortHouseString(c[4].innerText),
+            place:c[5].innerText
         };
     });
 
-    /* ---------- PIVOT ORDER ---------- */
-    let pivot = document.getElementById("pivotSelect").value;
-    let displayPlanets = [...planets];
-
-    if(pivot !== "Lagna"){
-        let idx = displayPlanets.indexOf(pivot);
-        if(idx !== -1){
-            displayPlanets =
-                displayPlanets.slice(idx)
-                .concat(displayPlanets.slice(0, idx));
+    /* ---------- PIVOT ORDER (UNCHANGED) ---------- */
+    let pivot=document.getElementById("pivotSelect").value;
+    let displayPlanets=[...planets];
+    if(pivot!=="Lagna"){
+        let i=displayPlanets.indexOf(pivot);
+        if(i!==-1){
+            displayPlanets=
+                displayPlanets.slice(i)
+                .concat(displayPlanets.slice(0,i));
         }
     }
 
-    let html = `
+    let html=`
     <div id="table4">
     <h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
 
-    <div style="margin:10px 0;">
-        <label style="margin-right:20px;">
-            <input type="checkbox" id="hideStarNums">
-            Hide Star Numbers Column
-        </label>
+		<!-- ================== TABLE-5 VISUAL CONTROLS ================== -->
 
-        <label style="margin-right:20px;">
-            <input type="checkbox" id="hideSSLNums">
-            Hide Sub-Sub Numbers Column
-        </label>
+		<div style="margin:10px 0;">
+			<label>
+				<input type="checkbox" id="hideSSLNums">
+				Hide Sub-Sub Column Numbers
+			</label>
 
-        <label style="margin-right:20px;">
-            <input type="checkbox" id="hideSSLRowNums">
-            Hide Sub-Sub Row Numbers
-        </label>
+			<label style="margin-left:20px;">
+				<input type="checkbox" id="hideStarNums">
+				Hide Star Column Numbers
+			</label>
+		</div>
 
-        <label style="margin-right:20px;">
-		<input type="checkbox" id="hideSubRowNums">
-		Hide Sub Lord Row
-	</label>
+		<div style="margin:10px 0;">
+			<label>
+				<input type="checkbox" id="hideSubRowNums">
+				Hide Sub Row
+			</label>
 
-    </div>
+			<label style="margin-left:20px;">
+				<input type="checkbox" id="hideSOSRow">
+				Hide Star of Sub Row
+			</label>
+		</div>
+
+		<div style="margin:10px 0;">
+			<label>
+				<input type="checkbox" id="hideSSLRowNums">
+				Hide Sub-Sub Row
+			</label>
+
+			<label style="margin-left:20px;">
+				<input type="checkbox" id="hideSOSSRow">
+				Hide Star of Sub-Sub
+			</label>
+		</div>
+		
     `;
 
-    /* ---------- BUILD PLANET BLOCKS ---------- */
     displayPlanets.forEach(p=>{
 
-        let kp = getPlanetKPLords(p);
+        let kp=getPlanetKPLords(p);
         if(!kp) return;
 
-        let rows = [
-            { label:"Planet",    planet:p,       data:t3[p] },
-            { label:"Star Lord", planet:kp.star, data:t3[kp.star] },
-            { label:"Sub Lord",  planet:kp.sub,  data:t3[kp.sub] },
-            { label:"Sub-Sub",   planet:kp.ssl,  data:t3[kp.ssl] }
+        /* ===============================
+           KP-CORRECT DERIVATIONS (NEW)
+           =============================== */
+        let kpSubKP   = getPlanetKPLords(kp.sub);
+        let kpSSLKP   = getPlanetKPLords(kp.ssl);
+
+        let starOfSub    = kpSubKP  ? kpSubKP.star  : null;
+        let starOfSubSub = kpSSLKP  ? kpSSLKP.star  : null;
+
+        let rows=[
+            {label:"Planet",planet:p,data:t3[p]},
+            {label:"Star Lord",planet:kp.star,data:t3[kp.star]},
+            {label:"Sub Lord",planet:kp.sub,data:t3[kp.sub]}
         ];
 
-        html += `
+        html+=`
         <table style="margin-bottom:20px;">
         <tr>
-            <th colspan="7"
-                style="font-size:20px;font-weight:700;
-                color:#ff9f1c;background:linear-gradient(180deg,#2a0f0f,#140707);
-                padding:12px;border-bottom:2px solid #a86b17;">
-                ${p}
-            </th>
+            <th colspan="7" style="font-size:20px;color:#ff9f1c;">${p}</th>
         </tr>
         <tr>
-            <th>Entity</th>
-            <th>Planet</th>
-            <th>Sub</th>
-            <th>Sub-Sub</th>
-            <th>Star</th>
-            <th>Sign</th>
-            <th>Placement</th>
+            <th>Entity</th><th>Planet</th>
+            <th>Sub</th><th>Sub-Sub</th>
+            <th>Star</th><th>Sign</th><th>Placement</th>
         </tr>
         `;
 
         rows.forEach(r=>{
-            html += `
-            <tr class="
-                ${r.label === 'Sub Lord' ? 'sub-row' : ''}
-                ${r.label === 'Sub-Sub' ? 'ssl-row' : ''}
-            ">
+            html+=`
+            <tr class="${r.label==='Sub Lord'?'sub-row':''}">
                 <td>${r.label}</td>
                 <td><b>${r.planet}</b></td>
-                <td class="sub-num">${r.data ? r.data.sub  : ""}</td>
-                <td class="ssl-num">${r.data ? r.data.ssl  : ""}</td>
-                <td class="star-num">${r.data ? r.data.star : ""}</td>
-                <td>${r.data ? r.data.sign : ""}</td>
-                <td>${r.data ? r.data.place: ""}</td>
-            </tr>
-            `;
+                <td class="sub-num">${r.data?.sub||""}</td>
+                <td class="ssl-num">${r.data?.ssl||""}</td>
+                <td class="star-num">${r.data?.star||""}</td>
+                <td>${r.data?.sign||""}</td>
+                <td>${r.data?.place||""}</td>
+            </tr>`;
         });
 
-        html += `</table>`;
+        /* ===== STAR OF SUB (KP-CORRECT) ===== */
+        html+=`
+        <tr class="sos-row">
+            <td>Star of Sub</td>
+            <td><b>${starOfSub||""}</b></td>
+            <td class="sub-num">${t3[starOfSub]?.sub||""}</td>
+            <td class="ssl-num">${t3[starOfSub]?.ssl||""}</td>
+            <td class="star-num">${t3[starOfSub]?.star||""}</td>
+            <td>${t3[starOfSub]?.sign||""}</td>
+            <td>${t3[starOfSub]?.place||""}</td>
+        </tr>`;
+
+        /* ===== SUB-SUB LORD (UNCHANGED DISPLAY) ===== */
+        html+=`
+        <tr class="ssl-row">
+            <td>Sub-Sub Lord</td>
+            <td><b>${kp.ssl}</b></td>
+            <td class="sub-num">${t3[kp.ssl]?.sub||""}</td>
+            <td class="ssl-num">${t3[kp.ssl]?.ssl||""}</td>
+            <td class="star-num">${t3[kp.ssl]?.star||""}</td>
+            <td>${t3[kp.ssl]?.sign||""}</td>
+            <td>${t3[kp.ssl]?.place||""}</td>
+        </tr>`;
+
+        /* ===== STAR OF SUB-SUB (KP-CORRECT) ===== */
+        html+=`
+        <tr class="sossl-row">
+            <td>Star of Sub-Sub</td>
+            <td><b>${starOfSubSub||""}</b></td>
+            <td class="sub-num">${t3[starOfSubSub]?.sub||""}</td>
+            <td class="ssl-num">${t3[starOfSubSub]?.ssl||""}</td>
+            <td class="star-num">${t3[starOfSubSub]?.star||""}</td>
+            <td>${t3[starOfSubSub]?.sign||""}</td>
+            <td>${t3[starOfSubSub]?.place||""}</td>
+        </tr>
+        </table>`;
     });
 
-    html += `</div>`;
+    html+=`</div>`;
     document.getElementById("kp-fixed-bottom")
-        .insertAdjacentHTML("beforebegin", html);
+        .insertAdjacentHTML("beforebegin",html);
 
-    /* ---------- VISUAL ONLY HIDING / BLANKING ---------- */
+   /* ---------- VISUAL TOGGLES (UNCHANGED) ---------- */
     setTimeout(()=>{
+        hideStarNums.onchange=()=>document.querySelectorAll(".star-num")
+            .forEach(e=>e.style.color=hideStarNums.checked?"transparent":"");
+        hideSSLNums.onchange=()=>document.querySelectorAll(".ssl-num")
+            .forEach(e=>e.style.color=hideSSLNums.checked?"transparent":"");
+        hideSSLRowNums.onchange=()=>document.querySelectorAll(".ssl-row td")
+            .forEach(e=>e.style.color=hideSSLRowNums.checked?"transparent":"");
+        hideSubRowNums.onchange=()=>document.querySelectorAll(".sub-row td")
+            .forEach(e=>e.style.color=hideSubRowNums.checked?"transparent":"");
+        hideSOSRow.onchange=()=>document.querySelectorAll(".sos-row td")
+            .forEach(e=>e.style.color=hideSOSRow.checked?"transparent":"");
+        hideSOSSRow.onchange=()=>document.querySelectorAll(".sossl-row td")
+            .forEach(e=>e.style.color=hideSOSSRow.checked?"transparent":"");
 
-        document.getElementById("hideStarNums").onchange = function(){
-            document.querySelectorAll(".star-num").forEach(e=>{
-                e.style.color = this.checked ? "transparent" : "";
-            });
-        };
+				/* ===== DEFAULT ON ===== */
+		hideStarNums.checked = true;        hideStarNums.onchange();
+		hideSOSSRow.checked  = true;        hideSOSSRow.onchange();
+		hideSSLRowNums.checked = true;      hideSSLRowNums.onchange();
 
-        document.getElementById("hideSSLNums").onchange = function(){
-            document.querySelectorAll(".ssl-num").forEach(e=>{
-                e.style.color = this.checked ? "transparent" : "";
-            });
-        };
+		/* ===== DEFAULT OFF ===== */
+		hideSSLNums.checked  = false;       hideSSLNums.onchange();
+		hideSubRowNums.checked = false;     hideSubRowNums.onchange();
+		hideSOSRow.checked   = false;       hideSOSRow.onchange();
 
-        document.getElementById("hideSSLRowNums").onchange = function(){
-            document.querySelectorAll(".ssl-row td").forEach(cell=>{
-                cell.style.color = this.checked ? "transparent" : "";
-            });
-        };
-
-        /* 🔥 HIDE SUB LORD ROW = BLANK VALUES ONLY */
-		   document.getElementById("hideSubRowNums").onchange = function(){
-		document.querySelectorAll(".sub-row td").forEach(td=>{
-			td.style.color = this.checked ? "transparent" : "";
-		});
-	};
-
-
-
-        /* preserve original values */
-        document.querySelectorAll(".sub-row td").forEach(td=>{
-            td.dataset.orig = td.textContent;
-        });
-
-        /* DEFAULT STATES (UNCHANGED) */
-        document.getElementById("hideStarNums").checked = true;
-        document.getElementById("hideStarNums").onchange();
-
-        document.getElementById("hideSSLRowNums").checked = true;
-        document.getElementById("hideSSLRowNums").onchange();
 
     },0);
 }
 
+
 /* =========================================================
-   SAFE AUTO REFRESH
+   SAFE AUTO REFRESH (UNCHANGED)
    ========================================================= */
 (function(){
-    const _orig = buildTable3;
-    buildTable3 = function(){
-        _orig();
+    const _o=buildTable3;
+    buildTable3=function(){
+        _o();
         buildTable4();
     };
 })();
@@ -2110,10 +2461,8 @@ function buildTable4(){
 
 
 
-
-
 <!-- =========================================================
-     PART 6 : EFFECTIVE LINKS TABLE (UPDATED – ROW LEVEL CONTROL)
+     PART 6 : EFFECTIVE LINKS TABLE 6 (UPDATED – ROW LEVEL CONTROL)
      (HARD-ANCHORED — NEVER MOVES)
      ========================================================= -->
 <script>
@@ -2157,25 +2506,42 @@ function initTable5Shell(){
     <div id="table5-shell" style="margin-top:40px;">
         <h2>Table-6 Effective Links Table</h2>
 
-        <div style="margin-bottom:10px;">
+        <!-- ROW 1 -->
+        <div style="margin-bottom:6px;">
+            <label style="margin-right:20px;">
+                <input type="checkbox" id="ignoreSSL">
+                Ignore Sub-Sub Lord Column
+            </label>
+
             <label style="margin-right:20px;">
                 <input type="checkbox" id="ignoreStar" checked>
                 Ignore Star Lord Column
             </label>
+        </div>
 
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreSSL" unchecked>
-                Ignore Sub-Sub Lord Column
-            </label>
-
+        <!-- ROW 2 -->
+        <div style="margin-bottom:6px;">
             <label style="margin-right:20px;">
                 <input type="checkbox" id="ignoreSubRow" checked>
                 Ignore Sub Lord Row
             </label>
 
-            <label>
+            <label style="margin-right:20px;">
+                <input type="checkbox" id="ignoreStarOfSub" checked>
+                Ignore Star of Sub
+            </label>
+        </div>
+
+        <!-- ROW 3 -->
+        <div style="margin-bottom:10px;">
+            <label style="margin-right:20px;">
                 <input type="checkbox" id="ignoreSSLRow" checked>
                 Ignore Sub-Sub Lord Row
+            </label>
+
+            <label style="margin-right:20px;">
+                <input type="checkbox" id="ignoreStarOfSSL" checked>
+                Ignore Star of Sub-Sub
             </label>
         </div>
 
@@ -2183,10 +2549,16 @@ function initTable5Shell(){
     </div>
     `;
 
-    ["ignoreStar","ignoreSSL","ignoreSubRow","ignoreSSLRow"]
-        .forEach(id=>{
-            document.getElementById(id).onchange = buildTable5;
-        });
+    [
+        "ignoreStar",
+        "ignoreSSL",
+        "ignoreSubRow",
+        "ignoreSSLRow",
+        "ignoreStarOfSub",
+        "ignoreStarOfSSL"
+    ].forEach(id=>{
+        document.getElementById(id).onchange = buildTable5;
+    });
 }
 
 /* =========================================================
@@ -2202,7 +2574,7 @@ function getPivotSortedPlanets(){
 }
 
 /* =========================================================
-   BUILD TABLE-5 (ROW CORRECT LOGIC)
+   BUILD TABLE-6 (ROW CORRECT LOGIC + STAR OF SUB ADDED)
    ========================================================= */
 function buildTable5(){
 
@@ -2211,10 +2583,12 @@ function buildTable5(){
     let T3 = window.__T3_CACHE__;
     if(!T3) return;
 
-    let useStar      = !document.getElementById("ignoreStar").checked;
-    let useSSL       = !document.getElementById("ignoreSSL").checked;
-    let ignoreSubRow = document.getElementById("ignoreSubRow").checked;
-    let ignoreSSLRow = document.getElementById("ignoreSSLRow").checked;
+    let useStar          = !document.getElementById("ignoreStar").checked;
+    let useSSL           = !document.getElementById("ignoreSSL").checked;
+    let ignoreSubRow     = document.getElementById("ignoreSubRow").checked;
+    let ignoreSSLRow     = document.getElementById("ignoreSSLRow").checked;
+    let ignoreStarOfSub  = document.getElementById("ignoreStarOfSub").checked;
+    let ignoreStarOfSSL  = document.getElementById("ignoreStarOfSSL").checked;
 
     let order = getPivotSortedPlanets();
 
@@ -2236,20 +2610,36 @@ function buildTable5(){
 
         let all = [];
 
-        /* Planet row */
+        /* Planet */
         all.push(...collectPlanet(p, useStar, useSSL));
 
-        /* Star row */
+        /* Star Lord */
         all.push(...collectPlanet(kp.star, useStar, useSSL));
 
-        /* Sub ROW (CORRECTLY OPTIONAL) */
+        /* Sub Lord */
         if(!ignoreSubRow){
             all.push(...collectPlanet(kp.sub, useStar, useSSL));
         }
 
-        /* Sub-Sub ROW (OPTIONAL) */
+        /* Sub-Sub Lord */
         if(!ignoreSSLRow){
             all.push(...collectPlanet(kp.ssl, useStar, useSSL));
+        }
+
+        /* ⭐ STAR OF SUB (NEW) */
+        if(!ignoreStarOfSub && kp.sub){
+            let subKP = getPlanetKPLords(kp.sub);
+            if(subKP && subKP.star){
+                all.push(...collectPlanet(subKP.star, useStar, useSSL));
+            }
+        }
+
+        /* ⭐⭐ STAR OF SUB-SUB (NEW) */
+        if(!ignoreStarOfSSL && kp.ssl){
+            let sslKP = getPlanetKPLords(kp.ssl);
+            if(sslKP && sslKP.star){
+                all.push(...collectPlanet(sslKP.star, useStar, useSSL));
+            }
         }
 
         all = uniqueSorted(all);
@@ -2311,10 +2701,8 @@ function buildTable5(){
 
 
 
-
-
 <!-- =========================================================
-     PART 7 : KP TABLE-6 (FINAL STABLE)
+     PART 7 : KP TABLE-7 (FINAL STABLE)
      ========================================================= -->
 <script>
 /* =========================================================
@@ -2374,7 +2762,7 @@ function getSignLordHouses6(p){
 }
 
 /* =========================================================
-   BUILD TABLE-6
+   BUILD TABLE-7
    ========================================================= */
 function buildTable6(){
 
@@ -2510,22 +2898,264 @@ function buildTable6(){
 
 
 
-
-
-
-
-
-
-
-
-
-
 <!-- 🔒 PERMANENT BOTTOM CONTAINER FOR EFFECTIVE LINKS -->
 <div id="kp-fixed-bottom"></div>
 
+
+
+
+
+<!-- VIMSHOTTARI START -->
+<div id="vimshottari-wrapper">
+<h2>Vimshottari Dasha Age Calculator</h2>
+
+
+
+<style>
+/* ===== ORIGINAL SUPERB STYLING (UNCHANGED) ===== */
+#vimshottari-wrapper{
+  background:#0b0f14;
+  color:#f5e9c6;
+  font-family:Segoe UI,Arial,sans-serif;
+  padding:20px;
+  margin-top:40px;
+}
+#vimshottari-wrapper h2,
+#vimshottari-wrapper h3{
+  color:#facc15;
+  text-shadow:0 0 6px #b45309;
+}
+#vimshottari-wrapper select,
+#vimshottari-wrapper input,
+#vimshottari-wrapper button{
+  background:#111827;
+  color:#f5e9c6;
+  border:1px solid #ca8a04;
+  padding:6px 8px;
+  margin:4px;
+  border-radius:6px;
+  font-weight:600;
+}
+#vimshottari-wrapper button{cursor:pointer}
+#vimshottari-wrapper button:hover{background:#1f2937}
+#vimshottari-wrapper hr{
+  border:0;border-top:1px solid #ca8a04;margin:16px 0
+}
+.dasha-node{
+  margin-left:14px;
+  border-left:1px solid #7c6f3d;
+  padding-left:8px;
+}
+.dasha-header{
+  cursor:pointer;
+  padding:6px 8px;
+  border-radius:6px;
+}
+.active.level-1 > .dasha-header{
+  background:#facc15;color:#1f2937;border:2px solid #ca8a04;
+  box-shadow:0 0 12px #facc15;
+}
+.active.level-2 > .dasha-header{
+  background:#38bdf8;color:#082f49;border:2px solid #0284c7;
+}
+.active.level-3 > .dasha-header{
+  background:#4ade80;color:#052e16;border:2px solid #16a34a;
+}
+.active.level-4 > .dasha-header{
+  background:#fbbf24;color:#422006;border:2px solid #d97706;
+}
+.active.level-5 > .dasha-header{
+  background:#eab308;color:#422006;border:2px solid #a16207;
+}
+.small{font-size:13px;opacity:.9}
+.age-box{
+  margin-left:10px;
+  font-weight:700;
+  color:#4ade80;
+}
+</style>
+
+<div>
+  <button onclick="generateVimMoon()">Generate from Moon</button>
+  <button onclick="generateVimLagna()">Generate from Lagna</button>
+  <span id="nativeAge" class="age-box"></span>
+</div>
+
+<hr>
+<div id="tree"></div>
+<hr>
+
+<h3>Event Analyzer</h3>
+<div><button onclick="clearVim()">Clear All</button></div>
+<div id="events"></div>
+
+<script>
+/* ===== CONSTANTS (UNCHANGED) ===== */
+const ORDER=["Ketu","Venus","Surya","Chandra","Mangala","Rahu","Jupiter","Saturn","Budha"];
+const YEARS={Ketu:7,Venus:20,Surya:6,Chandra:10,Mangala:7,Rahu:18,Jupiter:16,Saturn:19,Budha:17};
+const LEVELS=["Mahadasha","Bhukti","Antara","Sookshma","Prana"];
+const MS_YEAR=365.2425*24*60*60*1000;
+const NAK_LEN=13+20/60;
+
+let lastExpanded=false;
+
+/* ===== AGE (Y M D – AUTHORITATIVE) ===== */
+function diffYMD(from,to){
+  if(!from||to<from)return "";
+  let d=to-from;
+  let y=Math.floor(d/MS_YEAR);d-=y*MS_YEAR;
+  let m=Math.floor(d/(30.4375*24*60*60*1000));
+  let da=Math.floor((d%(30.4375*24*60*60*1000))/(24*60*60*1000));
+  return `${y} years ${m} months ${da} days`;
+}
+
+/* ===== DEGREE FROM KP PROJECT ===== */
+function moonAbs(){
+  return absoluteDeg(
+    signs.indexOf(Chandra_sign.value),
+    Chandra_deg.value,Chandra_min.value,Chandra_sec.value
+  );
+}
+function lagnaAbs(){
+  return absoluteDeg(
+    signs.indexOf(c1_sign.value),
+    c1_deg.value,c1_min.value,c1_sec.value
+  );
+}
+
+/* ===== TRUE START FROM DEGREE ===== */
+function getStart(abs,dob){
+  let i=Math.floor(abs/NAK_LEN)%9;
+  let lord=ORDER[i];
+  let elapsed=(abs%NAK_LEN)/NAK_LEN*YEARS[lord];
+  let start=new Date(dob.getTime()-elapsed*MS_YEAR);
+  return{lord,start};
+}
+
+/* ===== CORE ENGINE (UNCHANGED) ===== */
+function addYears(d,y){return new Date(d.getTime()+y*MS_YEAR)}
+function rotate(p){let i=ORDER.indexOf(p);return ORDER.slice(i).concat(ORDER.slice(0,i))}
+function genLevel(l,s,p,y,m){
+  if(l>m)return[];
+  let a=[],c=new Date(s);
+  rotate(p).forEach(x=>{
+    let yy=y*(YEARS[x]/120),e=addYears(c,yy);
+    a.push({level:l,planet:x,start:new Date(c),end:new Date(e),
+      children:genLevel(l+1,c,x,yy,m)});
+    c=e;
+  });
+  return a;
+}
+
+/* ===== RENDER (FIXED AGE FOR FIRST MAHADASHA) ===== */
+function render(n,dob){
+  let w=document.createElement("div");
+  w.className="dasha-node level-"+n.level;
+  w.dataset.s=n.start;w.dataset.e=n.end;w.dataset.l=n.level;
+
+  let h=document.createElement("div");
+  h.className="dasha-header";
+  h.innerHTML=`<b>${LEVELS[n.level-1]} – ${n.planet}</b> |
+  ${n.start.toISOString().slice(0,10)}
+  (Age ${diffYMD(dob,n.start)})
+  → ${n.end.toISOString().slice(0,10)}
+  (Age ${diffYMD(dob,n.end)})`;
+
+  let c=document.createElement("div");c.style.display="none";
+  n.children.forEach(ch=>c.appendChild(render(ch,dob)));
+
+  h.onclick=()=>{
+    w.classList.toggle("active");
+    c.style.display=w.classList.contains("active")?"block":"none";
+  };
+
+  w.appendChild(h);w.appendChild(c);return w;
+}
+
+/* ===== GENERATORS ===== */
+function generateFrom(abs){
+  tree.innerHTML="";
+  let dob=new Date(baseDate.value);
+  nativeAge.textContent="Age of Native : "+diffYMD(dob,new Date());
+  let s=getStart(abs,dob);
+  let cur=new Date(s.start);
+  rotate(s.lord).forEach(p=>{
+    let e=addYears(cur,YEARS[p]);
+    tree.appendChild(render({
+      level:1,planet:p,start:new Date(cur),end:new Date(e),
+      children:genLevel(2,cur,p,YEARS[p],3)
+    },dob));
+    cur=e;
+  });
+  buildEvents();
+}
+function generateVimMoon(){generateFrom(moonAbs())}
+function generateVimLagna(){generateFrom(lagnaAbs())}
+
+/* ===== EVENTS (100% ORIGINAL) ===== */
+function buildEvents(){
+  let today=new Date().toISOString().slice(0,10);
+  let html=`
+  <div>
+    <button onclick="setToday()">Current Transit</button>
+    <input type="date" id="ed0" value="${today}">
+    <button onclick="findEvent(0)">Find</button>
+    <span id="er0" class="small"></span>
+  </div>`;
+  for(let i=1;i<=5;i++){
+    html+=`
+    <div>
+      <input id="en${i}" placeholder="Event name">
+      <input type="date" id="ed${i}">
+      <button onclick="findEvent(${i})">Find</button>
+      <span id="er${i}" class="small"></span>
+    </div>`;
+  }
+  events.innerHTML=html;
+}
+function setToday(){ed0.value=new Date().toISOString().slice(0,10)}
+function findEvent(i){
+  let r=er0;
+  if(lastExpanded){
+    document.querySelectorAll(".active").forEach(a=>a.classList.remove("active"));
+    document.querySelectorAll(".dasha-node > div:nth-child(2)")
+      .forEach(d=>d.style.display="none");
+    r.textContent="";lastExpanded=false;return;
+  }
+  let d=new Date(document.getElementById(`ed${i}`).value);
+  let n=[...document.querySelectorAll(".dasha-node")]
+    .filter(x=>d>=new Date(x.dataset.s)&&d<new Date(x.dataset.e))
+    .sort((a,b)=>a.dataset.l-b.dataset.l);
+  n.forEach(x=>{x.classList.add("active");x.children[1].style.display="block"});
+  r.textContent=n.map(x=>x.querySelector("b").textContent.split(" – ").pop()).join(" – ");
+  lastExpanded=true;
+}
+function clearVim(){
+  tree.innerHTML="";events.innerHTML="";
+  nativeAge.textContent="";lastExpanded=false;
+}
+</script>
+
+
+
+</div>
+<!-- VIMSHOTTARI END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
-
 
 
 
