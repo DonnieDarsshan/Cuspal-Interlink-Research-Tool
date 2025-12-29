@@ -1,6 +1,8 @@
 {
   "personName": "KEERCHI",
   "manualMode": true,
+  "baseDate": "1998-04-17",
+  "baseTime": "20:05:00",
   "cusps": {
     "1": {
       "sign": "Libra",
@@ -130,5 +132,27 @@
       "min": "20",
       "sec": "56"
     }
-  }
+  },
+  "vimshottariEvents": [
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    }
+  ]
 }

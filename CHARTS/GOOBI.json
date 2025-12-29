@@ -1,6 +1,8 @@
 {
   "personName": "GOOBI",
   "manualMode": true,
+  "baseDate": "2000-05-24",
+  "baseTime": "06:18:00",
   "cusps": {
     "1": {
       "sign": "Taurus",
@@ -130,5 +132,27 @@
       "min": "25",
       "sec": "45"
     }
-  }
+  },
+  "vimshottariEvents": [
+    {
+      "name": "Grahapravesha ",
+      "date": "2025-02-22"
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    }
+  ]
 }

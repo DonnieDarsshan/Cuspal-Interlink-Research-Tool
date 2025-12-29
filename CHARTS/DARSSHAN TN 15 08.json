@@ -1,0 +1,158 @@
+{
+  "personName": "DARSSHAN TN",
+  "manualMode": true,
+  "baseDate": "1993-02-22",
+  "baseTime": "15:08:00",
+  "cusps": {
+    "1": {
+      "sign": "Gemini",
+      "deg": "24",
+      "min": "28",
+      "sec": "26"
+    },
+    "2": {
+      "sign": "Cancer",
+      "deg": "20",
+      "min": "26",
+      "sec": "59"
+    },
+    "3": {
+      "sign": "Leo",
+      "deg": "19",
+      "min": "34",
+      "sec": "7"
+    },
+    "4": {
+      "sign": "Virgo",
+      "deg": "21",
+      "min": "33",
+      "sec": "28"
+    },
+    "5": {
+      "sign": "Libra",
+      "deg": "24",
+      "min": "14",
+      "sec": "5"
+    },
+    "6": {
+      "sign": "Scorpio",
+      "deg": "25",
+      "min": "13",
+      "sec": "23"
+    },
+    "7": {
+      "sign": "Sagittarius",
+      "deg": "24",
+      "min": "28",
+      "sec": "26"
+    },
+    "8": {
+      "sign": "Capricorn",
+      "deg": "20",
+      "min": "36",
+      "sec": "59"
+    },
+    "9": {
+      "sign": "Aquarius",
+      "deg": "19",
+      "min": "34",
+      "sec": "7"
+    },
+    "10": {
+      "sign": "Pisces",
+      "deg": "21",
+      "min": "33",
+      "sec": "28"
+    },
+    "11": {
+      "sign": "Aries",
+      "deg": "24",
+      "min": "14",
+      "sec": "5"
+    },
+    "12": {
+      "sign": "Taurus",
+      "deg": "25",
+      "min": "13",
+      "sec": "23"
+    }
+  },
+  "planets": {
+    "Surya": {
+      "sign": "Aquarius",
+      "deg": "10",
+      "min": "6",
+      "sec": "47"
+    },
+    "Chandra": {
+      "sign": "Aquarius",
+      "deg": "19",
+      "min": "24",
+      "sec": "54"
+    },
+    "Mangala": {
+      "sign": "Gemini",
+      "deg": "15",
+      "min": "18",
+      "sec": "12"
+    },
+    "Rahu": {
+      "sign": "Scorpio",
+      "deg": "23",
+      "min": "58",
+      "sec": "30"
+    },
+    "Jupiter": {
+      "sign": "Virgo",
+      "deg": "20",
+      "min": "5",
+      "sec": "19"
+    },
+    "Saturn": {
+      "sign": "Capricorn",
+      "deg": "28",
+      "min": "47",
+      "sec": "27"
+    },
+    "Budha": {
+      "sign": "Aquarius",
+      "deg": "28",
+      "min": "6",
+      "sec": "6"
+    },
+    "Ketu": {
+      "sign": "Taurus",
+      "deg": "23",
+      "min": "58",
+      "sec": "30"
+    },
+    "Venus": {
+      "sign": "Pisces",
+      "deg": "21",
+      "min": "11",
+      "sec": "4"
+    }
+  },
+  "vimshottariEvents": [
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    },
+    {
+      "name": "",
+      "date": ""
+    }
+  ]
+}
