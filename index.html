@@ -192,6 +192,28 @@ hr{
 
 
 
+
+
+<!-- =========================================================
+     MINI NAVIGATION BUTTONS
+     ========================================================= -->
+<div id="miniNav">
+    <button onclick="document.getElementById('table1').scrollIntoView({behavior:'smooth'})">1</button>
+    <button onclick="document.getElementById('table2').scrollIntoView({behavior:'smooth'})">2</button>
+    <button onclick="document.getElementById('kundaliSection').scrollIntoView({behavior:'smooth'})">3</button>
+    <button onclick="document.getElementById('pivotMode').scrollIntoView({behavior:'smooth'})">4</button>
+    <button onclick="document.getElementById('anchor-table4').scrollIntoView({behavior:'smooth'})">5</button>
+<button onclick="document.getElementById('anchor-table5').scrollIntoView({behavior:'smooth'})">6</button>
+<button onclick="document.getElementById('anchor-table6').scrollIntoView({behavior:'smooth'})">7</button>
+<button onclick="document.getElementById('anchor-table7').scrollIntoView({behavior:'smooth'})">8</button>
+
+    <button onclick="document.getElementById('vimshottari-wrapper').scrollIntoView({behavior:'smooth'})">9</button>
+</div>
+
+
+
+
+
 <!-- =========================================================
      MAIN HEADING
      ========================================================= -->
@@ -226,6 +248,8 @@ Manual Cusps (unchecked = Equal cusps from Lagna)
 
 <button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
 
+<div id="table1"></div>
+
 <h3 style="
     margin-top:10px;
     margin-bottom:10px;
@@ -241,6 +265,7 @@ CUSP DATA &amp; PLANETS DATA INPUT TABLE-1
 
 
 
+<div id="table1"></div>
 
 <table id="inputTable">
 <tr>
@@ -411,6 +436,19 @@ function lockBaseDateTime(){
 .kCell .sign{position:absolute;bottom:4px;right:6px;font-size:13px;font-weight:800;color:#ff9f1c}
 .kBlank{background:#0c0404;border:1px solid #2a0f0f}
 </style>
+
+
+<div id="kundaliSection"></div>
+
+<h2 style="
+    text-align:center;
+    color:#ff9f1c;
+    letter-spacing:2px;
+    margin-top:30px;
+">
+SOUTH INDIAN KUNDALI
+</h2>
+
 
 <div id="kundaliControls">
     <label>Pivot :
@@ -1520,7 +1558,7 @@ function renderCuspalTable(){
     let view = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
 
     let html = `
-    <h2>Table-2 Cuspal Interlink Chart</h2>
+    <h2 id="table2">Table-2 Cuspal Interlink Chart</h2>
     <table>
         <tr>
             <th>Bhava</th>
@@ -1595,7 +1633,7 @@ document.addEventListener("DOMContentLoaded", () => {
    UI : PIVOT + HOUSE MODE
    ========================================================= */
 document.body.insertAdjacentHTML("beforeend", `
-<h2>Pivot & House Mode</h2>
+<h2 id="pivotMode">Pivot & House Mode</h2>
 
 
 
@@ -1878,7 +1916,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 
 
-
 <!-- =========================================================
      PART 4 : KP PLANETARY TABLE-4 (PIVOT-ORDERED)
      (RAHU / KETU SIGN-LORD DISPOSITOR PATCH – FINAL)
@@ -1910,6 +1947,8 @@ function buildTable3(){
 
     let html = `
     <div id="table3">
+	<div id="anchor-table4"></div>
+
     <h2>Table-4 : Planetary House Significations (Pivot Based)</h2>
     <table>
         <tr>
@@ -2610,7 +2649,7 @@ function computeTaraIndex(janma, target){
    ========================================================= */
 function buildTable4(){
 
-    document.getElementById("table4")?.remove();
+    document.getElementById("table5-content")?.remove();
 
     let t3Table = document.querySelector("#table3 table");
     if(!t3Table) return;
@@ -2648,9 +2687,14 @@ function buildTable4(){
     }
 
     let html=`
-    <div id="table4">
-    <h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
+    <div id="table5-content">
+	
+<div id="anchor-table5"></div>
+
+	<h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
+
     `;
+
 
     displayPlanets.forEach(p=>{
 
@@ -2862,8 +2906,11 @@ function initTable5Shell(){
     if(!root || root.querySelector("#table5-shell")) return;
 
     root.innerHTML = `
-    <div id="table5-shell" style="margin-top:40px;">
-        <h2>Table-6 Effective Links Table</h2>
+    <div id="anchor-table6"></div>
+<div id="table5-shell" style="margin-top:40px;">
+        <div id="anchor-table6"></div>
+		<h2>Table-6 : Effective Links Table</h2>
+
 
         <!-- ROW 1 -->
         <div style="margin-bottom:6px;">
@@ -3140,7 +3187,7 @@ function getSignLordHouses6(p){
    ========================================================= */
 function buildTable6(){
 
-    document.getElementById("table6")?.remove();
+    document.getElementById("table7-content")?.remove();
     if(!cuspsData || !cuspsData.length) return;
 
     let pivot = document.getElementById("pivotSelect")?.value;
@@ -3154,8 +3201,11 @@ function buildTable6(){
     }
 
     let html = `
-    <div id="table6" style="margin-top:40px;">
-        <h2>Table-7 : Sign • Placement • Aspect Synthesis</h2>
+    <div id="table7-content" style="margin-top:40px;">
+	<div id="anchor-table7"></div>
+
+<h2>Table-7 : Sign • Placement • Aspect Synthesis</h2>
+
 
         <div style="margin-bottom:12px;">
             <label style="margin-right:20px;">
@@ -3302,21 +3352,23 @@ function buildTable6(){
 
 
 
-<!-- 🔒 PERMANENT BOTTOM CONTAINER FOR EFFECTIVE LINKS -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 🔒 FIXED BOTTOM MARKER (DO NOT REMOVE) -->
 <div id="kp-fixed-bottom"></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3781,6 +3833,39 @@ document.getElementById("trueNodeModeKP")
 
 
 
+
+
+
+<style>
+/* =========================================================
+   MINI FIXED NAVIGATION – TOP RIGHT
+   ========================================================= */
+#miniNav{
+    position:fixed;
+    top:10px;
+    right:10px;
+    z-index:9999;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
+
+#miniNav button{
+    font-size:11px;
+    padding:3px 6px;
+    border-radius:4px;
+    background:#1a0808;
+    color:#facc15;
+    border:1px solid #a86b17;
+    cursor:pointer;
+    opacity:0.65;
+}
+
+#miniNav button:hover{
+    opacity:1;
+    box-shadow:0 0 6px rgba(255,159,28,0.6);
+}
+</style>
 
 
 
