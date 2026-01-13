@@ -205,7 +205,7 @@ hr{
     <button onclick="document.getElementById('anchor-table4').scrollIntoView({behavior:'smooth'})">5</button>
 <button onclick="document.getElementById('anchor-table5').scrollIntoView({behavior:'smooth'})">6</button>
 <button onclick="document.getElementById('anchor-table6').scrollIntoView({behavior:'smooth'})">7</button>
-<button onclick="document.getElementById('anchor-table7').scrollIntoView({behavior:'smooth'})">8</button>
+<button onclick="document.getElementById('anchor-table8').scrollIntoView({behavior:'smooth'})">8</button>
 
     <button onclick="document.getElementById('vimshottari-wrapper').scrollIntoView({behavior:'smooth'})">9</button>
 </div>
@@ -2910,6 +2910,8 @@ function initTable5Shell(){
 <div id="table5-shell" style="margin-top:40px;">
         <div id="anchor-table6"></div>
 		<h2>Table-6 : Effective Links Table</h2>
+		<div id="table6-content"></div>
+
 
 
         <!-- ROW 1 -->
@@ -3095,6 +3097,121 @@ function buildTable5(){
 
 
 
+<script>
+/* =========================================================
+   TABLE-7 : EFFECTIVE LINKS TABLE 
+   (SAME RULES AS TABLE-6, DIFFERENT GROUPING)
+   ========================================================= */
+
+function gA(n){ return [1,5,9].includes(n); }
+function gB(n){ return [2,6,10].includes(n); }
+function gC(n){ return [3,7,11].includes(n); }
+function gD(n){ return [4,8,12].includes(n); }
+
+function buildTable7(){
+
+    document.getElementById("table7-content")?.remove();
+
+    let T3 = window.__T3_CACHE__;
+    if(!T3) return;
+
+    let useStar          = !document.getElementById("ignoreStar")?.checked;
+    let useSSL           = !document.getElementById("ignoreSSL")?.checked;
+    let ignoreSubRow     = document.getElementById("ignoreSubRow")?.checked;
+    let ignoreSSLRow     = document.getElementById("ignoreSSLRow")?.checked;
+    let ignoreStarOfSub  = document.getElementById("ignoreStarOfSub")?.checked;
+    let ignoreStarOfSSL  = document.getElementById("ignoreStarOfSSL")?.checked;
+
+    let order = getPivotSortedPlanets();
+
+    let html = `
+    <div id="table7-content" style="margin-top:40px;">
+    <h2>Table-7 : Effective Links Table</h2>
+
+    <table>
+        <tr>
+            <th>Planet</th>
+            <th>Even</th>
+            <th>Odd</th>
+            <th>1,5,9</th>
+            <th>2,6,10</th>
+            <th>3,7,11</th>
+            <th>4,8,12</th>
+        </tr>
+    `;
+
+    order.forEach(p=>{
+
+        let kp = getPlanetKPLords(p);
+        if(!kp) return;
+
+        let all = [];
+
+        /* Planet */
+        all.push(...collectPlanet(p, useStar, useSSL));
+
+        /* Star Lord */
+        all.push(...collectPlanet(kp.star, useStar, useSSL));
+
+        /* Sub Lord */
+        if(!ignoreSubRow){
+            all.push(...collectPlanet(kp.sub, useStar, useSSL));
+        }
+
+        /* Sub-Sub Lord */
+        if(!ignoreSSLRow){
+            all.push(...collectPlanet(kp.ssl, useStar, useSSL));
+        }
+
+        /* Star of Sub */
+        if(!ignoreStarOfSub && kp.sub){
+            let x = getPlanetKPLords(kp.sub);
+            if(x?.star){
+                all.push(...collectPlanet(x.star, useStar, useSSL));
+            }
+        }
+
+        /* Star of Sub-Sub */
+        if(!ignoreStarOfSSL && kp.ssl){
+            let x = getPlanetKPLords(kp.ssl);
+            if(x?.star){
+                all.push(...collectPlanet(x.star, useStar, useSSL));
+            }
+        }
+
+        all = uniqueSorted(all);
+
+        let even=[], odd=[], a=[], b=[], c=[], d=[];
+        all.forEach(n=>{
+            if(isEven(n)) even.push(n);
+            if(isOdd(n))  odd.push(n);
+            if(gA(n)) a.push(n);
+            if(gB(n)) b.push(n);
+            if(gC(n)) c.push(n);
+            if(gD(n)) d.push(n);
+        });
+
+        html += `
+        <tr>
+            <td><b>${markPlanet(p)}</b></td>
+            <td>${even.join(",")}</td>
+            <td>${odd.join(",")}</td>
+            <td>${a.join(",")}</td>
+            <td>${b.join(",")}</td>
+            <td>${c.join(",")}</td>
+            <td>${d.join(",")}</td>
+        </tr>
+        `;
+    });
+
+    html += `
+    </table>
+    </div>
+    `;
+
+    document.getElementById("table5-shell")
+        ?.insertAdjacentHTML("afterend", html);
+}
 
 
 
@@ -3105,6 +3222,19 @@ function buildTable5(){
 
 
 
+
+
+(function(){
+    const _orig = buildTable5;
+    buildTable5 = function(){
+        _orig();          // ✅ builds Table-6
+        if(typeof buildTable7 === "function"){
+            buildTable7(); // ✅ then Table-7
+        }
+    };
+})();
+
+</script>
 
 
 
@@ -3122,8 +3252,32 @@ function buildTable5(){
 
 
 
+
+
+
+
+
+
+
+
+
+
 <!-- =========================================================
-     PART 7 : KP TABLE-7 (FINAL STABLE)
+     TABLE 8
+     ========================================================= -->
+
+
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     PART 7 : KP TABLE-8 (FINAL STABLE)
      ========================================================= -->
 <script>
 /* =========================================================
@@ -3187,7 +3341,7 @@ function getSignLordHouses6(p){
    ========================================================= */
 function buildTable6(){
 
-    document.getElementById("table7-content")?.remove();
+    document.getElementById("table8-content")?.remove();
     if(!cuspsData || !cuspsData.length) return;
 
     let pivot = document.getElementById("pivotSelect")?.value;
@@ -3201,10 +3355,10 @@ function buildTable6(){
     }
 
     let html = `
-    <div id="table7-content" style="margin-top:40px;">
-	<div id="anchor-table7"></div>
+    <div id="table8-content" style="margin-top:40px;">
+	<div id="anchor-table8"></div>
 
-<h2>Table-7 : Sign • Placement • Aspect Synthesis</h2>
+<h2>Table-8 : Sign • Placement • Aspect Synthesis</h2>
 
 
         <div style="margin-bottom:12px;">
@@ -3369,6 +3523,40 @@ function buildTable6(){
 
 <!-- 🔒 FIXED BOTTOM MARKER (DO NOT REMOVE) -->
 <div id="kp-fixed-bottom"></div>
+
+
+
+<script>
+/* =========================================================
+   TABLE-7 POSITION FIX
+   FORCE TABLE-7 TO APPEAR AFTER TABLE-6
+   ========================================================= */
+
+
+(function(){
+
+    const __origBuildTable7 = buildTable7;
+
+    buildTable7 = function(){
+
+        __origBuildTable7();
+
+        const t7 = document.getElementById("table7-content");
+        const t6Table =
+            document.querySelector("#table5-shell table:last-of-type");
+
+        if(t6Table && t7){
+            t6Table.insertAdjacentElement("afterend", t7);
+        }
+    };
+
+})();
+</script>
+
+
+
+
+
 
 
 
