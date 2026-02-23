@@ -121,10 +121,80 @@ input[type="checkbox"]{
     accent-color: var(--accent-saffron);
 }
 
+
+/* ---------- RADIO ---------- */
+input[type="radio"]{
+    accent-color: var(--accent-saffron);
+    transform: scale(1.15);
+    cursor: pointer;
+}
+
+
+
 /* ---------- HIDDEN ---------- */
 .hidden{
     display: none;
 }
+
+
+
+
+/* =========================================================
+   COLLAPSIBLE TABLE SYSTEM
+   ========================================================= */
+
+.collapsible-heading{
+    cursor:pointer;
+    user-select:none;
+    position:relative;
+}
+
+.collapsible-heading::after{
+    content:" ▶";
+    font-size:14px;
+    color:#facc15;
+}
+
+.collapsible-heading.open::after{
+    content:" ▼";
+}
+
+.collapsible-body{
+    display:none;
+}
+
+
+
+
+
+/* =========================================================
+   COLLAPSIBLE TABLE SECTIONS (TABLE-5 & TABLE-8)
+   ========================================================= */
+
+.collapsible-heading{
+    cursor:pointer;
+    position:relative;
+    user-select:none;
+}
+
+.collapsible-heading::after{
+    content:" ▼";
+    font-size:14px;
+    color:#facc15;
+}
+
+.collapsible-heading.collapsed::after{
+    content:" ▶";
+}
+
+.collapsible-content{
+    display:none;
+}
+
+
+
+
+
 
 /* ---------- SECTION SPACING ---------- */
 #output, #table3, #table4{
@@ -458,48 +528,67 @@ function lockBaseDateTime(){
 
 <div id="kundaliSection"></div>
 
-<h2 style="
-    text-align:center;
-    color:#ff9f1c;
-    letter-spacing:2px;
-    margin-top:30px;
-">
-SOUTH INDIAN KUNDALI
+<h2 id="southKundaliHeading" 
+    style="
+        text-align:center;
+        color:#ff9f1c;
+        letter-spacing:2px;
+        margin-top:30px;
+        cursor:pointer;
+    "
+    onclick="toggleSouthKundali()"
+>
+SOUTH INDIAN KUNDALI ▶
 </h2>
 
 
-<div id="kundaliControls">
-    <label>Pivot :
-        <select id="kPivot">
-            <option value="Lagna">Lagna</option>
-            <option value="Surya">Surya</option>
-            <option value="Chandra">Chandra</option>
-            <option value="Mangala">Mangala</option>
-            <option value="Rahu">Rahu</option>
-            <option value="Jupiter">Guru</option>
-            <option value="Saturn">Saturn</option>
-            <option value="Budha">Budha</option>
-            <option value="Ketu">Ketu</option>
-            <option value="Venus">Venus</option>
-        </select>
-    </label>
-    <label><input type="checkbox" id="kpModeK"> KP (0°)</label>
-    <label><input type="checkbox" id="vedicModeK"> Vedic (15°)</label>
-    <label><input type="checkbox" id="retroModeK"> Retro</label>
 
-    <!-- 🔥 ADDITION ONLY -->
-    <label>
-        <input type="checkbox" id="showCuspsD1">
-        Show Cusps (2–12)
-    </label>
-</div>
 
-<div id="kundaliZone">
-    <div class="kWrap">
-        <div class="kTitle">D1 – RĀŚI</div>
-        <div id="D1Chart" class="kChart"></div>
+
+
+
+
+
+
+<div id="southKundaliWrapper" style="display:none;">
+
+    <div id="kundaliControls">
+        <label>Pivot :
+            <select id="kPivot">
+                <option value="Lagna">Lagna</option>
+                <option value="Surya">Surya</option>
+                <option value="Chandra">Chandra</option>
+                <option value="Mangala">Mangala</option>
+                <option value="Rahu">Rahu</option>
+                <option value="Jupiter">Guru</option>
+                <option value="Saturn">Saturn</option>
+                <option value="Budha">Budha</option>
+                <option value="Ketu">Ketu</option>
+                <option value="Venus">Venus</option>
+            </select>
+        </label>
+
+        <label><input type="checkbox" id="kpModeK"> KP (0°)</label>
+        <label><input type="checkbox" id="vedicModeK"> Vedic (15°)</label>
+        <label><input type="checkbox" id="retroModeK"> Retro</label>
+
+        <label>
+            <input type="checkbox" id="showCuspsD1">
+            Show Cusps (2–12)
+        </label>
     </div>
+
+    <div id="kundaliZone">
+        <div class="kWrap">
+            <div class="kTitle">D1 – RĀŚI</div>
+            <div id="D1Chart" class="kChart"></div>
+        </div>
+    </div>
+
 </div>
+
+
+
 
 <script>
 const SI_SIGNS=[
@@ -1465,6 +1554,13 @@ let cuspsData = [];
 /* cache */
 let TENANTED_CACHE = null;
 
+
+/* =========================================================
+   GLOBAL RETRO STATE (FROM SWISS JSON)
+   ========================================================= */
+let PLANET_RETRO_STATE = {};
+
+
 /* build tenanted set */
 function computeTenantedPlanets(){
     let set = new Set();
@@ -1488,17 +1584,36 @@ function computeTenantedPlanets(){
 
 
 function markPlanet(p){
+
     if(!p) return "";
 
-    p = String(p).trim();   // 🔒 HARD NORMALIZATION
+    p = String(p).trim();
 
     if(p === "Lagna") return p;
 
-   /* cache is built explicitly in buildCuspalChart */
+    let label = p;
 
-    return TENANTED_CACHE.has(p)
-        ? p
-        : p + " $";
+    /* RETRO */
+    if(isRetroPlanet(p)){
+        label += " (R)";
+    }
+
+    /* TENANTED */
+    if(!TENANTED_CACHE.has(p)){
+        label += " $";
+    }
+
+    /* OWN STAR / SUB */
+    if(isInOwnStarOrSub(p)){
+        label += " %";
+    }
+
+    /* STAR EXCHANGE */
+    if(isStarExchangePlanet(p)){
+        label += " #";
+    }
+
+    return label;
 }
 
 
@@ -1659,7 +1774,14 @@ function renderCuspalTable(){
     let view = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
 
     let html = `
-    <h2 id="table2">Table-2 Cuspal Interlink Chart</h2>
+    <h2 id="table2" class="collapsible-heading"
+    onclick="toggleCollapsible('table2-body', this)">
+	Table-2 Cuspal Interlink Chart
+	</h2>
+
+	<div id="table2-body" class="collapsible-body">
+
+
     <table>
         <tr>
             <th>Bhava</th>
@@ -1687,7 +1809,7 @@ function renderCuspalTable(){
         </tr>`;
     });
 
-    html += `</table>`;
+    html += `</table></div>`;
     document.getElementById("output").innerHTML = html;
 }
 </script>
@@ -1805,7 +1927,7 @@ document.body.insertAdjacentHTML("beforeend", `
 
 
 <label style="margin-left:15px;font-weight:700;color:#facc15;">
-    <input type="checkbox" id="vedicMode" checked>
+    <input type="checkbox" id="vedicMode">
     Vedic House (±15°)
 </label>
 
@@ -1852,6 +1974,40 @@ function getPlanetAbsDeg(p){
         document.getElementById(p+"_sec").value
     );
 }
+
+
+
+
+
+/* =========================================================
+   RETRO DETECTOR (KP PROJECT WIDE)
+   ========================================================= */
+function isRetroPlanet(p){
+
+    if(p === "Lagna") return false;
+
+    /* Nodes always retro */
+    if(p === "Rahu" || p === "Ketu") return true;
+
+    /* 1️⃣ Swiss JSON retro has highest priority */
+    if(PLANET_RETRO_STATE && PLANET_RETRO_STATE[p] === true){
+        return true;
+    }
+
+    /* 2️⃣ Manual Retro checkbox */
+    const chk =
+        document.getElementById("retroMode") ||
+        document.getElementById("retroModeK");
+
+    return !!(chk && chk.checked);
+}
+
+
+
+
+
+
+
 
 /* =========================================================
    KP HOUSE CALCULATION
@@ -2359,7 +2515,14 @@ function buildPivotCuspalTable(){
 
     /* ---------- BUILD TABLE ---------- */
     let html = `
-    <h2>Table-3 : Pivot Based Cuspal Interlink (Dynamic)</h2>
+    <h2 class="collapsible-heading"
+    onclick="toggleCollapsible('table3-body', this)">
+	Table-3 : Pivot Based Cuspal Interlink (Dynamic)
+	</h2>
+
+	<div id="table3-body" class="collapsible-body">
+
+
     <table>
         <tr>
             <th>Bhava</th>
@@ -2391,7 +2554,7 @@ function buildPivotCuspalTable(){
         `;
     });
 
-    html += `</table>`;
+    html += `</table></div>`;
 
     document.getElementById("pivotCuspalTable").innerHTML = html;
 }
@@ -2777,6 +2940,64 @@ function getPlanetKPLords(p){
 
 
 
+
+
+
+
+/* =========================================================
+   OWN STAR / OWN SUB (%)
+   ========================================================= */
+function isInOwnStarOrSub(p){
+
+    if(p === "Lagna") return false;
+
+    const kp = getPlanetKPLords(p);
+    if(!kp) return false;
+
+    return kp.star === p || kp.sub === p;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   STAR EXCHANGE (#) – MUTUAL NAKSHATRA LORDSHIP
+   ========================================================= */
+function isStarExchangePlanet(p){
+
+    if(p === "Lagna") return false;
+
+    const kp = getPlanetKPLords(p);
+    if(!kp || !kp.star) return false;
+
+    const other = kp.star;
+
+    /* 🔒 BLOCK SELF-REFERENCE (OWN STAR) */
+    if(other === p) return false;
+
+    const kp2 = getPlanetKPLords(other);
+    if(!kp2 || !kp2.star) return false;
+
+    /* 🔒 MUTUAL ONLY */
+    return kp2.star === p;
+}
+
+
+
+
+
+
+
+
+
 /* 🔒 TARA MANUAL LOCK */
 let TARA_MANUAL_LOCK = false;
 let TARA_LAST_JANMA = null;
@@ -3027,7 +3248,11 @@ function buildTable4(){
 	
 <div id="anchor-table5"></div>
 
-	<h2>Table-5 : Planet → Star → Sub → Sub-Sub</h2>
+	<h2 class="collapsible-heading collapsed" onclick="toggleSection('table5-body', this)">
+	Table-5 : Planet → Star → Sub → Sub-Sub
+	</h2>
+
+	<div id="table5-body" class="collapsible-content">
 
 		<div style="
     margin:10px 0 14px;
@@ -3171,7 +3396,7 @@ function buildTable4(){
         </table>`;
     });
 
-    html+=`</div>`;
+    html+=`</div></div>`;
     document.getElementById("kp-fixed-bottom")
         .insertAdjacentHTML("beforebegin",html);
 		
@@ -3319,6 +3544,14 @@ function collectPlanet(p, useStar, useSSL){
     return out;
 }
 
+
+
+
+
+
+
+
+
 /* =========================================================
    INIT SHELL (ONCE)
    ========================================================= */
@@ -3328,53 +3561,62 @@ function initTable5Shell(){
 
     root.innerHTML = `
     <div id="anchor-table6"></div>
-<div id="table5-shell" style="margin-top:40px;">
-        <div id="anchor-table6"></div>
-		<h2>Table-6 : Effective Links Table</h2>
-		<div id="table6-content"></div>
 
+    <div id="table5-shell" style="margin-top:40px;">
 
+        <!-- COLLAPSIBLE HEADING -->
+        <h2 class="collapsible-heading"
+            onclick="toggleCollapsible('table6-body', this)">
+            Table-6 : Effective Links Table
+        </h2>
 
-        <!-- ROW 1 -->
-        <div style="margin-bottom:6px;">
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreSSL">
-                Ignore Sub-Sub Lord Column
-            </label>
+        <!-- COLLAPSIBLE BODY -->
+        <div id="table6-body" class="collapsible-body">
 
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreStar" checked>
-                Ignore Star Lord Column
-            </label>
+            <div id="table6-content"></div>
+
+            <!-- ROW 1 -->
+            <div style="margin-bottom:6px;">
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreSSL">
+                    Ignore Sub-Sub Lord Column
+                </label>
+
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreStar" checked>
+                    Ignore Star Lord Column
+                </label>
+            </div>
+
+            <!-- ROW 2 -->
+            <div style="margin-bottom:6px;">
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreSubRow" checked>
+                    Ignore Sub Lord Row
+                </label>
+
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreStarOfSub">
+                    Ignore Star of Sub
+                </label>
+            </div>
+
+            <!-- ROW 3 -->
+            <div style="margin-bottom:10px;">
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreSSLRow" checked>
+                    Ignore Sub-Sub Lord Row
+                </label>
+
+                <label style="margin-right:20px;">
+                    <input type="checkbox" id="ignoreStarOfSSL" checked>
+                    Ignore Star of Sub-Sub
+                </label>
+            </div>
+
+            <div id="table5"></div>
+
         </div>
-
-        <!-- ROW 2 -->
-        <div style="margin-bottom:6px;">
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreSubRow" checked>
-                Ignore Sub Lord Row
-            </label>
-
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreStarOfSub">
-                Ignore Star of Sub
-            </label>
-        </div>
-
-        <!-- ROW 3 -->
-        <div style="margin-bottom:10px;">
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreSSLRow" checked>
-                Ignore Sub-Sub Lord Row
-            </label>
-
-            <label style="margin-right:20px;">
-                <input type="checkbox" id="ignoreStarOfSSL" checked>
-                Ignore Star of Sub-Sub
-            </label>
-        </div>
-
-        <div id="table5"></div>
     </div>
     `;
 
@@ -3389,6 +3631,14 @@ function initTable5Shell(){
         document.getElementById(id).onchange = buildTable5;
     });
 }
+
+
+
+
+
+
+
+
 
 /* =========================================================
    PIVOT SORT
@@ -3547,7 +3797,14 @@ function buildTable7(){
 
     let html = `
     <div id="table7-content" style="margin-top:40px;">
-    <h2>Table-7 : Effective Links Table</h2>
+	
+	
+    <h2 class="collapsible-heading"
+    onclick="toggleCollapsible('table7-body', this)">
+	Table-7 : Effective Links Table
+	</h2>
+
+	<div id="table7-body" class="collapsible-body">
 
     <table>
         <tr>
@@ -3627,6 +3884,7 @@ function buildTable7(){
 
     html += `
     </table>
+    </div>
     </div>
     `;
 
@@ -3779,7 +4037,11 @@ function buildTable6(){
     <div id="table8-content" style="margin-top:40px;">
 	<div id="anchor-table8"></div>
 
-<h2>Table-8 : Sign • Placement • Aspect Synthesis</h2>
+<h2 class="collapsible-heading collapsed" onclick="toggleSection('table8-body', this)">
+Table-8 : Sign • Placement • Aspect Synthesis
+</h2>
+
+<div id="table8-body" class="collapsible-content">
 
 
         <div style="margin-bottom:12px;">
@@ -3881,7 +4143,7 @@ function buildTable6(){
         html += `</table>`;
     });
 
-    html += `</div>`;
+    html += `</div></div>`;
     document.getElementById("table5-shell")
         ?.insertAdjacentHTML("afterend", html);
 
@@ -3979,32 +4241,675 @@ document.getElementById("vedicMode")
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =========================================================
+     TABLE 9 : HOUSE BREAKING THEORY (CORRECTED PRIORITY)
+     ========================================================= -->
 <script>
+
 /* =========================================================
-   TABLE-7 POSITION FIX
-   FORCE TABLE-7 TO APPEAR AFTER TABLE-6
+   HOUSE BREAKING GROUPS
    ========================================================= */
 
 
-(function(){
+/* =========================================================
+   TABLE-9 GLOBAL STATE (MISSING VARIABLES FIX)
+   ========================================================= */
 
-    const __origBuildTable7 = buildTable7;
+let HB_MODE = "pattern";        // default mode
+let HB_ATTRACTION_MODE = false;   // 🔥 magnetic even-odd expansion toggle
+let HB_USE_PLACEMENT = false;   // 🔥 placement fallback toggle
+let HB_SHOW_STARS = false;      // default hidden
 
-    buildTable7 = function(){
+function setHBMode(mode){
+    HB_MODE = mode;
+    buildTable9();
+}
 
-        __origBuildTable7();
+/* =========================================================
+   GET RAW VALUES
+   ========================================================= */
+function getHBSource(p){
 
-        const t7 = document.getElementById("table7-content");
-        const t6Table =
-            document.querySelector("#table5-shell table:last-of-type");
+    const T3 = window.__T3_CACHE__;
+    if(!T3 || !T3[p]){
+        return {sub:[], ssl:[], star:[], placed:[]};
+    }
 
-        if(t6Table && t7){
-            t6Table.insertAdjacentElement("afterend", t7);
+    return {
+        sub:nums(T3[p].sub),
+        ssl:nums(T3[p].ssl),
+        star:nums(T3[p].star),
+        placed:nums(T3[p].place)
+    };
+}
+
+
+
+
+
+
+
+
+/* =========================================================
+   RAW VALUE WRAPPER FOR EFFECTIVE ENGINE
+   ========================================================= */
+function getHBValuesRaw(p){
+
+    let vals = computeHBFinal(p);
+
+    if(!vals || !vals.length) return [];
+
+    return vals.slice();   // return clean copy
+}
+
+
+
+/* =========================================================
+   HOUSE BREAKING GROUPS (CORRECT PRIORITY ORDER)
+   ========================================================= */
+
+/* PRIMARY GROUPS */
+const HB_PRIMARY = [
+    [1,4,7,10],
+    [2,5,8,11],
+    [3,6,9,12]
+];
+
+/* SECONDARY GROUPS */
+const HB_SECONDARY = [
+    [1,3,5,7,9,11],   // Odd
+    [2,4,6,8,10,12]   // Even
+];
+
+/* =========================================================
+   DETECT BASE GROUP (PRIMARY FIRST)
+   ========================================================= */
+
+
+/* =========================================================
+   FINAL GROUP SELECTOR (STRICT GROUPING)
+   ========================================================= */
+function detectBaseGroup(set){
+
+    set = uniqueSorted(set);
+
+    const GROUPS = [
+        [1,4,7,10],
+        [2,5,8,11],
+        [3,6,9,12],
+        [1,3,5,7,9,11],
+        [2,4,6,8,10,12]
+    ];
+
+    let bestGroup = [];
+    let maxCount = 0;
+
+    GROUPS.forEach(group=>{
+        let matches = set.filter(x=>group.includes(x));
+
+        if(matches.length > maxCount){
+            maxCount = matches.length;
+            bestGroup = group;
         }
+    });
+
+    return bestGroup;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   EXTEND BASE WITH MATCHING MEMBERS ONLY
+   ========================================================= */
+
+function extendWithMatching(base, extension, group){
+
+    if(!extension.length) return base;
+
+    let allowed = extension.filter(x=>group.includes(x));
+
+    return uniqueSorted(base.concat(allowed));
+}
+
+
+
+
+
+
+
+/* =========================================================
+   FINAL HOUSE BREAKING ENGINE (CORRECTED)
+   ========================================================= */
+function computeHBFinal(p){
+
+    let raw = getHBSource(p);
+
+    let sub     = raw.sub     || [];
+    let ssl     = raw.ssl     || [];
+    let star    = raw.star    || [];
+    let placed  = raw.placed  || [];
+
+    let anchor = [];
+
+    /* ==========================================
+       1️⃣ STRICT ANCHOR SELECTION
+       ========================================== */
+
+    if(sub.length){
+        anchor = sub.slice();
+    }
+    else if(ssl.length){
+        anchor = ssl.slice();
+    }
+    else if(star.length){
+        anchor = star.slice();
+    }
+    else{
+        anchor = [];   // 🚨 DO NOT use placement yet
+    }
+
+    anchor = uniqueSorted(anchor);
+
+    /* ==========================================
+       2️⃣ IF STILL EMPTY → TRUE FALLBACK
+       ========================================== */
+
+    if(!anchor.length){
+
+    if(HB_USE_PLACEMENT){
+        return uniqueSorted(placed);
+    }
+
+    return [];
+}
+
+    /* ==========================================
+       3️⃣ IF ATTRACTION MODE OFF → RETURN ANCHOR
+       ========================================== */
+
+    if(!HB_ATTRACTION_MODE){
+        return anchor;
+    }
+
+    /* ==========================================
+       4️⃣ CHECK EVEN / ODD PURITY
+       ========================================== */
+
+    let evenCount = anchor.filter(x => x % 2 === 0).length;
+    let oddCount  = anchor.filter(x => x % 2 !== 0).length;
+
+    /* Mixed → no expansion */
+    if(evenCount > 0 && oddCount > 0){
+        return anchor;
+    }
+
+    /* ==========================================
+       5️⃣ ATTRACTION POOL (NO PLACEMENT)
+       ========================================== */
+
+    let pool = [...anchor];
+
+    if(sub.length){
+        pool.push(...ssl);
+        pool.push(...star);
+    }
+    else if(ssl.length){
+        pool.push(...star);
+    }
+
+    pool = uniqueSorted(pool);
+
+    /* ==========================================
+       6️⃣ FILTER BY FAMILY
+       ========================================== */
+
+    if(evenCount === anchor.length){
+        return pool.filter(x => x % 2 === 0);
+    }
+
+    if(oddCount === anchor.length){
+        return pool.filter(x => x % 2 !== 0);
+    }
+
+    return anchor;
+}
+
+
+
+
+
+
+/* =========================================================
+   FORMAT WITH SYMBOLS
+   ========================================================= */
+function formatHBPlanet(p){
+
+    let vals = computeHBFinal(p);
+
+    let name = markPlanet(p)
+        .replace(/\(R\)/g,"")
+        .replace(/%/g,"")
+        .replace(/#/g,"")
+        .trim();
+
+    return `${name} ${vals.join(",")}`;
+}
+
+/* =========================================================
+   BUILD TABLE 9
+   ========================================================= */
+function buildTable9(){
+
+    document.getElementById("table9-content")?.remove();
+
+    let anchor = document.getElementById("vimshottari-wrapper");
+    if(!anchor) return;
+
+    let html = `
+    <div id="table9-content" style="margin-top:40px;">
+        <h2>Table 9 : Effective Links as Per House Breaking Theory</h2>
+		
+		
+		
+		
+		
+		
+		
+		
+		<div style="margin:10px 0 14px; font-weight:600;">
+		<label style="margin-right:20px;">
+			<input type="radio"
+				   name="hb_mode"
+				   value="evenodd"
+				   ${HB_MODE === "evenodd" ? "checked" : ""}
+				   onchange="setHBMode('evenodd')">
+			Even-Odd Mode
+		</label>
+
+		<label style="margin-right:20px;">
+			<input type="radio"
+				   name="hb_mode"
+				   value="pattern"
+				   ${HB_MODE === "pattern" ? "checked" : ""}
+				   onchange="setHBMode('pattern')">
+			Pattern Mode
+		</label>
+
+		<label>
+			<input type="radio"
+				   name="hb_mode"
+				   value="mixed"
+				   ${HB_MODE === "mixed" ? "checked" : ""}
+				   onchange="setHBMode('mixed')">
+			Mixed Mode
+		</label>
+		
+		
+		<label style="margin-left:10px;font-weight:700;color:#facc15;">
+		<input type="checkbox"
+			   id="hbAttractToggle"
+			   ${HB_ATTRACTION_MODE ? "checked" : ""}
+			   onchange="HB_ATTRACTION_MODE = this.checked; buildTable9();">
+		Attract Even / Odd
+	</label>
+	
+	<label style="margin-left:15px;font-weight:700;color:#38bdf8;">
+    <input type="checkbox"
+           id="hbPlacementToggle"
+           ${HB_USE_PLACEMENT ? "checked" : ""}
+           onchange="HB_USE_PLACEMENT = this.checked; buildTable9();">
+    Placement
+</label>
+				
+		
+
+
+	</div>
+			
+			
+			
+			
+			
+			
+			
+			
+		
+		
+
+		<label style="display:block;margin:8px 0 14px;font-weight:600;">
+			<input type="checkbox"
+			       id="toggleStarColumns"
+			       ${HB_SHOW_STARS ? "checked" : ""}
+			       onchange="HB_SHOW_STARS = this.checked; buildTable9();">
+			Show Star of Sub & Star of Sub-Sub column
+		</label>
+		
+		
+        <table class="table9-equal">
+            <tr>
+                <th>Planet</th>
+				<th>Star Lord</th>
+				<th>Sub</th>
+				<th class="col-star-sub">Star of Sub</th>
+				<th>Sub-Sub</th>
+				<th class="col-star-ssl">Star of Sub-Sub</th>
+				<th>EFF A</th>
+				<th>EFF B</th>
+				<th>EFF C</th>
+            </tr>
+    `;
+
+    getPivotSortedPlanets().forEach(p=>{
+
+        let kp = getPlanetKPLords(p);
+        if(!kp) return;
+
+        let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
+		let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
+
+        html += `
+            <tr>
+                <td><b>${formatHBPlanet(p)}</b></td>
+				<td>${kp.star ? formatHBPlanet(kp.star) : ""}</td>
+				<td>${kp.sub ? formatHBPlanet(kp.sub) : ""}</td>
+				<td class="col-star-sub">${starOfSub ? formatHBPlanet(starOfSub) : ""}</td>
+				<td>${kp.ssl ? formatHBPlanet(kp.ssl) : ""}</td>
+				<td class="col-star-ssl">${starOfSSL ? formatHBPlanet(starOfSSL) : ""}</td>
+
+                ${(()=>{
+				let eff = computeEffectiveLinksRow(p);
+				return `
+					<td>${eff.A}</td>
+					<td>${eff.B}</td>
+					<td>${eff.C}</td>
+				`;
+			})()}
+			
+			
+            </tr>
+        `;
+    });
+
+    html += `</table></div>`;
+
+    anchor.insertAdjacentHTML("beforebegin", html);
+
+
+/* sync checkbox with state */
+const starToggle = document.getElementById("toggleStarColumns");
+
+if(starToggle){
+
+    starToggle.checked = HB_SHOW_STARS;
+
+    starToggle.onchange = function(){
+        HB_SHOW_STARS = this.checked;
+        toggleStarColumnsVisibility();
     };
 
+    toggleStarColumnsVisibility();
+}
+	
+	
+}
+
+
+
+
+function toggleStarColumnsVisibility(){
+
+    const show = HB_SHOW_STARS;
+
+    document.querySelectorAll(".col-star-sub, .col-star-ssl")
+        .forEach(el=>{
+            el.style.display = show ? "" : "none";
+        });
+}
+
+
+
+
+
+
+
+
+/* =========================================================
+   EFFECTIVE LINKS ENGINE — CLEAN REWRITE
+   ========================================================= */
+
+/* ---------- UTIL ---------- */
+function uniqueSorted(arr){
+    return [...new Set(arr.map(Number))].sort((a,b)=>a-b);
+}
+
+/* ---------- PARITY DOMINANCE (EVEN-ODD MODE) ---------- */
+function evenOddDominance(values){
+
+    if(!values.length) return [];
+
+    let even = values.filter(v => v % 2 === 0);
+    let odd  = values.filter(v => v % 2 !== 0);
+
+    if(even.length > odd.length){
+        return uniqueSorted(even);
+    }
+
+    /* odd wins if greater OR tie */
+    return uniqueSorted(odd);
+}
+
+/* ---------- PATTERN DOMINANCE (PATTERN MODE) ---------- */
+function patternDominance(values){
+
+    if(!values.length) return [];
+
+    values = uniqueSorted(values);
+
+    let even = values.filter(v => v % 2 === 0);
+    let odd  = values.filter(v => v % 2 !== 0);
+
+    /* if all even OR all odd → return as is */
+    if(even.length === values.length) return values;
+    if(odd.length === values.length)  return values;
+
+    const P1 = [1,4,7,10];
+    const P2 = [2,5,8,11];
+    const P3 = [3,6,9,12];
+
+    let m1 = values.filter(v => P1.includes(v));
+    let m2 = values.filter(v => P2.includes(v));
+    let m3 = values.filter(v => P3.includes(v));
+
+    let max = Math.max(m1.length, m2.length, m3.length);
+
+    let candidates = [];
+
+    if(m1.length === max) candidates.push(m1);
+    if(m2.length === max) candidates.push(m2);
+    if(m3.length === max) candidates.push(m3);
+
+    /* if single dominant */
+    if(candidates.length === 1){
+        return uniqueSorted(candidates[0]);
+    }
+
+    /* tie → choose cluster with more odd numbers */
+    let best = candidates[0];
+    let bestOdd = best.filter(v => v % 2 !== 0).length;
+
+    candidates.forEach(c=>{
+        let oddCount = c.filter(v => v % 2 !== 0).length;
+        if(oddCount > bestOdd){
+            best = c;
+            bestOdd = oddCount;
+        }
+    });
+
+    return uniqueSorted(best);
+}
+
+/* ---------- MIXED MODE (STRUCTURAL CLUSTERS) ---------- */
+function mixedStructural(values){
+
+    if(!values.length) return [];
+
+    values = uniqueSorted(values);
+
+    let even = values.filter(v => v % 2 === 0);
+    let odd  = values.filter(v => v % 2 !== 0);
+
+    /* if all even OR all odd → return as is */
+    if(even.length === values.length) return values;
+    if(odd.length === values.length)  return values;
+
+    const P1 = [1,4,7,10];
+    const P2 = [2,5,8,11];
+    const P3 = [3,6,9,12];
+
+    let clusters = [];
+
+    let c1 = values.filter(v => P1.includes(v));
+    let c2 = values.filter(v => P2.includes(v));
+    let c3 = values.filter(v => P3.includes(v));
+
+    if(c1.length >= 2) clusters.push(uniqueSorted(c1));
+    if(c2.length >= 2) clusters.push(uniqueSorted(c2));
+    if(c3.length >= 2) clusters.push(uniqueSorted(c3));
+
+    if(!clusters.length){
+
+	/* if mixed and no cluster ≥2 → return each separately */
+	return values.map(v => [v]);
+	}
+
+    return clusters;
+}
+
+/* ---------- FORMAT ---------- */
+function formatEffectiveDisplay(arr){
+
+    if(!arr || !arr.length) return "";
+
+    if(Array.isArray(arr[0])){
+        return arr.map(cluster => cluster.join(",")).join(" + ");
+    }
+
+    return arr.join(",");
+}
+
+/* ---------- MAIN COMPUTE ---------- */
+function computeEffectiveLinksRow(p){
+
+    let kp = getPlanetKPLords(p);
+    if(!kp) return {A:"", B:"", C:""};
+
+    let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
+    let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
+
+    let partA = []
+        .concat(getHBValuesRaw(p))
+        .concat(getHBValuesRaw(kp.star));
+
+    let partB = []
+        .concat(getHBValuesRaw(kp.sub))
+        .concat(getHBValuesRaw(starOfSub));
+
+    let partC = []
+        .concat(getHBValuesRaw(kp.ssl))
+        .concat(getHBValuesRaw(starOfSSL));
+
+    let A, B, C;
+
+    if(HB_MODE === "evenodd"){
+        A = evenOddDominance(partA);
+        B = evenOddDominance(partB);
+        C = evenOddDominance(partC);
+    }
+    else if(HB_MODE === "pattern"){
+        A = patternDominance(partA);
+        B = patternDominance(partB);
+        C = patternDominance(partC);
+    }
+    else{ /* mixed */
+        A = mixedStructural(partA);
+        B = mixedStructural(partB);
+        C = mixedStructural(partC);
+    }
+
+    return {
+        A: formatEffectiveDisplay(A),
+        B: formatEffectiveDisplay(B),
+        C: formatEffectiveDisplay(C)
+    };
+}
+
+
+
+
+/* =========================================================
+   AUTO CHAIN
+   ========================================================= */
+(function(){
+    const _orig = buildTable6;
+    buildTable6 = function(){
+        _orig();
+        buildTable9();
+    };
 })();
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4028,6 +4933,29 @@ document.getElementById("vedicMode")
 
 
 <style>
+
+
+
+
+/* =========================================
+   TABLE 9 — EQUAL COLUMN WIDTH
+   ========================================= */
+.table9-equal{
+    width:100%;
+    table-layout:fixed;
+}
+
+.table9-equal th,
+.table9-equal td{
+    width:calc(100% / 9);   /* 9 columns total */
+    text-align:center;
+    word-wrap:break-word;
+}
+
+
+
+
+
 /* ===== ORIGINAL SUPERB STYLING (UNCHANGED) ===== */
 #vimshottari-wrapper{
   background:#0b0f14;
@@ -4337,6 +5265,29 @@ function loadSwissJSON(){
 
             let data = JSON.parse(r.result);
 			window.__LAST_SWISS_KP__ = data;
+			
+			
+			
+			/* ===============================
+			   LOAD RETRO FLAGS (SWISS)
+			   =============================== */
+			PLANET_RETRO_STATE = {};
+
+			let retroSrc =
+				data.ayanamshas?.Lahiri?.planets_retro ||
+				data.planets_retro;
+
+			if(retroSrc){
+				Object.keys(retroSrc).forEach(p=>{
+					PLANET_RETRO_STATE[p] = !!retroSrc[p];
+				});
+			}
+
+			
+			
+			
+			
+			
 
 
             /* ---------- PERSON NAME ---------- */
@@ -4447,6 +5398,26 @@ function applyNodeModeKP(){
 
 
 
+	/* ===============================
+   SYNC RETRO FOR NODE MODE
+   =============================== */
+	if(window.__LAST_SWISS_KP__){
+		const src =
+			window.__LAST_SWISS_KP__.ayanamshas?.Lahiri?.planets_retro ||
+			window.__LAST_SWISS_KP__.planets_retro;
+
+		if(src){
+			Object.keys(src).forEach(p=>{
+				PLANET_RETRO_STATE[p] = !!src[p];
+			});
+		}
+	}
+
+
+
+
+
+
 
 
 document.getElementById("trueNodeModeKP")
@@ -4509,6 +5480,149 @@ document.getElementById("trueNodeModeKP")
     box-shadow:0 0 6px rgba(255,159,28,0.6);
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+/* =========================================================
+   COLLAPSIBLE SECTION TOGGLE
+   ========================================================= */
+function toggleSection(id, el){
+    const box = document.getElementById(id);
+    if(!box) return;
+
+    const isOpen = box.style.display === "block";
+
+    box.style.display = isOpen ? "none" : "block";
+
+    if(isOpen){
+        el.classList.add("collapsed");
+    }else{
+        el.classList.remove("collapsed");
+    }
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+<script>
+/* =========================================================
+   GLOBAL COLLAPSIBLE TOGGLE
+   ========================================================= */
+function toggleCollapsible(id, el){
+
+    const box = document.getElementById(id);
+    if(!box) return;
+
+    const isOpen = box.style.display === "block";
+
+    box.style.display = isOpen ? "none" : "block";
+
+    if(isOpen){
+        el.classList.remove("open");
+    }else{
+        el.classList.add("open");
+    }
+}
+</script>
+
+
+
+
+
+
+<script>
+function toggleSouthKundali(){
+
+    const box = document.getElementById("southKundaliWrapper");
+    const head = document.getElementById("southKundaliHeading");
+
+    const isOpen = box.style.display === "block";
+
+    box.style.display = isOpen ? "none" : "block";
+
+    head.innerHTML = isOpen
+        ? "SOUTH INDIAN KUNDALI ▶"
+        : "SOUTH INDIAN KUNDALI ▼";
+}
+
+
+
+
+
+/* =========================================================
+   GLOBAL TABLE ORDER LOCK (FINAL PERMANENT FIX)
+   Table-6 → Table-7 → Table-8
+   ========================================================= */
+
+function enforceTableOrder(){
+
+    const shell = document.getElementById("table5-shell");
+    const t7 = document.getElementById("table7-content");
+    const t8 = document.getElementById("table8-content");
+
+    if(!shell) return;
+
+    /* place table-7 after shell */
+    if(t7){
+        shell.insertAdjacentElement("afterend", t7);
+    }
+
+    /* place table-8 after table-7 */
+    if(t7 && t8){
+        t7.insertAdjacentElement("afterend", t8);
+    }
+}
+
+/* =========================================================
+   AUTO APPLY AFTER EVERY BUILD
+   ========================================================= */
+
+(function(){
+
+    const _b5 = buildTable5;
+    buildTable5 = function(){
+        _b5();
+        setTimeout(enforceTableOrder,0);
+    };
+
+    const _b6 = buildTable6;
+    buildTable6 = function(){
+        _b6();
+        setTimeout(enforceTableOrder,0);
+    };
+
+    const _b7 = buildTable7;
+    buildTable7 = function(){
+        _b7();
+        setTimeout(enforceTableOrder,0);
+    };
+
+})();
+
+
+
+
+
+
+
+</script>
 
 
 
