@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -248,18 +249,15 @@ hr{
     background:
         linear-gradient(
             145deg,
-            rgba(16,185,129,0.35),
-            rgba(6,95,70,0.65)
-        ),
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,0.06),
-            rgba(0,0,0,0.18)
+            #022c22 0%,     /* deeper emerald */
+            #033a2c 45%,    /* rich dark body */
+            #021b16 100%    /* shadow green */
         ) !important;
 
-    color:#ecfdf5 !important;
-    border-left:2px solid rgba(16,185,129,0.55);
+    color:#ffffff !important;         /* pure white text */
+    border-left:2px solid #047857;    /* darker emerald accent */
 }
+
 
 
 /* 🔥 CRIMSON EMBER (Sub / Star of Sub / EFF B) */
@@ -267,17 +265,13 @@ hr{
     background:
         linear-gradient(
             145deg,
-            rgba(239,68,68,0.35),
-            rgba(127,29,29,0.65)
-        ),
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,0.05),
-            rgba(0,0,0,0.2)
+            #3f0008 0%,     /* deep blood red */
+            #5c000f 45%,    /* rich crimson body */
+            #2b0006 100%    /* shadow red */
         ) !important;
 
-    color:#fff1f2 !important;
-    border-left:2px solid rgba(248,113,113,0.55);
+    color:#ffffff !important;          /* pure white text */
+    border-left:2px solid #b91c1c;     /* strong crimson edge */
 }
 
 
@@ -320,26 +314,23 @@ hr{
 }
 
 
-
-
-
-
-
-
-
-
-
-
-</style>
-
-<style>
 /* TABLE-1 HEADING SIZE BALANCE */
 #inputTable th{
     font-size:15.5px;
     font-weight:800;
     letter-spacing:0.6px;
 }
+
+
+
+
+
+
+
+
+
 </style>
+
 
 
 
@@ -402,6 +393,10 @@ Person Name :
   oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\s]/g,'')"
   style="margin-left:8px;padding:4px 6px"
 />
+
+<button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
+
+
 </label>
 
 
@@ -456,24 +451,47 @@ CUSP DATA &amp; PLANETS DATA INPUT TABLE-1
 
 <div id="table1-body" class="collapsible-body">
 
+
+
+
+
+
+
+
+<!-- ===== ROW 1 : MANUAL CUSPS ONLY ===== -->
 <div style="
     display:flex;
     justify-content:center;
-    align-items:center;
-    gap:25px;
-    flex-wrap:wrap;
-    margin-bottom:10px;
+    margin-bottom:8px;
     font-weight:700;
 ">
-
 <label>
 <input type="checkbox" id="manualMode" checked>
 Manual Cusps (unchecked = Equal cusps from Lagna)
 </label>
+</div>
 
+<!-- ===== ROW 2 : AUTO FILL ===== -->
+<div style="
+    display:flex;
+    justify-content:center;
+    margin-bottom:12px;
+">
 <button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
 
+<button onclick="buildCuspalChart()">Build Cuspal Chart</button>
+<button onclick="saveJSON()">Save</button>
+<button onclick="loadJSON()">Load</button>
+<button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
+<button onclick="clearAll()">Clear All</button>
+
 </div>
+
+
+
+
+
+
 
 <table id="inputTable">
 <tr>
@@ -577,11 +595,7 @@ function lockBaseDateTime(){
      BUILD BUTTONS (UNCHANGED)
      ========================================================= -->
 
-<button onclick="buildCuspalChart()">Build Cuspal Chart</button>
-<button onclick="saveJSON()">Save</button>
-<button onclick="loadJSON()">Load</button>
-<button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
-<button onclick="clearAll()">Clear All</button>
+
 
 
 <!-- REQUIRED OUTPUT CONTAINER -->
@@ -3301,6 +3315,22 @@ document.getElementById("pivotSelect")
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function computeTaraIndex(janma, target){
 
 	if(!janma) return "";
@@ -4668,10 +4698,15 @@ function formatHBPlanet(p){
     return `${name} ${vals.join(",")}`;
 }
 
+
+
 /* =========================================================
    BUILD TABLE 9
    ========================================================= */
 
+
+/* HB UNTENANTED RULE (default ON) */
+let HB_UNTENANTED_RULE = false;
 
 function buildTable9(){
 
@@ -4757,16 +4792,36 @@ function buildTable9(){
                buildTable9();
            ">
     Ignore Sub-Sub
-</label>
-        </div>
+	</label>
+	</div>
 
-        <label style="display:block;margin:8px 0 14px;font-weight:600;">
-            <input type="checkbox"
-                   id="toggleStarColumns"
-                   ${HB_SHOW_STARS ? "checked" : ""}
-                   onchange="HB_SHOW_STARS = this.checked; buildTable9();">
-            Show Star of Sub & Star of Sub-Sub column
-        </label>
+
+
+
+
+
+	<label style="margin:8px 15px 14px 0;font-weight:600;">
+    <input type="checkbox"
+           id="toggleStarColumns"
+           ${HB_SHOW_STARS ? "checked" : ""}
+           onchange="HB_SHOW_STARS = this.checked; buildTable9();">
+    Show Star of Sub & Star of Sub-Sub column
+</label>
+
+<label style="margin:8px 0 14px;font-weight:700;color:#fde68a;">
+    <input type="checkbox"
+           id="hbUntenantedRule"
+           ${HB_UNTENANTED_RULE ? "checked" : ""}
+           onchange="HB_UNTENANTED_RULE = this.checked; buildTable9();">
+    Untenanted Rule
+</label>
+	
+	
+	
+	
+	
+	
+	
         
         <table class="table9-equal">
             <tr>
@@ -5070,17 +5125,82 @@ function computeEffectiveLinksRow(p){
     let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
     let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
 
-    let partA = []
-        .concat(getHBValuesRaw(p))
-        .concat(getHBValuesRaw(kp.star));
+    
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/* =============================
+	   UNTENANTED CHECK PER LEVEL
+	   ============================= */
 
-    let partB = []
-        .concat(getHBValuesRaw(kp.sub))
-        .concat(getHBValuesRaw(starOfSub));
+	let planetUntenanted =
+		typeof formatHBPlanet === "function" &&
+		formatHBPlanet(p)?.includes("$");
 
-    let partC = []
-        .concat(getHBValuesRaw(kp.ssl))
-        .concat(getHBValuesRaw(starOfSSL));
+	let subUntenanted =
+		typeof formatHBPlanet === "function" &&
+		formatHBPlanet(kp.sub)?.includes("$");
+
+	let sslUntenanted =
+		typeof formatHBPlanet === "function" &&
+		formatHBPlanet(kp.ssl)?.includes("$");
+
+
+	/* =============================
+	   PART BUILD
+	   ============================= */
+
+	let partA = [];
+	let partB = [];
+	let partC = [];
+
+	/* ---- PLANET LEVEL ---- */
+	partA = partA.concat(getHBValuesRaw(p));
+
+	if(!(HB_UNTENANTED_RULE && planetUntenanted)){
+		partA = partA.concat(getHBValuesRaw(kp.star));
+	}
+
+	/* ---- SUB LEVEL ---- */
+	partB = partB.concat(getHBValuesRaw(kp.sub));
+
+	if(!(HB_UNTENANTED_RULE && subUntenanted)){
+		partB = partB.concat(getHBValuesRaw(starOfSub));
+	}
+
+	/* ---- SUB-SUB LEVEL ---- */
+	partC = partC.concat(getHBValuesRaw(kp.ssl));
+
+	if(!(HB_UNTENANTED_RULE && sslUntenanted)){
+		partC = partC.concat(getHBValuesRaw(starOfSSL));
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
     let A, B, C;
 
@@ -5205,6 +5325,11 @@ Vimshottari Dasha ▼
   Hide Date
 </label>
 
+<label style="display:flex;align-items:center;gap:6px;">
+  <input type="checkbox" id="vimHideAge">
+  Hide Age
+</label>
+
 
 
 
@@ -5301,6 +5426,9 @@ Vimshottari Dasha ▼
 }
 
 
+
+
+
 /* =========================================================
    PERFECT FULL WIDTH GRID
    ========================================================= */
@@ -5308,24 +5436,71 @@ Vimshottari Dasha ▼
 .vimRow{
  display:grid;
 
- grid-template-columns:
-  4%
-  20%
-  11%
-  9%
-  11%
-  9%
-  2%      /* empty spacer column */
-  9.67%
-  9.67%
-  9.66%;
+grid-template-columns:
+
+  0.6fr   /* Symbol */
+  3.2fr   /* Planet */
+
+  0.2fr   /* GAP */
+
+  2fr     /* Start */
+  1.6fr   /* Age */
+
+  0.3fr   /* GAP */
+
+  2fr     /* End */
+  1.6fr   /* Age */
+
+  0.3fr   /* Spacer */
+
+  2fr     /* EFF A */
+  2fr     /* EFF B */
+  2fr;    /* EFF C */
 
  padding:10px 14px;
  align-items:center;
- column-gap:8px;
+ column-gap:6px;
 }
 
 
+
+
+
+
+
+/* =========================================================
+   HIDE AGE MODE GRID
+   ========================================================= */
+
+.vimNoAge .vimHead,
+.vimNoAge .vimRow{
+ grid-template-columns:
+
+  0.6fr   /* Symbol */
+  3.2fr   /* Planet */
+
+  0.2fr   /* GAP */
+
+  2fr     /* Start */
+
+  2fr     /* End */
+
+  0.3fr   /* Spacer */
+
+  2fr     /* EFF A */
+  2fr     /* EFF B */
+  2fr;    /* EFF C */
+}
+
+/* remove age columns completely */
+.vimNoAge .vimHead div:nth-child(5),
+.vimNoAge .vimHead div:nth-child(6),
+.vimNoAge .vimHead div:nth-child(8),
+.vimNoAge .vimRow  div:nth-child(5),
+.vimNoAge .vimRow  div:nth-child(6),
+.vimNoAge .vimRow  div:nth-child(8){
+ display:none;
+}
 
 
 
@@ -5333,8 +5508,17 @@ Vimshottari Dasha ▼
 .vimHead div,
 .vimRow div{
  white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis;
+ overflow:visible;
+}
+
+/* allow EFF columns to fully display values */
+.vimHead div:nth-child(10),
+.vimHead div:nth-child(11),
+.vimHead div:nth-child(12),
+.vimRow  div:nth-child(10),
+.vimRow  div:nth-child(11),
+.vimRow  div:nth-child(12){
+ overflow:visible;
 }
 
 
@@ -5422,7 +5606,7 @@ Vimshottari Dasha ▼
  align-items:center;
  justify-content:center;
 
- font-size:22px;               /* slightly bigger */
+ font-size:18px;               /* slightly bigger */
  font-weight:900;
  line-height:1;
 
@@ -5444,24 +5628,35 @@ Vimshottari Dasha ▼
 }
 
 
+
+
+
+
+
+
+
 /* ===================================
    VERTICAL COLUMN SEPARATORS
+   (ONLY FOR EFF COLUMNS)
    =================================== */
 
+/* remove all default separators */
 .vimHead div,
 .vimRow div{
- border-right:2px solid rgba(255,255,255,.18);  /* strong vertical line */
-}
-
-.vimHead div:last-child,
-.vimRow div:last-child{
  border-right:none;
 }
 
-.vimHead div:last-child,
-.vimRow div:last-child{
- border-right:none;
+/* add separators only before EFF columns */
+.vimHead div:nth-child(10),
+.vimRow  div:nth-child(10),
+.vimHead div:nth-child(11),
+.vimRow  div:nth-child(11),
+.vimHead div:nth-child(12),
+.vimRow  div:nth-child(12){
+ border-left:2px solid rgba(255,255,255,.25);
 }
+
+
 
 
 
@@ -5474,21 +5669,18 @@ Vimshottari Dasha ▼
    SEPARATOR BEFORE EFF GROUP
    =============================== */
 
-.vimHead div:nth-child(8),
-.vimRow  div:nth-child(8){
+.vimHead div:nth-child(10),
+.vimRow  div:nth-child(10){
  border-left:2px solid rgba(255,180,80,.45);
- padding-left:12px;
 }
-
-
 
 
 /* ===============================
    SPACER COLUMN STYLE
    =============================== */
 
-.vimHead div:nth-child(7),
-.vimRow  div:nth-child(7){
+.vimHead div:nth-child(9),
+.vimRow  div:nth-child(9){
  background:transparent;
  border-right:none;
  border-left:none;
@@ -5498,22 +5690,32 @@ Vimshottari Dasha ▼
 .vimHead div{
  text-align:center;
  font-weight:800;
+ display:flex;
+ justify-content:center;
+ align-items:center;
 }
 
 
 /* ===============================
-   CENTER ALIGN START & END DATES
+   CENTER ALIGN DATE + EFF COLUMNS
    =============================== */
 
-.vimHead div:nth-child(3),
-.vimHead div:nth-child(5),
-.vimRow  div:nth-child(3),
-.vimRow  div:nth-child(5){
+.vimHead div:nth-child(4),
+.vimHead div:nth-child(7),
+.vimRow  div:nth-child(4),
+.vimRow  div:nth-child(7){
  text-align:center;
 }
 
-
-
+/* center EFF A B C values */
+.vimHead div:nth-child(10),
+.vimHead div:nth-child(11),
+.vimHead div:nth-child(12),
+.vimRow  div:nth-child(10),
+.vimRow  div:nth-child(11),
+.vimRow  div:nth-child(12){
+ text-align:center;
+}
 
 
 
@@ -5546,58 +5748,72 @@ Vimshottari Dasha ▼
 
 /* BUKTHI — DEEP CRIMSON */
 .vimRow.activeLevel2{
- background:#7f1d1d !important;
- color:#fee2e2 !important;
- border:2px solid #dc2626 !important;
-}
+ background:#004d4d !important;
 
-/* ANTARA — OCEAN TEAL */
-/* ANTARA — DEEP PLUM (ROYAL MYSTIC) */
-.vimRow.activeLevel3{
- background:linear-gradient(
-   135deg,
-   #2e1065 0%,
-   #4c1d95 50%,
-   #5b21b6 100%
- ) !important;
+ color:#ffffff !important;
 
- color:#f3e8ff !important;
-
- border:2px solid #8b5cf6 !important;
+ border:2px solid #00b3b3 !important;
 
  box-shadow:
    inset 0 0 10px rgba(0,0,0,.5),
-   0 0 6px rgba(139,92,246,.35) !important;
+   0 0 8px rgba(0,179,179,.45) !important;
 }
 
 
 
 
 
-
-
-
-
-
-/* =========================================
-   FINAL OVERRIDE — ANTARA DEEP PLUM (FORCED)
-   ========================================= */
 
 .vimRow.activeLevel3{
- background:linear-gradient(
-   135deg,
-   #2e1065 0%,
-   #4c1d95 50%,
-   #5b21b6 100%
- ) !important;
+ background:#0000b3 !important;
 
- color:#f3e8ff !important;
- border:2px solid #8b5cf6 !important;
+ color:#ffffff !important;
+
+ border:2px solid #3b82f6 !important;
 
  box-shadow:
-   inset 0 0 10px rgba(0,0,0,.5),
-   0 0 6px rgba(139,92,246,.35) !important;
+   inset 0 0 10px rgba(0,0,0,.6),
+   0 0 8px rgba(59,130,246,.45) !important;
 }
+
+
+
+
+
+
+
+
+.vimSelectedAntara{
+ background:linear-gradient(
+   135deg,
+   #3b001f 0%,
+   #7a003f 45%,
+   #b0005a 100%
+ ) !important;
+
+ color:#ffe6f2 !important;
+
+ border:2px solid #ff007a !important;
+
+ box-shadow:
+   inset 0 0 12px rgba(0,0,0,.6),
+   0 0 8px rgba(255,0,122,.45) !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .vimHit{
  outline:2px solid #ffb84d;
@@ -5693,6 +5909,23 @@ Vimshottari Dasha ▼
  cursor:pointer;
 }
 
+
+
+
+
+
+
+
+
+/* ===============================
+   PLANET → START GAP COLUMN
+   =============================== */
+
+.vimHead div:nth-child(3),
+.vimRow  div:nth-child(3){
+ border:none;
+ background:transparent;
+}
 
 
 </style>
@@ -5831,17 +6064,85 @@ row.dataset.end   = endTime;
    if(level===3) symbol="🕉";
  }
 
+
+
+
+
+
+
+
+
  /* ================= CLICK COLOR ONLY ================= */
 
- row.selectColor=function(){
+row.selectColor=function(e){
 
-   document.querySelectorAll(".vimSelectedMaha,.vimSelectedBukthi,.vimSelectedAntara")
-     .forEach(r=>r.classList.remove("vimSelectedMaha","vimSelectedBukthi","vimSelectedAntara"));
+   const isCtrl = e && (e.ctrlKey || e.metaKey);
 
-   if(level===1) row.classList.add("vimSelectedMaha");
-   if(level===2) row.classList.add("vimSelectedBukthi");
-   if(level===3) row.classList.add("vimSelectedAntara");
- };
+
+
+
+
+   /* NORMAL CLICK → CLEAR ALL */
+  if(!isCtrl){
+
+   const selector =
+       level===1 ? ".vimSelectedMaha" :
+       level===2 ? ".vimSelectedBukthi" :
+                   ".vimSelectedAntara";
+
+   document.querySelectorAll(selector).forEach(r=>{
+       r.classList.remove(
+         "vimSelectedMaha","vimSelectedBukthi","vimSelectedAntara",
+         "activeLevel1","activeLevel2","activeLevel3"
+       );
+   });
+
+}
+
+   /* TOGGLE SELECTION + APPLY COLOR */
+
+   if(level===1){
+
+       row.classList.toggle("vimSelectedMaha");
+
+       if(row.classList.contains("vimSelectedMaha")){
+           row.classList.add("activeLevel1");
+       }else{
+           row.classList.remove("activeLevel1");
+       }
+   }
+
+   if(level===2){
+
+       row.classList.toggle("vimSelectedBukthi");
+
+       if(row.classList.contains("vimSelectedBukthi")){
+           row.classList.add("activeLevel2");
+       }else{
+           row.classList.remove("activeLevel2");
+       }
+   }
+
+   if(level===3){
+
+       row.classList.toggle("vimSelectedAntara");
+
+       if(row.classList.contains("vimSelectedAntara")){
+           row.classList.add("activeLevel3");
+       }else{
+           row.classList.remove("activeLevel3");
+       }
+   }
+};
+
+
+
+
+
+
+
+
+
 
  /* ================= LABEL ================= */
 
@@ -5874,31 +6175,57 @@ if(level===1 && node.isFirstMahadasha && dob){
 
 
 
- let startAge=calcAge(node.start);
- let endAge=calcAge(node.end);
+const hideAge = document.getElementById("vimHideAge")?.checked;
 
- if(level===1 && node.isFirstMahadasha){
-   startAge="0 y 0 m";
- }
+let startAge = "";
+let endAge   = "";
+
+if(!hideAge){
+  startAge = calcAge(node.start);
+  endAge   = calcAge(node.end);
+
+  if(level===1 && node.isFirstMahadasha){
+    startAge = "0 y 0 m";
+  }
+
+  startAge = `{ ${startAge} }`;
+  endAge   = `{ ${endAge} }`;
+}
 
  const eff=computeEffectiveLinksRow(node.planet);
 
- row.innerHTML=`
+
+
+
+
+
+
+
+row.innerHTML=`
    <div class="vimSymbol">${symbol}</div>
    <div><b>${levelLabel} – ${node.planet}</b></div>
-   
-   
-   <div>${vimFmt(displayStart)}</div>
-	<div>{ ${startAge} }</div>
-	<div>${vimFmt(displayEnd)}</div>
-   
-   
-   <div>{ ${endAge} }</div>
+
    <div></div>
+
+   <div>${vimFmt(displayStart)}</div>
+   <div>${startAge}</div>
+
+   <div></div>
+
+   <div>${vimFmt(displayEnd)}</div>
+   <div>${endAge}</div>
+
+   <div></div>
+
    <div>${eff.A}</div>
    <div>${eff.B}</div>
    <div>${eff.C}</div>
  `;
+ 
+ 
+ 
+ 
+ 
 
  return row;
 }
@@ -6094,24 +6421,63 @@ function renderNode(node,level,parent){
 
 
 
-row.onclick = ()=>{
+row.onclick = (e)=>{
+
+ const isCtrl = e.ctrlKey || e.metaKey;
+
+ /* CTRL CLICK → ONLY MULTI SELECT */
+ if(isCtrl){
+     row.selectColor(e);
+     return;
+ }
+
+ /* NORMAL CLICK → OLD BEHAVIOUR */
+ row.selectColor(e);
 
  const isOpen = childrenBox.style.display === "block";
+
+
+
+
+
+
+
+
+
 
  /* ============================
     CLOSE ONLY SAME LEVEL SIBLINGS
     ============================ */
 
- const siblings = parent.querySelectorAll(":scope > .vimNode");
- siblings.forEach(sib=>{
+const siblings = parent.querySelectorAll(":scope > .vimNode");
+
+siblings.forEach(sib=>{
+
    const sibRow = sib.querySelector(".vimRow");
    const sibChildren = sib.querySelector(".vimChildren");
 
    if(sibRow !== row){
-     sibRow.classList.remove("activeLevel1","activeLevel2","activeLevel3");
+
+     /* close accordion only */
      if(sibChildren) sibChildren.style.display = "none";
+
+     /* 🔥 DO NOT REMOVE ACTIVE COLORS */
+     /* keeps Mahadasha and Bukthi highlighted while opening Antara */
+
    }
- });
+
+});
+
+
+
+
+
+
+
+
+
+
+
 
  /* ============================
     TOGGLE CURRENT
@@ -6169,20 +6535,27 @@ function vimRender(boxId,abs){
  let start = vimStart(abs,d);
  let box   = document.getElementById(boxId);
 
+const hideAge = document.getElementById("vimHideAge")?.checked;
+
 box.innerHTML = `
  <div class="vimHead">
    <div></div>
    <div>Planet</div>
+   <div></div>
    <div>Start</div>
-   <div>Age</div>
+   <div>${hideAge ? "" : "Age"}</div>
+   <div></div>
    <div>End</div>
-   <div>Age</div>
-   <div></div> 
+   <div>${hideAge ? "" : "Age"}</div>
+   <div></div>
    <div>EFF A</div>
    <div>EFF B</div>
    <div>EFF C</div>
  </div>
 `;
+
+
+
 
  let cur = new Date(start.start);
 
@@ -6258,12 +6631,24 @@ document.addEventListener("DOMContentLoaded",()=>{
    HIDE DATE TOGGLE REFRESH
    =============================== */
 document.addEventListener("change", e=>{
- if(e.target.id==="vimHideDate"){
+
+ if(e.target.id==="vimHideDate" || e.target.id==="vimHideAge"){
+
+   const wrapper = document.getElementById("vimshottari-wrapper");
+   const hideAge = document.getElementById("vimHideAge")?.checked;
+
+   if(wrapper){
+       if(hideAge){
+           wrapper.classList.add("vimNoAge");
+       }else{
+           wrapper.classList.remove("vimNoAge");
+       }
+   }
+
    buildCollapsedVim();
  }
+
 });
-
-
 
 
 
