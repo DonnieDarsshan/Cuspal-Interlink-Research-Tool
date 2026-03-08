@@ -2374,17 +2374,12 @@ function buildTable3(){
     /* ---------- PIVOT SELECTION ---------- */
     let pivot = document.getElementById("pivotSelect").value;
 
-    /* ---------- PLANET DISPLAY ORDER ---------- */
-    let displayPlanets = [...planets];
 
-    if(pivot !== "Lagna"){
-        let idx = displayPlanets.indexOf(pivot);
-        if(idx !== -1){
-            displayPlanets =
-                displayPlanets.slice(idx)
-                .concat(displayPlanets.slice(0, idx));
-        }
-    }
+
+
+
+    /* ---------- PLANET DISPLAY ORDER ---------- */
+    let displayPlanets = getPivotSortedPlanets();
 
     let pivotHouse = getPivotHouse();
 
@@ -2392,7 +2387,12 @@ function buildTable3(){
     <div id="table3">
 	<div id="anchor-table4"></div>
 
-    <h2>Table-4 : Planetary House Significations (Pivot Based)</h2>
+    <h2 class="collapsible-heading"
+    onclick="toggleCollapsible('table4-body', this)">
+	Table-4 : Planetary House Significations (Pivot Based)
+	</h2>
+
+	<div id="table4-body" class="collapsible-body">
 	
 	<div id="pivotMirrorBox" style="
     margin:12px 0 18px;
@@ -2515,6 +2515,7 @@ function buildTable3(){
 
     html += `
     </table>
+    </div>
     </div>
     `;
 
@@ -2651,9 +2652,9 @@ function buildPivotCuspalTable(){
 
     /* ---------- BUILD TABLE ---------- */
     let html = `
-    <h2 class="collapsible-heading"
-    onclick="toggleCollapsible('table3-body', this)">
-	Table-3 : Pivot Based Cuspal Interlink (Dynamic)
+    <h2 class="collapsible-heading open"
+    onclick="toggleCollapsible('table4-body', this)">
+	Table-4 : Planetary House Significations (Pivot Based)
 	</h2>
 
 	<div id="table3-body" class="collapsible-body">
@@ -3385,15 +3386,10 @@ function buildTable4(){
     });
 
     let pivot=document.getElementById("pivotSelect").value;
-    let displayPlanets=[...planets];
-    if(pivot!=="Lagna"){
-        let i=displayPlanets.indexOf(pivot);
-        if(i!==-1){
-            displayPlanets =
-                displayPlanets.slice(i)
-                .concat(displayPlanets.slice(0,i));
-        }
-    }
+	
+	
+	
+   let displayPlanets = getPivotSortedPlanets();
 
     let html=`
     <div id="table5-content">
@@ -3796,11 +3792,34 @@ function initTable5Shell(){
    PIVOT SORT
    ========================================================= */
 function getPivotSortedPlanets(){
+
     let pivot = document.getElementById("pivotSelect")?.value;
     let list = [...planets];
-    if(!pivot || pivot === "Lagna") return list;
+
+    /* ======================================
+       DEFAULT MODE → START FROM CHANDRA STAR
+       ====================================== */
+    if(!pivot || pivot === "Lagna"){
+
+        let kp = getPlanetKPLords("Chandra");
+
+        if(kp && kp.star){
+            let idx = list.indexOf(kp.star);
+            if(idx !== -1){
+                return list.slice(idx).concat(list.slice(0,idx));
+            }
+        }
+
+        return list;
+    }
+
+    /* ======================================
+       PIVOT MODE
+       ====================================== */
     let idx = list.indexOf(pivot);
+
     if(idx === -1) return list;
+
     return list.slice(idx).concat(list.slice(0, idx));
 }
 
@@ -3821,7 +3840,11 @@ function buildTable5(){
     let ignoreStarOfSub  = document.getElementById("ignoreStarOfSub").checked;
     let ignoreStarOfSSL  = document.getElementById("ignoreStarOfSSL").checked;
 
-    let order = getPivotSortedPlanets();
+
+
+
+
+   let order = getPivotSortedPlanets();
 
     let html = `
     <table>
@@ -4175,15 +4198,7 @@ function buildTable6(){
     document.getElementById("table8-content")?.remove();
     if(!cuspsData || !cuspsData.length) return;
 
-    let pivot = document.getElementById("pivotSelect")?.value;
-    let order = [...planets];
-
-    if(pivot && pivot !== "Lagna"){
-        let i = order.indexOf(pivot);
-        if(i !== -1){
-            order = order.slice(i).concat(order.slice(0,i));
-        }
-    }
+    let order = getPivotSortedPlanets();
 
     let html = `
     <div id="table8-content" style="margin-top:40px;">
@@ -4710,6 +4725,17 @@ let HB_UNTENANTED_RULE = false;
 
 function buildTable9(){
 
+
+
+
+
+
+
+
+
+
+
+
     document.getElementById("table9-content")?.remove();
 
     let anchor = document.getElementById("vimshottari-wrapper");
@@ -4797,6 +4823,23 @@ function buildTable9(){
 
 
 
+	<label style="margin:8px 15px 14px 0;font-weight:700;color:#38bdf8;">
+    Pivot :
+    <select id="pivotSelectMirror"
+        onchange="
+            const main=document.getElementById('pivotSelect');
+            main.value=this.value;
+            main.dispatchEvent(new Event('change'));
+        ">
+    </select>
+</label>
+
+
+
+
+
+
+
 
 
 
@@ -4873,6 +4916,37 @@ function buildTable9(){
 
     html += `</table></div>`;
     anchor.insertAdjacentHTML("beforebegin", html);
+	
+	
+	
+	/* =============================
+   MIRROR PIVOT SYNCHRONIZATION
+   ============================= */
+
+const mainPivot = document.getElementById("pivotSelect");
+const mirrorPivot = document.getElementById("pivotSelectMirror");
+
+if(mainPivot && mirrorPivot){
+
+    /* copy options from main pivot */
+    mirrorPivot.innerHTML = mainPivot.innerHTML;
+
+    /* sync value */
+    mirrorPivot.value = mainPivot.value;
+
+    /* mirror → main */
+    mirrorPivot.onchange = function(){
+        mainPivot.value = this.value;
+        mainPivot.dispatchEvent(new Event("change"));
+    };
+
+    /* main → mirror */
+    mainPivot.addEventListener("change", ()=>{
+        mirrorPivot.value = mainPivot.value;
+    });
+}
+	
+	
 
     const starToggle = document.getElementById("toggleStarColumns");
 
@@ -6059,9 +6133,9 @@ row.dataset.end   = endTime;
  let symbol="";
 
  if(now>=row.dataset.start && now<row.dataset.end){
-   if(level===1) symbol="💥";
-   if(level===2) symbol="🔥";
-   if(level===3) symbol="🕉";
+   if(level===1) symbol="&#128165;";
+	if(level===2) symbol="&#128293;";
+	if(level===3) symbol="&#128329;";
  }
 
 
