@@ -4446,12 +4446,14 @@ let HB_MODE = "evenodd";
 let HB_ATTRACTION_MODE = false;
 let HB_USE_PLACEMENT = false;
 let HB_SHOW_STARS = false;
+let HB_SPLIT_SOURCE = false;
 
 /* 🔥 STRICT SOURCE CONTROL */
 let HB_IGNORE_STAR = false;
 let HB_IGNORE_SSL  = false;
 
-
+/* 🔥 EXCEPTION RULE */
+let HB_EXCEPTION_RULE = false;
 
 
 
@@ -4858,6 +4860,22 @@ function buildTable9(){
            onchange="HB_UNTENANTED_RULE = this.checked; buildTable9();">
     Untenanted Rule
 </label>
+
+
+<label style="margin-left:15px;font-weight:700;color:#22c55e;">
+<input type="checkbox"
+       ${HB_SPLIT_SOURCE ? "checked" : ""}
+       onchange="HB_SPLIT_SOURCE=this.checked; buildTable9();">
+Split by Source Level
+</label>
+
+<label style="margin-left:15px;font-weight:700;color:#ef4444;">
+<input type="checkbox"
+       ${HB_EXCEPTION_RULE ? "checked" : ""}
+       onchange="HB_EXCEPTION_RULE=this.checked; buildTable9();">
+Exception Rule
+</label>
+	
 	
 	
 	
@@ -5230,77 +5248,109 @@ function computeEffectiveLinksRow(p){
 		formatHBPlanet(kp.ssl)?.includes("$");
 
 
+
+
+
+
+
+
+
+
+
+
 	/* =============================
-	   PART BUILD
-	   ============================= */
+		   PART BUILD
+		   ============================= */
 
-	let partA = [];
-	let partB = [];
-	let partC = [];
+		let partA = [];
+		let partB = [];
+		let partC = [];
+		
+		let srcA = [p];
+		let srcB = [kp.sub];
+		let srcC = [kp.ssl];
 
-	/* ---- PLANET LEVEL ---- */
-	partA = partA.concat(getHBValuesRaw(p));
+		/* ---- PLANET LEVEL ---- */
+		partA = partA.concat(getHBValuesRaw(p));
 
-	if(!(HB_UNTENANTED_RULE && planetUntenanted)){
-		partA = partA.concat(getHBValuesRaw(kp.star));
+		if(!(HB_UNTENANTED_RULE && planetUntenanted) && kp.star){
+			partA = partA.concat(getHBValuesRaw(kp.star));
+			srcA.push(kp.star); // Track contributing planet
+		}
+
+		/* ---- SUB LEVEL ---- */
+		partB = partB.concat(getHBValuesRaw(kp.sub));
+
+		if(!(HB_UNTENANTED_RULE && subUntenanted) && starOfSub){
+			partB = partB.concat(getHBValuesRaw(starOfSub));
+			srcB.push(starOfSub); // Track contributing planet
+		}
+
+
+
+
+
+		/* ---- SUB-SUB LEVEL ---- */
+		partC = partC.concat(getHBValuesRaw(kp.ssl));
+
+		if(!(HB_UNTENANTED_RULE && sslUntenanted) && starOfSSL){
+			partC = partC.concat(getHBValuesRaw(starOfSSL));
+			srcC.push(starOfSSL); // Track contributing planet
+		}
+
+		/* =========================================
+		   EXCEPTION RULE (8th and 12th from House)
+		   ========================================= */
+		if (HB_EXCEPTION_RULE) {
+			const badMap = {
+				1: [8, 12], 2: [9, 1], 3: [10, 2], 4: [11, 3],
+				5: [12, 4], 6: [1, 5], 7: [2, 6], 8: [3, 7],
+				9: [4, 8], 10: [5, 9], 11: [6, 10], 12: [7, 11]
+			};
+
+			// If an array contains a "bad" number for a house, that house is eliminated
+			const applyException = (arr) => arr.filter(v => {
+				let badList = badMap[v] || [];
+				let hasBad = badList.some(bad => arr.includes(bad));
+				return !hasBad; 
+			});
+
+			partA = applyException(partA);
+			partB = applyException(partB);
+			partC = applyException(partC);
+		}
+
+		let A, B, C;
+
+
+
+
+		if(HB_MODE === "evenodd"){
+			A = evenOddDominance(partA);
+			B = evenOddDominance(partB);
+			C = evenOddDominance(partC);
+		}
+		else if(HB_MODE === "pattern"){
+			A = patternDominance(partA);
+			B = patternDominance(partB);
+			C = patternDominance(partC);
+		}
+		else{ /* mixed */
+			A = mixedStructural(partA);
+			B = mixedStructural(partB);
+			C = mixedStructural(partC);
+		}
+
+		let outA = formatEffectiveDisplay(A);
+		let outB = formatEffectiveDisplay(B);
+		let outC = formatEffectiveDisplay(C);
+
+		return {
+			A: splitBySourceLevel(srcA, outA), // Pass array of planets
+			B: splitBySourceLevel(srcB, outB), // Pass array of planets
+			C: splitBySourceLevel(srcC, outC)  // Pass array of planets
+		};
 	}
-
-	/* ---- SUB LEVEL ---- */
-	partB = partB.concat(getHBValuesRaw(kp.sub));
-
-	if(!(HB_UNTENANTED_RULE && subUntenanted)){
-		partB = partB.concat(getHBValuesRaw(starOfSub));
-	}
-
-	/* ---- SUB-SUB LEVEL ---- */
-	partC = partC.concat(getHBValuesRaw(kp.ssl));
-
-	if(!(HB_UNTENANTED_RULE && sslUntenanted)){
-		partC = partC.concat(getHBValuesRaw(starOfSSL));
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-    let A, B, C;
-
-    if(HB_MODE === "evenodd"){
-        A = evenOddDominance(partA);
-        B = evenOddDominance(partB);
-        C = evenOddDominance(partC);
-    }
-    else if(HB_MODE === "pattern"){
-        A = patternDominance(partA);
-        B = patternDominance(partB);
-        C = patternDominance(partC);
-    }
-    else{ /* mixed */
-        A = mixedStructural(partA);
-        B = mixedStructural(partB);
-        C = mixedStructural(partC);
-    }
-
-    return {
-        A: formatEffectiveDisplay(A),
-        B: formatEffectiveDisplay(B),
-        C: formatEffectiveDisplay(C)
-    };
-}
-
 
 
 
@@ -5320,6 +5370,94 @@ function computeEffectiveLinksRow(p){
     };
 })();
 
+
+
+
+
+
+
+
+
+/* =========================================================
+   SPLIT BY SOURCE LEVEL (TABLE-4 PRIORITY)
+   ========================================================= */
+
+
+
+
+function splitBySourceLevel(planets, effValues){
+
+    if(!HB_SPLIT_SOURCE) return effValues;
+
+    let T3 = window.__T3_CACHE__;
+    if(!T3) return effValues;
+
+    /* normalize planets to array to handle multiple sources */
+    let planetList = Array.isArray(planets) ? planets : [planets];
+    planetList = planetList.filter(Boolean);
+
+    /* normalize string without destroying the original */
+    let cleanStr = String(effValues).replace(/\+/g,",");
+
+    let eff = cleanStr
+        .split(/[,> ]+/)
+        .map(v => Number(v))
+        .filter(v => !isNaN(v) && v !== 0);
+
+    if(!eff.length) return effValues;
+
+    /* Pool sources from table-4 for ALL contributing planets */
+    let rawSub=[], rawSSL=[], rawStar=[], rawPlc=[];
+
+    planetList.forEach(p => {
+        if(T3[p]){
+            rawSub.push(...nums(T3[p].sub));
+            rawSSL.push(...nums(T3[p].ssl));
+            rawStar.push(...nums(T3[p].star));
+            rawPlc.push(...nums(T3[p].place));
+        }
+    });
+
+    /* 🔥 STRICT EXCLUSIVITY FILTERING (Top Priority Rule) */
+    /* If a number belongs to a higher level, erase it from the lower levels completely */
+    const sub  = [...new Set(rawSub)];
+    const ssl  = [...new Set(rawSSL)].filter(n => !sub.includes(n));
+    const star = [...new Set(rawStar)].filter(n => !sub.includes(n) && !ssl.includes(n));
+    const plc  = [...new Set(rawPlc)].filter(n => !sub.includes(n) && !ssl.includes(n) && !star.includes(n));
+
+    let gSub=[], gSSL=[], gStar=[], gPlc=[], gOther=[];
+
+    /* Distribute into priority buckets */
+    eff.forEach(n=>{
+        if(sub.includes(n))       gSub.push(n);
+        else if(ssl.includes(n))  gSSL.push(n);
+        else if(star.includes(n)) gStar.push(n);
+        else if(plc.includes(n))  gPlc.push(n);
+        else                      gOther.push(n); 
+    });
+
+    gSub   = uniqueSorted(gSub);
+    gSSL   = uniqueSorted(gSSL);
+    gStar  = uniqueSorted(gStar);
+    gPlc   = uniqueSorted(gPlc);
+    gOther = uniqueSorted(gOther);
+
+    let groups=[];
+
+    if(gSub.length)   groups.push(gSub.join(","));
+    if(gSSL.length)   groups.push(gSSL.join(","));
+    if(gStar.length)  groups.push(gStar.join(","));
+    if(gPlc.length)   groups.push(gPlc.join(","));
+    if(gOther.length) groups.push(gOther.join(","));
+
+    // If all numbers belong to the exact same level
+    // Return the original string to preserve original formatting
+    if(groups.length <= 1){
+        return effValues; 
+    }
+
+    return groups.join(" > ");
+}
 
 
 
