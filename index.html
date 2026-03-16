@@ -4452,8 +4452,14 @@ let HB_SPLIT_SOURCE = false;
 let HB_IGNORE_STAR = false;
 let HB_IGNORE_SSL  = false;
 
+
+
 /* 🔥 EXCEPTION RULE */
 let HB_EXCEPTION_RULE = false;
+
+/* 🔥 SUPERIOR RULE (NEW) */
+let HB_SUPERIOR_RULE = false;
+
 
 
 
@@ -4875,7 +4881,13 @@ Split by Source Level
        onchange="HB_EXCEPTION_RULE=this.checked; buildTable9();">
 Exception Rule
 </label>
-	
+
+<label style="margin-left:15px;font-weight:700;color:#a855f7;">
+<input type="checkbox"
+       ${HB_SUPERIOR_RULE ? "checked" : ""}
+       onchange="HB_SUPERIOR_RULE=this.checked; buildTable9();">
+Superior Rule
+</label>
 	
 	
 	
@@ -4977,6 +4989,9 @@ if(mainPivot && mirrorPivot){
         toggleStarColumnsVisibility();
     }
 
+    /* 🔥🔥🔥 BUILD DYNAMIC BAR CHARTS 🔥🔥🔥 */
+    buildBarCharts();
+
     /* 🔥🔥🔥 HARD SYNC VIMSHOTTARI WITH TABLE-9 🔥🔥🔥 */
     if(typeof buildCollapsedVim === "function"){
         setTimeout(buildCollapsedVim,0);
@@ -5031,6 +5046,21 @@ function evenOddDominance(values){
     return uniqueSorted(odd);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ---------- PATTERN DOMINANCE (PATTERN MODE) ---------- */
 function patternDominance(values){
 
@@ -5053,34 +5083,47 @@ function patternDominance(values){
     let m2 = values.filter(v => P2.includes(v));
     let m3 = values.filter(v => P3.includes(v));
 
-    let max = Math.max(m1.length, m2.length, m3.length);
+    if (HB_SUPERIOR_RULE) {
+        /* ==========================================
+           NEW RULE: STRICT HIERARCHY (SUPERIOR OVERRIDES)
+           ========================================== */
+        if(m1.length > 0) return uniqueSorted(m1);
+        if(m2.length > 0) return uniqueSorted(m2);
+        if(m3.length > 0) return uniqueSorted(m3);
+        
+        return values;
+    } else {
+        /* ==========================================
+           OLD RULE: MAJORITY WINS (TIE-BREAKER TO ODDS)
+           ========================================== */
+        let max = Math.max(m1.length, m2.length, m3.length);
 
-    let candidates = [];
+        let candidates = [];
 
-    if(m1.length === max) candidates.push(m1);
-    if(m2.length === max) candidates.push(m2);
-    if(m3.length === max) candidates.push(m3);
+        if(m1.length === max) candidates.push(m1);
+        if(m2.length === max) candidates.push(m2);
+        if(m3.length === max) candidates.push(m3);
 
-    /* if single dominant */
-    if(candidates.length === 1){
-        return uniqueSorted(candidates[0]);
-    }
-
-    /* tie → choose cluster with more odd numbers */
-    let best = candidates[0];
-    let bestOdd = best.filter(v => v % 2 !== 0).length;
-
-    candidates.forEach(c=>{
-        let oddCount = c.filter(v => v % 2 !== 0).length;
-        if(oddCount > bestOdd){
-            best = c;
-            bestOdd = oddCount;
+        /* if single dominant */
+        if(candidates.length === 1){
+            return uniqueSorted(candidates[0]);
         }
-    });
 
-    return uniqueSorted(best);
+        /* tie → choose cluster with more odd numbers */
+        let best = candidates[0];
+        let bestOdd = best.filter(v => v % 2 !== 0).length;
+
+        candidates.forEach(c=>{
+            let oddCount = c.filter(v => v % 2 !== 0).length;
+            if(oddCount > bestOdd){
+                best = c;
+                bestOdd = oddCount;
+            }
+        });
+
+        return uniqueSorted(best);
+    }
 }
-
 
 
 
@@ -5458,6 +5501,13 @@ function splitBySourceLevel(planets, effValues){
 
     return groups.join(" > ");
 }
+
+
+
+
+
+
+
 
 
 
@@ -7330,8 +7380,788 @@ function enforceTableOrder(){
 
 
 
+
+
+
+
+
+
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   DYNAMIC BAR CHARTS (OUTER LIFE & INNER LIFE) - EXTRACTION PROTOCOL
+   ========================================================= */
+
+// Global states for Chart Checkboxes & Modes
+let CHART_SOURCE_MODE = "eff";  // Changed to 'eff' by default
+let CHART_SHOW_EFF_A = true;
+let CHART_SHOW_EFF_B = false;   // Changed to false so 'Sub + Star of Sub' / 'EFF B' is unchecked by default
+let CHART_SHOW_EFF_C = false;
+let CHART_REDUCE_8_12 = false;
+
+// Global State for Manual Overrides
+window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
+
+function updateOverride(planet, type, value) {
+    if (!window.OVERRIDE_SCORES[planet]) {
+        window.OVERRIDE_SCORES[planet] = { outer: null, inner: null };
+    }
+    window.OVERRIDE_SCORES[planet][type] = (value === "auto") ? null : parseInt(value, 10);
+    buildBarCharts(); // Re-render charts & tables instantly
+}
+
+function clearAllOverrides() {
+    window.OVERRIDE_SCORES = {};
+    buildBarCharts();
+}
+
+
+
+
+
+
+
+
+
+
+
+function extractEFFNumbers(p) {
+    let groups = getSelectedEFFGroupsForCharts(p);
+    let parts = [];
+
+    groups.forEach(arr => {
+        parts.push(...arr);
+    });
+
+    if (parts.length === 0) return [];
+
+    let nums = parts.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 12);
+    return [...new Set(nums)].sort((a,b) => a-b);
+}
+
+/* =========================================================
+   CHART GROUP EXTRACTOR
+   Respects selected checkboxes and keeps A/B/C separated
+   ========================================================= */
+function getSelectedEFFGroupsForCharts(p) {
+    let out = [];
+    let kp = getPlanetKPLords(p);
+    if (!kp) return out;
+
+    let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
+    let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
+
+    function cleanNums(arr) {
+        if (!Array.isArray(arr)) return [];
+        return [...new Set(
+            arr.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 12)
+        )].sort((a,b)=>a-b);
+    }
+
+    function parseEffStr(str) {
+        if (!str) return [];
+        let matches = String(str).match(/\d+/g);
+        return matches ? cleanNums(matches.map(Number)) : [];
+    }
+
+    if (CHART_SOURCE_MODE === "raw") {
+        if (CHART_SHOW_EFF_A) {
+            let grpA = [];
+            if (p) grpA.push(...(computeHBFinal(p) || []));
+            if (kp.star) grpA.push(...(computeHBFinal(kp.star) || []));
+            out.push(cleanNums(grpA));
+        }
+
+        if (CHART_SHOW_EFF_B) {
+            let grpB = [];
+            if (kp.sub) grpB.push(...(computeHBFinal(kp.sub) || []));
+            if (starOfSub) grpB.push(...(computeHBFinal(starOfSub) || []));
+            out.push(cleanNums(grpB));
+        }
+
+        if (CHART_SHOW_EFF_C) {
+            let grpC = [];
+            if (kp.ssl) grpC.push(...(computeHBFinal(kp.ssl) || []));
+            if (starOfSSL) grpC.push(...(computeHBFinal(starOfSSL) || []));
+            out.push(cleanNums(grpC));
+        }
+    } else {
+        let eff = computeEffectiveLinksRow(p);
+
+        if (CHART_SHOW_EFF_A) out.push(parseEffStr(eff.A));
+        if (CHART_SHOW_EFF_B) out.push(parseEffStr(eff.B));
+        if (CHART_SHOW_EFF_C) out.push(parseEffStr(eff.C));
+    }
+
+    return out;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   VISUAL CAP RULES FOR CHART SCORES
+   Only checks selected groups separately
+   ========================================================= */
+function getVisualScoreCap(p) {
+    let groups = getSelectedEFFGroupsForCharts(p);
+    if (!groups.length) return 100;
+
+    /* =========================================
+       VISUAL CAP RULES (UPDATED)
+       ========================================= */
+
+    /* 🔻 NEW RULE: CAP MAX = 30% */
+    const cap30Rules = [
+        [2,4,6,8,10,12],
+        [2,6,8,12],
+        [6,8,12],
+        [4,8,12],
+        [2,8,12],
+        [8,10,12]
+    ];
+
+    /* 🔻 CAP MAX = 70% (Keeping your existing 70% rules) */
+    const cap70Rules = [
+        [4,12],
+        [2,12],
+        [6,12],
+        [10,12],
+        [2,8],
+        [4,8],
+        [6,8],
+        [8,10]
+    ];
+
+    function hasCombo(group, combo) {
+        return combo.every(n => group.includes(n));
+    }
+
+    let finalCap = 100;
+
+    groups.forEach(group => {
+        if (!group || !group.length) return;
+
+        // Apply the new 30% cap rules
+        for (let combo of cap30Rules) {
+            if (hasCombo(group, combo)) {
+                finalCap = Math.min(finalCap, 30);
+                return; // skip further checks for this specific group once max penalty is hit
+            }
+        }
+
+        // Apply the 70% cap rules
+        for (let combo of cap70Rules) {
+            if (hasCombo(group, combo)) {
+                finalCap = Math.min(finalCap, 70);
+            }
+        }
+    });
+
+    return finalCap;
+}
+
+
+
+
+
+
+
+
+
+function applyVisualScoreCap(p, score) {
+    let cap = getVisualScoreCap(p);
+    return Math.min(score, cap);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Elegant Gradient & Outline Theme Engine
+function getBarTheme(score) {
+    if (score < 20) return { // Red
+        bg: "linear-gradient(180deg, #ef4444 0%, #7f1d1d 100%)",
+        border: "1px solid #fca5a5",
+        shadow: "rgba(239, 68, 68, 0.6)"
+    };
+    if (score < 50) return { // Blue
+        bg: "linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)",
+        border: "1px solid #93c5fd",
+        shadow: "rgba(59, 130, 246, 0.6)"
+    };
+    if (score < 70) return { // Yellow
+        bg: "linear-gradient(180deg, #facc15 0%, #854d0e 100%)",
+        border: "1px solid #fef08a",
+        shadow: "rgba(250, 204, 21, 0.6)"
+    };
+    return { // Green
+        bg: "linear-gradient(180deg, #22c55e 0%, #14532d 100%)",
+        border: "1px solid #86efac",
+        shadow: "rgba(34, 197, 94, 0.6)"
+    };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// OUTER LIFE (Official / Material)
+function calculateOuterScore(nums){
+    if(!nums || nums.length === 0) return 10;
+
+    // ========================================================
+    // 🔥 STRICT RULES FOR ALL MODES (WHEN ONLY ODD NUMBERS PRESENT)
+    // ========================================================
+    if (nums.every(n => n % 2 !== 0)) {
+        if (nums.length === 1 && nums.includes(1)) return 50;
+        if (nums.length === 1 && nums.includes(7)) return 50;
+        if (nums.length === 2 && nums.includes(1) && nums.includes(7)) return 60;
+        
+        // If 1 or 7 combines with ANY other odd numbers (or just 3,5,9,11 appear) -> Crash to 10%
+        return 10;
+    }
+    // ========================================================
+
+    /* =====================================
+       🔥 100% TRIGGER RULE
+       ===================================== */
+    const strongHouses = [1,2,4,6,7,10];
+    const blockers = [5,8,9,12]; // Added 5 here to block the 100% trigger
+
+    let strongCount = nums.filter(n => strongHouses.includes(n)).length;
+    let hasBlocker = nums.some(n => blockers.includes(n));
+
+    if(strongCount >= 3 && !hasBlocker){
+        return 100;
+    }
+
+    /* =====================================
+       ORIGINAL LOGIC (UNCHANGED)
+       ===================================== */
+    const goodEven = [1, 2, 4, 6, 7, 10];
+    const badEven = [8,12];
+    
+    let score = 0;
+
+    nums.forEach(n => {
+        if(goodEven.includes(n)) score += 30;
+        if(badEven.includes(n)) score += 20;
+    });
+
+    if(score > 100) score = 100;
+
+    let goodEvenCount = nums.filter(n => goodEven.includes(n)).length;
+
+    if(goodEvenCount >= 1){
+        // NEW PENALTY RULES: -15 for each of 5, 8, 9, 12
+        if(CHART_REDUCE_8_12){
+            if(nums.includes(5)) score -= 15;
+            if(nums.includes(8)) score -= 15;
+            if(nums.includes(9)) score -= 15;
+            if(nums.includes(12)) score -= 15;
+        }
+    }
+
+    if(score < 10) score = 10;
+    if(score > 100) score = 100;
+
+    return score;
+}
+
+// INNER LIFE (Personal / Non-Material)
+function calculateInnerScore(nums){
+    if(!nums || nums.length === 0) return 10;
+
+    // ========================================================
+    // 🔥 STRICT RULES FOR ALL MODES (WHEN ONLY ODD NUMBERS PRESENT)
+    // ========================================================
+    if (nums.every(n => n % 2 !== 0)) {
+        if (nums.length === 1 && nums.includes(1)) return 50;
+        if (nums.length === 1 && nums.includes(7)) return 50;
+        if (nums.length === 2 && nums.includes(1) && nums.includes(7)) return 60;
+        
+        // If 1 or 7 combines with ANY other odd numbers (or just 3,5,9,11 appear) -> Crash to 10%
+        return 10;
+    }
+    // ========================================================
+
+    const fav = [3,5,9,11];
+    let score = 10;
+    let has1 = nums.includes(1);
+    let favCount = nums.filter(n => fav.includes(n)).length;
+
+    // Base points for odd houses
+    if(has1 && favCount === 1) score = 60;
+    else if(favCount === 1) score = 40;
+    else if(favCount === 2) score = 60;
+    else if(favCount === 3) score = 70;
+    else if(favCount >= 4) score = 100;
+
+    // NEW PENALTY RULES: 5, 8, 9, 12 reduce Inner Life (-15 each)
+    if(CHART_REDUCE_8_12){
+        if(nums.includes(5)) score -= 15;
+        if(nums.includes(8)) score -= 15;
+        if(nums.includes(9)) score -= 15;
+        if(nums.includes(12)) score -= 15;
+    }
+
+    // Safety bounds
+    if(score < 10) score = 10;
+    if(score > 100) score = 100;
+    
+    return score;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Data Resolvers (Returns manual override if set, else returns calculation)
+function getFinalOuterScore(p, nums) {
+    if (window.OVERRIDE_SCORES[p] && window.OVERRIDE_SCORES[p].outer !== null) {
+        return window.OVERRIDE_SCORES[p].outer;
+    }
+
+    let score = calculateOuterScore(nums);
+    return applyVisualScoreCap(p, score);
+}
+
+function getFinalInnerScore(p, nums) {
+    if (window.OVERRIDE_SCORES[p] && window.OVERRIDE_SCORES[p].inner !== null) {
+        return window.OVERRIDE_SCORES[p].inner;
+    }
+
+    let score = calculateInnerScore(nums);
+    return applyVisualScoreCap(p, score);
+}
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   MANUAL SCORE OVERRIDES UI
+   ========================================================= */
+function renderOverrideTable(planetsOrder) {
+    let html = `
+    <div style="background:#120606; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #a86b17; padding-bottom:12px;">
+            <h3 style="color:#facc15; margin:0; font-size:24px; font-weight:900; text-shadow:0 0 8px rgba(250,204,21,0.4);">Manual Score Overrides</h3>
+            <button onclick="clearAllOverrides()" style="background:linear-gradient(135deg, #b11226, #7f1d1d); color:#fff; border:1px solid #ef4444; padding:8px 16px; border-radius:6px; font-weight:900; cursor:pointer; box-shadow:0 0 10px rgba(239,68,68,0.4);">Reset All to Auto</button>
+        </div>
+        <table style="width:100%; border-collapse:collapse; text-align:center; color:#f3e8d0;">
+            <thead>
+                <tr style="background:linear-gradient(180deg,#2a0f0f,#140707); border-bottom:2px solid #a86b17;">
+                    <th style="padding:12px; border:1px solid #3a1a12; font-size:18px;">Planets</th>
+                    <th style="padding:12px; border:1px solid #3a1a12; font-size:18px;">Outer Life</th>
+                    <th style="padding:12px; border:1px solid #3a1a12; font-size:18px;">Inner Life</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    planetsOrder.forEach(p => {
+        let nums = extractEFFNumbers(p);
+        
+        let calcOuter = calculateOuterScore(nums);
+        let calcInner = calculateInnerScore(nums);
+        
+        let overOuter = window.OVERRIDE_SCORES[p] ? window.OVERRIDE_SCORES[p].outer : null;
+        let overInner = window.OVERRIDE_SCORES[p] ? window.OVERRIDE_SCORES[p].inner : null;
+
+        let makeSelect = (type, calcVal, overrideVal) => {
+            let isOverridden = overrideVal !== null;
+            let borderStyle = isOverridden ? "border:2px solid #22c55e; box-shadow:0 0 8px rgba(34,197,94,0.4);" : "border:1px solid #475569;";
+            
+            let sel = `<select onchange="updateOverride('${p}', '${type}', this.value)" style="background:#020617; color:#facc15; ${borderStyle} padding:8px; border-radius:6px; font-weight:bold; font-size:15px; cursor:pointer; outline:none; width:140px; text-align:center;">`;
+            
+            sel += `<option value="auto" ${!isOverridden ? "selected" : ""}>Auto (${calcVal}%)</option>`;
+            
+            for(let i=10; i<=100; i+=10) {
+                let isSel = (isOverridden && i === overrideVal) ? "selected" : "";
+                sel += `<option value="${i}" ${isSel}>${i} %</option>`;
+            }
+            sel += `</select>`;
+            return sel;
+        };
+
+        html += `
+            <tr style="border-bottom:1px solid #3a1a12; background:#0c0505;">
+                <td style="padding:12px; border:1px solid #3a1a12; font-weight:900; color:#ff9f1c; font-size:18px;">${markPlanet(p).split(' ')[0]}</td>
+                <td style="padding:12px; border:1px solid #3a1a12;">${makeSelect('outer', calcOuter, overOuter)}</td>
+                <td style="padding:12px; border:1px solid #3a1a12;">${makeSelect('inner', calcInner, overInner)}</td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div>`;
+    return html;
+}
+
+/* =========================================================
+   BAR CHARTS (Clean Font & Elegant Boxes)
+   ========================================================= */
+function renderVerticalChart(planetsOrder, type) {
+    let isOuter = type === "outer";
+    
+    let titleLeft = isOuter ? "Outer Life ( Career , Money , Property , Investments )" : "Inner Life ( Education , Marriage , Children )";
+    let titleRight = isOuter ? "Logical Life" : "Sentimental Life";
+    
+    let subTitle = isOuter 
+        ? "Planet Strength (Based on Dasa Bhukti) for Economic Growth, Profession, Property, Investment, Responsibility, Status, Self-Control and Official Life"
+        : "Planet Strength (Based on Dasa Bhukti) for Education, Happiness, Marriage Life, Health, Public Relationship, Enjoyment, Charity Thinking, Enjoyable Expenses, Soul related Personal Life";
+
+    let primaryColor = isOuter ? '#ff9f1c' : '#e879f9'; 
+    let glowColor = isOuter ? 'rgba(255,159,28,0.4)' : 'rgba(232,121,249,0.4)';
+    let borderColor = isOuter ? '#b11226' : '#a21caf'; 
+
+    let html = `
+    <div style="background:#0c0505; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid ${borderColor}; padding-bottom:12px; margin-bottom:15px;">
+            <h2 style="margin:0; color:${primaryColor}; font-size:26px; font-weight:900; text-shadow: 0 0 8px ${glowColor};">${titleLeft}</h2>
+            <h2 style="margin:0; color:transparent; -webkit-text-stroke: 1.5px ${primaryColor}; text-shadow: 0 0 12px ${glowColor}; font-size:28px; font-weight:900; letter-spacing: 2px; text-transform:uppercase;">
+                ${titleRight}
+            </h2>
+        </div>
+        
+        <div style="font-size:15px; font-weight:800; color:#f3e8d0; margin-bottom:40px; line-height:1.5;">
+            ${subTitle}
+        </div>
+        
+        <div style="display:flex; justify-content:space-around; align-items:flex-end; height:280px; border-bottom:3px solid #3a1a12; padding-bottom:0px;">
+    `;
+
+    let labelsHtml = `<div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:20px;">`;
+
+    planetsOrder.forEach(p => {
+        let nums = extractEFFNumbers(p); 
+        let score = isOuter ? getFinalOuterScore(p, nums) : getFinalInnerScore(p, nums);
+        
+        let theme = getBarTheme(score);
+        let shortName = markPlanet(p).split(' ')[0]; 
+
+        html += `
+            <div style="display:flex; flex-direction:column; align-items:center; width:9%; height:100%; justify-content:flex-end;">
+                <div style="font-weight:900; color:#ffffff; font-size:16px; margin-bottom:10px; text-shadow: 0px 2px 4px rgba(0,0,0,0.9);">${score} %</div>
+                <div style="width:70%; background:${theme.bg}; border:${theme.border}; border-bottom:none; border-radius:6px 6px 0 0; height:${score}%; min-height:4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 15px ${theme.shadow}; transition: height 0.6s ease-in-out;"></div>
+            </div>
+        `;
+
+        labelsHtml += `
+            <div style="width:9%; display:flex; justify-content:center;">
+                <div style="
+                    background: linear-gradient(145deg, #2a0f0f 0%, #0c0404 100%);
+                    border: 1px solid #a86b17;
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    color: #f3e8d0;
+                    font-family: 'Segoe UI', Tahoma, sans-serif;
+                    font-size: 17px;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+                    text-transform: capitalize;
+                    white-space: nowrap;
+                ">
+                    ${shortName}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`; 
+    labelsHtml += `</div>`; 
+
+    html += labelsHtml;
+    html += `</div>`; 
+    
+    return html;
+}
+
+/* =========================================================
+   COMPARISON TABLE ENGINE (INNER VS OUTER LIFE)
+   ========================================================= */
+function getComparisonBarColor(score) {
+    if (score <= 10) return "#ef4444"; 
+    if (score <= 30) return "#374151"; 
+    if (score <= 50) return "#2563eb"; 
+    if (score <= 70) return "#eab308"; 
+    return "#22c55e"; 
+}
+
+function renderComparisonTable(planetsOrder) {
+    let totalOuter = 0;
+    let totalInner = 0;
+    
+    let rowsHtml = "";
+    planetsOrder.forEach(p => {
+        let nums = extractEFFNumbers(p); 
+        let outerScore = getFinalOuterScore(p, nums);
+        let innerScore = getFinalInnerScore(p, nums);
+        
+        totalOuter += outerScore;
+        totalInner += innerScore;
+        
+        let outerColor = getComparisonBarColor(outerScore);
+        let innerColor = getComparisonBarColor(innerScore);
+        
+        let fullName = markPlanet(p).split(' ')[0]; 
+        
+        rowsHtml += `
+        <tr style="border-bottom: 1px solid #3a1a12; background: #0c0505;">
+            <td style="padding: 12px; font-weight: 900; font-size: 18px; color: #facc15; text-align: center; border-right: 1px solid #3a1a12; text-transform: capitalize;">${fullName}</td>
+            <td style="padding: 12px; border-right: 1px solid #3a1a12;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #1a0808; height: 20px; border-radius: 2px; overflow: hidden; border: 1px solid #3a1a12;">
+                        <div style="width: ${outerScore}%; background: ${outerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; color: #f3e8d0; width: 50px; text-align: right;">${outerScore} %</span>
+                </div>
+            </td>
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #1a0808; height: 20px; border-radius: 2px; overflow: hidden; border: 1px solid #3a1a12;">
+                        <div style="width: ${innerScore}%; background: ${innerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; color: #f3e8d0; width: 50px; text-align: right;">${innerScore} %</span>
+                </div>
+            </td>
+        </tr>
+        `;
+    });
+    
+    let avgOuter = Math.round(totalOuter / planetsOrder.length);
+    let avgInner = Math.round(totalInner / planetsOrder.length);
+    
+    let html = `
+    <div style="background:#0c0505; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8); display: flex; flex-wrap: wrap; gap: 20px;">
+        
+        <div style="flex: 1 1 600px;">
+            <table style="width: 100%; border-collapse: collapse; background: #120606; border: 2px solid #a86b17;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #a86b17;">
+                        <th style="width: 8%; padding: 15px; background: linear-gradient(180deg, #2a0f0f, #140707);"></th>
+                        <th style="width: 46%; padding: 15px; color: #facc15; font-size: 22px; border-right: 1px solid #3a1a12; background: linear-gradient(180deg, #431407, #1f0505);">
+                            Outer Life<br><span style="font-size: 16px; color: #fdba74;">Official (Material)</span>
+                        </th>
+                        <th style="width: 46%; padding: 15px; color: #86efac; font-size: 22px; background: linear-gradient(180deg, #064e3b, #022c22);">
+                            Inner Life<br><span style="font-size: 16px; color: #6ee7b7;">Personal (Non-Material)</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 20px;">
+            <div style="background: #120606; border: 1px solid #3a1a12; padding: 15px; border-radius: 8px;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #22c55e; color: #000; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">71 - 100 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Very Good</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #eab308; color: #000; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">51 - 70 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Good</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #2563eb; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">31 - 50 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Average</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #374151; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">11 - 30 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Bad</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="background: #ef4444; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">0 - 10 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Very Bad</div>
+                </div>
+            </div>
+
+            <div style="background: #120606; border: 1px solid #3a1a12; padding: 20px; border-radius: 8px;">
+                <h3 style="color: #22c55e; margin-top: 0; margin-bottom: 20px; font-size: 22px; text-align: center;">Avg. Planet Strength</h3>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 900; color: #22c55e; font-size: 20px;">Official Life</span>
+                    <span style="font-weight: 900; color: #22c55e; font-size: 26px;">${avgOuter} %</span>
+                </div>
+                <p style="text-align: left; font-size: 13px; color: #a8a29e; margin-top: 0; margin-bottom: 25px; line-height: 1.4;">
+                    Favorable Planet (based Dasa Bhukti) for Economic, Profession, Property developing, logical sense
+                </p>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 900; color: #ef4444; font-size: 20px;">Personal Life</span>
+                    <span style="font-weight: 900; color: #ef4444; font-size: 26px;">${avgInner} %</span>
+                </div>
+                <p style="text-align: left; font-size: 13px; color: #a8a29e; margin: 0; line-height: 1.4;">
+                    Favorable Planet (based Dasa Bhukti) for Education, Happiness, Health, Marriage Life and sentiment sense
+                </p>
+            </div>
+        </div>
+    </div>
+    `;
+    return html;
+}
+
+function buildBarCharts() {
+    document.getElementById("planet-charts-wrapper")?.remove();
+    let anchor = document.getElementById("vimshottari-wrapper");
+    if(!anchor) return;
+
+    let planetsOrder = getPivotSortedPlanets();
+    
+    let html = `<div id="planet-charts-wrapper" style="margin-top:50px;">`;
+    
+    // --- MODE SELECTION BAR (NEW) ---
+    html += `
+    <div style="display:flex; justify-content:center; gap:30px; margin-bottom:15px; font-weight:800; color:#38bdf8; background:#120606; padding:12px 18px; border:1px solid #0284c7; border-radius:8px; box-shadow: 0 0 15px rgba(2,132,199,0.2);">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+            <input type="radio" name="chartSourceMode" value="raw" ${CHART_SOURCE_MODE === "raw" ? "checked" : ""} 
+                   onchange="CHART_SOURCE_MODE = this.value; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+            Raw Mode (Planet + Star, Sub + Star of Sub...)
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+            <input type="radio" name="chartSourceMode" value="eff" ${CHART_SOURCE_MODE === "eff" ? "checked" : ""} 
+                   onchange="CHART_SOURCE_MODE = this.value; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+            Effective Mode (EFF A, EFF B, EFF C)
+        </label>
+    </div>
+    `;
+
+    // Dynamically adjust checkbox labels based on the selected mode
+    let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
+    let labelB = CHART_SOURCE_MODE === "raw" ? "Sub + Star of Sub" : "EFF B";
+    let labelC = CHART_SOURCE_MODE === "raw" ? "Sub-Sub + Star of Sub-Sub" : "EFF C";
+
+    // --- EFF CHECKBOXES ---
+    html += `
+    <div style="display:flex; justify-content:center; gap:30px; margin-bottom:25px; font-weight:800; color:#facc15; background:#120606; padding:18px; border:1px solid #a86b17; border-radius:8px; box-shadow: 0 0 15px rgba(255,159,28,0.2);">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="chkEffA" ${CHART_SHOW_EFF_A ? "checked" : ""} 
+                   onchange="CHART_SHOW_EFF_A = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+            ${labelA}
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="chkEffB" ${CHART_SHOW_EFF_B ? "checked" : ""} 
+                   onchange="CHART_SHOW_EFF_B = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+            ${labelB}
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="chkEffC" ${CHART_SHOW_EFF_C ? "checked" : ""} 
+                   onchange="CHART_SHOW_EFF_C = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+            ${labelC}
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:8px; margin-left:15px; border-left:2px solid #a86b17; padding-left:15px;">
+            <input type="checkbox" id="chkReduce812" ${CHART_REDUCE_8_12 ? "checked" : ""} 
+                   onchange="CHART_REDUCE_8_12 = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#dc2626;">
+            <span style="color:#ff6a00;">5,8,9,12 Reduction</span>
+        </label>
+    </div>
+    `;
+
+    // 1. Render Outer Life Chart 
+    html += renderVerticalChart(planetsOrder, "outer");
+    
+    // 2. Render Inner Life Chart 
+    html += renderVerticalChart(planetsOrder, "inner");
+    
+    // 3. Render The Consolidated Comparison Table 
+    html += renderComparisonTable(planetsOrder);
+    
+    // 4. Render The New Manual Overrides Table 
+    html += renderOverrideTable(planetsOrder);
+    
+    html += `</div>`;
+
+    anchor.insertAdjacentHTML("beforebegin", html);
+}
+
+</script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 
