@@ -1,9 +1,13 @@
 
 <!DOCTYPE html>
 <html>
-<head>
-<title>KP Cuspal Research Tool</title>
 
+<head>
+    <meta charset="UTF-8">
+    
+    <title>KP Cuspal Research Tool</title>
+</head>
+	
 <style>
 /* =========================================================
    TANTRIC FIRE – OCCULT POWER THEME
@@ -332,7 +336,40 @@ hr{
 
 
 
+/* =========================================================
+   NATIVE DARK MODE FOR ALL DATE/TIME INPUTS
+   ========================================================= */
+input[type="date"],
+input[type="time"] {
+    color-scheme: dark; /* Forces browser popup calendar/clock to be dark */
+}
 
+/* =========================================================
+   TOP RIGHT MINI TIME TOOL STYLES
+   ========================================================= */
+#navButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+#navTimeTool {
+    background: #000000;
+    border: 1px solid #a86b17;
+    padding: 6px 8px;
+    border-radius: 6px;
+    box-shadow: 0 0 15px rgba(255,159,28,0.5);
+}
+#miniTimeInput {
+    background: #000000;
+    color: #facc15;
+    border: none;
+    outline: none;
+    font-weight: 900;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: monospace;
+    color-scheme: dark; /* 🔥 FORCES POPUP CLOCK TO DARK MODE */
+}
 
 
 
@@ -360,16 +397,23 @@ hr{
      MINI NAVIGATION BUTTONS
      ========================================================= -->
 <div id="miniNav">
-    <button onclick="document.getElementById('table1').scrollIntoView({behavior:'smooth'})">1</button>
-    <button onclick="document.getElementById('table2').scrollIntoView({behavior:'smooth'})">2</button>
-    <button onclick="document.getElementById('kundaliSection').scrollIntoView({behavior:'smooth'})">3</button>
-    <button onclick="document.getElementById('pivotMode').scrollIntoView({behavior:'smooth'})">4</button>
-    <button onclick="document.getElementById('anchor-table4').scrollIntoView({behavior:'smooth'})">5</button>
-<button onclick="document.getElementById('anchor-table5').scrollIntoView({behavior:'smooth'})">6</button>
-<button onclick="document.getElementById('anchor-table6').scrollIntoView({behavior:'smooth'})">7</button>
-<button onclick="document.getElementById('anchor-table8').scrollIntoView({behavior:'smooth'})">8</button>
+    
+    <div id="navButtons" style="display:none;">
+        <button onclick="document.getElementById('table1').scrollIntoView({behavior:'smooth'})">1</button>
+        <button onclick="document.getElementById('table2').scrollIntoView({behavior:'smooth'})">2</button>
+        <button onclick="document.getElementById('kundaliSection').scrollIntoView({behavior:'smooth'})">3</button>
+        <button onclick="document.getElementById('pivotMode').scrollIntoView({behavior:'smooth'})">4</button>
+        <button onclick="document.getElementById('anchor-table4').scrollIntoView({behavior:'smooth'})">5</button>
+        <button onclick="document.getElementById('anchor-table5').scrollIntoView({behavior:'smooth'})">6</button>
+        <button onclick="document.getElementById('anchor-table6').scrollIntoView({behavior:'smooth'})">7</button>
+        <button onclick="document.getElementById('anchor-table8').scrollIntoView({behavior:'smooth'})">8</button>
+        <button onclick="document.getElementById('vimshottari-wrapper').scrollIntoView({behavior:'smooth'})">9</button>
+    </div>
 
-    <button onclick="document.getElementById('vimshottari-wrapper').scrollIntoView({behavior:'smooth'})">9</button>
+    <div id="navTimeTool" style="display:block;">
+        <input type="time" id="miniTimeInput" step="1" title="HH:MM:SS">
+    </div>
+
 </div>
 
 
@@ -2085,6 +2129,11 @@ document.body.insertAdjacentHTML("beforeend", `
     Level Theme
 </label>
 
+<label style="margin-left:15px;font-weight:800;color:#ff9f1c;">
+    <input type="checkbox" id="navToggleMode">
+    Nav Bar (1-9)
+</label>
+
 `);
 
 
@@ -2659,10 +2708,11 @@ function buildPivotCuspalTable(){
     }
 
     /* ---------- BUILD TABLE ---------- */
+   /* Inside buildPivotCuspalTable() */
     let html = `
     <h2 class="collapsible-heading open"
-    onclick="toggleCollapsible('table4-body', this)">
-	Table-4 : Planetary House Significations (Pivot Based)
+    onclick="toggleCollapsible('table3-body', this)">
+	Table-3 : Cuspal Interlink Chart (Pivot Based)
 	</h2>
 
 	<div id="table3-body" class="collapsible-body">
@@ -2941,8 +2991,13 @@ function syncDateTimeTool(){
 
   dateCtrl.value = d.toISOString().slice(0,10);
   timeCtrl.value = d.toTimeString().slice(0,8);
-}
 
+  /* 🔥 NEW: SYNC WITH TOP-RIGHT MINI TIME TOOL */
+  const miniTime = document.getElementById("miniTimeInput");
+  if(miniTime) {
+      miniTime.value = timeCtrl.value;
+  }
+}
 
 
 </script>
@@ -3739,7 +3794,7 @@ function initTable5Shell(){
                 </label>
 
                 <label style="margin-right:20px;">
-                    <input type="checkbox" id="ignoreStar" checked>
+                    <input type="checkbox" id="ignoreStar">
                     Ignore Star Lord Column
                 </label>
             </div>
@@ -4458,7 +4513,7 @@ let HB_SPLIT_SOURCE = false;
 let HB_SHOW_LEGENDS = false;  // 🔥 NEW: Master toggle for Legends
 
 /* 🔥 STRICT SOURCE CONTROL */
-let HB_IGNORE_STAR = true; // Changed to true
+let HB_IGNORE_STAR = true; // 🔥 NOW ON BY DEFAULT
 let HB_IGNORE_SSL  = false; // Changed to true
 
 
@@ -4946,6 +5001,11 @@ function computeTable10DominanceWithSSL(top3Values, sslValues, pVals = [], sVals
 
 
 
+
+
+
+
+
 function computeTable10Row(p) {
     let kp = getPlanetKPLords(p);
     if (!kp) return "";
@@ -5017,7 +5077,7 @@ function computeTable10Row(p) {
     else if (pS==="2,4,10" && stS==="1,7" && subS==="2,4,10") finalArrBase = [1,4,7,10];
     else if (stS==="3,6,12" && subS==="5,8,11") finalArrBase = [6,8,12];
     else if (pS==="2,3,5,8" && stS==="10" && subS==="10") finalArrBase = [2,5,8];
-    else if (pS==="3,8" && stS==="9" && subS==="4" && sslS==="6,11,12") finalArrBase = [4,6,8,11,12];
+    else if (pS==="3,8" && stS==="9" && subS==="4" && sslS==="6,11,12") finalArrBase = [4,6,8,12];
     else if (pS==="" && stS==="11" && subS==="3,9") finalArrBase = [3,9,11];
     else if (pS==="3,6,12" && stS==="1,7" && subS==="12") finalArrBase = [1,3,7];
     else if (pS==="2,6,8,12" && stS==="8" && subS==="1") finalArrBase = [2,6,8,12];
@@ -5033,20 +5093,17 @@ function computeTable10Row(p) {
         let odds = core.filter(n => n % 2 !== 0);
 
         // 🔥 PURE PARITY OVERRIDE: 
-        // If the Top 3 levels (Planet, Star, Sub) are 100% Even or 100% Odd, they harmonize completely.
-        // We do not truncate them for patterns (like Samasapthaka). Give everything!
         if (core.length > 0 && evens.length === core.length) {
             let base = evens;
-            base.push(...sslVals.filter(n => n % 2 === 0)); // SSL as topping only if it matches Even
+            base.push(...sslVals.filter(n => n % 2 === 0)); 
             finalArrBase = uniqueSort(base);
         }
         else if (core.length > 0 && odds.length === core.length) {
             let base = odds;
-            base.push(...sslVals.filter(n => n % 2 !== 0)); // SSL as topping only if it matches Odd
+            base.push(...sslVals.filter(n => n % 2 !== 0)); 
             finalArrBase = uniqueSort(base);
         }
         else {
-            // It's a mixed set (e.g., 2, 3, 8), so we apply the Group/Pattern rules
             const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
             const getOverlap = (arr, g) => arr.filter(n => g.includes(n));
 
@@ -5058,7 +5115,6 @@ function computeTable10Row(p) {
                 let sO = getOverlap(sVals, g);
                 let subO = getOverlap(subVals, g);
                 
-                // 🔥 THE NEW GROUP ATTRACTION ENGINE
                 if ( (subO.length > 0 && uniqueSort([...pO, ...sO]).length > 1) ||
                      (sO.length > 0 && pO.length > 1) ) {
                     let combined = uniqueSort([...pO, ...sO, ...subO]);
@@ -5069,6 +5125,10 @@ function computeTable10Row(p) {
                 }
             }
 
+            let allEvens = all.filter(n => n % 2 === 0);
+            let allOdds  = all.filter(n => n % 2 !== 0);
+            let maxParityCount = Math.max(allEvens.length, allOdds.length);
+
             // Dusthana Lock: 6,12 + 8 -> 6,8,12
             if ( (hasAny(sVals, [6,12]) || hasAny(subVals, [6,12])) && (hasAny(pVals, [8]) || hasAny(subVals, [8]) || hasAny(sVals, [8])) ) {
                 finalArrBase = [6,8,12].filter(n => all.includes(n));
@@ -5077,31 +5137,69 @@ function computeTable10Row(p) {
             else if ( (hasAny(sVals, [3,9]) || hasAny(subVals, [3,9])) && (hasAny(subVals, [6,12]) || hasAny(sVals, [6,12])) ) {
                 finalArrBase = [3,6,9,12].filter(n => all.includes(n));
             }
-            // 🔥 APPLY STRONG ATTRACTION LOCK
-            else if (attractedBase) {
-                // Forcefully ignore Sub-Sub unless it explicitly matches the attracted group
+            // 🔥 OVERWHELMING PARITY RULE: Parity crushes Pattern if it's larger by 2 or more
+            else if (attractedBase && (maxParityCount - attractedBase.length < 2)) {
                 let sslMatch = sslVals.filter(n => attractedBase.includes(n));
                 finalArrBase = uniqueSort([...attractedBase, ...sslMatch]);
             }
-            // 1,4,7,10 mixing
-            else if ( (hasAny(subVals, [2,4,10]) || hasAny(pVals, [2,4,10])) && (hasAny(sVals, [1,7]) || hasAny(pVals, [1,7])) ) {
-                let mix = all.filter(n => [1,4,7,10].includes(n));
-                finalArrBase = mix.length >= 2 ? mix : core;
+            // Pattern matching 1,4,7,10
+            else if ( all.filter(n => [1,4,7,10].includes(n)).length >= 2 && (maxParityCount - all.filter(n => [1,4,7,10].includes(n)).length < 2) && (hasAny(subVals, [2,4,10]) || hasAny(pVals, [2,4,10])) && (hasAny(sVals, [1,7]) || hasAny(pVals, [1,7])) ) {
+                finalArrBase = all.filter(n => [1,4,7,10].includes(n));
             }
-            // 2,5,8,11 mixing
-            else if ( (hasAny(subVals, [2,4,8,10]) || hasAny(sVals, [5,8,11])) && (hasAny(sVals, [5,11]) || hasAny(sslVals, [2,5])) ) {
-                let mix = all.filter(n => [2,5,8,11].includes(n));
-                finalArrBase = mix.length >= 2 ? mix : core;
+            // Pattern matching 2,5,8,11
+            else if ( all.filter(n => [2,5,8,11].includes(n)).length >= 2 && (maxParityCount - all.filter(n => [2,5,8,11].includes(n)).length < 2) && (hasAny(subVals, [2,4,8,10]) || hasAny(sVals, [5,8,11])) && (hasAny(sVals, [5,11]) || hasAny(sslVals, [2,5])) ) {
+                finalArrBase = all.filter(n => [2,5,8,11].includes(n));
             }
+            
+            // =========================================================================
+            // 🔥🔥🔥 NEW: LION KILLS SHEEP (Sublord > Starlord Tag Dominance) 🔥🔥🔥
+            // =========================================================================
+            else if (subVals.length > 0) {
+                // Sublord (X) is the Prime Minister. It marries X level values only.
+                // We ignore the cheaper Starlord (F).
+                let evensX = subVals.filter(n => n % 2 === 0).length;
+                let oddsX  = subVals.filter(n => n % 2 !== 0).length;
+                
+                let base = [...subVals];
+                
+                // Add SSL (H) only if it conforms to the Sublord's dominant parity
+                if (evensX > oddsX) {
+                    base.push(...sslVals.filter(n => n % 2 === 0));
+                } else if (oddsX > evensX) {
+                    base.push(...sslVals.filter(n => n % 2 !== 0));
+                }
+                finalArrBase = uniqueSort(base);
+            }
+            else if (sVals.length > 0) {
+                // If no Sublord is available, Starlord (F) takes command
+                let evensF = sVals.filter(n => n % 2 === 0).length;
+                let oddsF  = sVals.filter(n => n % 2 !== 0).length;
+                
+                let base = [...sVals];
+                
+                // Add SSL (H) only if it conforms to the Starlord's dominant parity
+                if (evensF > oddsF) {
+                    base.push(...sslVals.filter(n => n % 2 === 0));
+                } else if (oddsF > evensF) {
+                    base.push(...sslVals.filter(n => n % 2 !== 0));
+                }
+                finalArrBase = uniqueSort(base);
+            }
+            // =========================================================================
+            
             else {
                 // Parity Dominance (Even always wins over Odd)
-                if (evens.length > 0 && evens.length >= odds.length) {
-                    let base = evens;
-                    base.push(...sslVals.filter(n => n % 2 === 0)); // SSL as topping only if it matches Even
+                if (evens.length === 1 && odds.length === 1 && evens.includes(2) && odds.includes(1)) {
+                    let base = [1];
+                    base.push(...sslVals.filter(n => n % 2 !== 0)); 
                     finalArrBase = uniqueSort(base);
-                } else if (odds.length > evens.length) {
+                } else if (evens.length > 0) {
+                    let base = evens;
+                    base.push(...sslVals.filter(n => n % 2 === 0)); 
+                    finalArrBase = uniqueSort(base);
+                } else if (odds.length > 0) {
                     let base = odds;
-                    base.push(...sslVals.filter(n => n % 2 !== 0)); // SSL as topping only if it matches Odd
+                    base.push(...sslVals.filter(n => n % 2 !== 0)); 
                     finalArrBase = uniqueSort(base);
                 } else {
                     finalArrBase = core.length > 0 ? core : sslVals;
@@ -5110,20 +5208,17 @@ function computeTable10Row(p) {
         }
     }
 
-    // 🔥 ROTATE back to Pivot
+   // 🔥 ROTATE back to Pivot
     const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
     let finalArrPivot = uniqueSort(rotate(finalArrBase));
-    let finalStr = finalArrPivot.join(",");
-    let allSources = [...sourcesTop3, ...sourcesSSL];
-
-    // 🔥 Force Split by Source Level to ALWAYS be ON for Table 10
-    let originalSplitState = HB_SPLIT_SOURCE;
-    HB_SPLIT_SOURCE = true; 
-    let result = splitBySourceLevel(allSources, finalStr);
-    HB_SPLIT_SOURCE = originalSplitState; // Restore immediately so it doesn't break other tables
-
-    return result;
+    
+    // 🔥 RETURN AS A SINGLE UNITED STRING (e.g., "5,8,11") SO THE GRAPH SCORES IT PROPERLY
+    return finalArrPivot.join(",");
 }
+
+
+
+
 
 
 
@@ -5215,7 +5310,7 @@ function buildTable9(){
             <label style="margin-right:20px;font-weight:700;color:#f472b6;">
                 <input type="checkbox"
                        ${HB_IGNORE_STAR ? "checked" : ""}
-                       onchange="HB_IGNORE_STAR = this.checked; buildTable9();">
+                       onchange="HB_IGNORE_STAR = this.checked; buildTable9();" >
                 Ignore Starlord
             </label>
 
@@ -5494,6 +5589,9 @@ function toggleStarColumnsVisibility(){
 
 
 
+
+
+
 /* =========================================================
    EFFECTIVE LINKS ENGINE — CLEAN REWRITE
    ========================================================= */
@@ -5503,8 +5601,6 @@ function uniqueSorted(arr){
     return [...new Set(arr.map(Number))].sort((a,b)=>a-b);
 }
 
-
-/* 🔥 ADD THIS RIGHT BELOW */
 /* 🔥 FIX: Rotate houses without destroying the " > " separator for Table 10 */
 function rotateHouseList(values, shift){
     if(!values) return "";
@@ -5527,45 +5623,25 @@ function rotateHouseList(values, shift){
         .join(" > ");
 }
 
-
-
-
-
-
-
-
-
-
 /* ---------- PARITY DOMINANCE (EVEN-ODD MODE) ---------- */
 function evenOddDominance(values){
-
     if(!values.length) return [];
 
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
-    if(even.length > odd.length){
+    // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins 
+    if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
+        return [1];
+    }
+
+    // 🔥 RULE: Even ALWAYS wins over odd
+    if(even.length > 0){
         return uniqueSorted(even);
     }
 
-    /* odd wins if greater OR tie */
     return uniqueSorted(odd);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ---------- PATTERN DOMINANCE (PATTERN MODE) ---------- */
 function patternDominance(values){
@@ -5581,14 +5657,9 @@ function patternDominance(values){
     if(even.length === values.length) return values;
     if(odd.length === values.length)  return values;
 
-
-
-
-
-
 	/* ==============================
-   🔥 MULTI PATTERN ENGINE
-   ============================== */
+       🔥 MULTI PATTERN ENGINE
+       ============================== */
 
 	/* --- Square Patterns (Existing) --- */
 	const SQ1 = [1,4,7,10];
@@ -5627,20 +5698,27 @@ function patternDominance(values){
 	/* parity strength */
 	let maxParity = Math.max(even.length, odd.length);
 
-
-
-
-   
-
     if (HB_SUPERIOR_RULE) {
-    for(let m of matches){
-        if(m.length > 0) return uniqueSorted(m);
-    }
-    return values;
-	}else {
-        /* 🔥 NEW RULE: If you find more odd or even numbers than the pattern, SKIP PATTERN */
-        if (maxParity > maxPattern) {
-            return even.length >= odd.length ? uniqueSorted(even) : uniqueSorted(odd);
+        for(let m of matches){
+            if(m.length > 0) return uniqueSorted(m);
+        }
+        return values;
+		
+		
+	} else {
+            /* If you find more odd or even numbers than the pattern, SKIP PATTERN */
+            /* 🔥 FIX: A strong pattern of 3 can defeat a parity of 4. 
+               BUT if the parity is overwhelmingly dominating (difference of 2 or more, like 5 vs 3), Parity crushes the pattern! */
+            if (maxParity > maxPattern && (maxPattern < 3 || maxParity - maxPattern >= 2)) {
+                // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins
+            if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
+                return [1];
+            }
+			
+			
+			
+            // 🔥 RULE: Even ALWAYS wins over odd
+            return even.length > 0 ? uniqueSorted(even) : uniqueSorted(odd);
         }
 
         /* Otherwise, keep the strong pattern */
@@ -5650,15 +5728,15 @@ function patternDominance(values){
             return uniqueSorted(candidates[0]);
         }
 
-        /* tie → choose cluster with more odd numbers */
+        /* tie → choose cluster with more EVEN numbers (since Even dominates) */
         let best = candidates[0];
-        let bestOdd = best.filter(v => v % 2 !== 0).length;
+        let bestEven = best.filter(v => v % 2 === 0).length;
 
         candidates.forEach(c=>{
-            let oddCount = c.filter(v => v % 2 !== 0).length;
-            if(oddCount > bestOdd){
+            let evenCount = c.filter(v => v % 2 === 0).length;
+            if(evenCount > bestEven){
                 best = c;
-                bestOdd = oddCount;
+                bestEven = evenCount;
             }
         });
 
@@ -5666,20 +5744,7 @@ function patternDominance(values){
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 /* ---------- MIXED MODE (STRUCTURAL CLUSTERS) ---------- */
-
-
 function mixedStructural(values){
 
     if(!values.length) return [];
@@ -5705,7 +5770,6 @@ function mixedStructural(values){
 
     /* ==============================
        STEP 2 : SAMASAPTHAKA SPOILING
-       (OVERRIDES PATTERN IF TRIGGERED)
        ============================== */
 
     const AXIS = [
@@ -5721,25 +5785,19 @@ function mixedStructural(values){
     let spoiledSomething = false;
 
     AXIS.forEach(rule => {
-
-        const hasAxis =
-            rule.axis.every(v => remaining.includes(v));
-
+        const hasAxis = rule.axis.every(v => remaining.includes(v));
         if(!hasAxis) return;
-
-        const hasSpoiler =
-            rule.spoil.every(v => remaining.includes(v));
+        const hasSpoiler = rule.spoil.every(v => remaining.includes(v));
 
         if(hasSpoiler){
             remaining = remaining.filter(v => !rule.axis.includes(v));
             spoiledSomething = true;
         }
-
     });
 
     remaining = uniqueSorted(remaining);
 
-    /* 🔥 IF SPOILING HAPPENED → RETURN CLEAN RESULT */
+    /* IF SPOILING HAPPENED → RETURN CLEAN RESULT */
     if(spoiledSomething){
         return remaining.length ? [remaining] : [];
     }
@@ -5759,14 +5817,18 @@ function mixedStructural(values){
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
-    if(even.length > odd.length){
+    // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins 
+    if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
+        return [[1]];
+    }
+
+    // 🔥 RULE: Even ALWAYS wins over odd
+    if(even.length > 0){
         return [uniqueSorted(even)];
     }
 
     return [uniqueSorted(odd)];
 }
-
-
 
 
 
@@ -5837,7 +5899,54 @@ function getPivotShift(){
 
 
 
-/* ---------- MAIN COMPUTE ---------- */
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   🔥 LION KILLS SHEEP MERGE (TAG DOMINANCE FOR TABLE 9)
+   Base Entity (Lion) dictates Parity. Starlord (Sheep) must conform.
+   ========================================================= */
+function mergeLionSheep(baseVals, starVals) {
+    if (!baseVals || baseVals.length === 0) return starVals || [];
+    if (!starVals || starVals.length === 0) return baseVals;
+    
+    // 🔥 FIX: If Pattern or Mixed Mode is ON, allow Sheep and Lion to mix so patterns can form!
+    if (typeof HB_MODE !== 'undefined' && (HB_MODE === "pattern" || HB_MODE === "mixed")) {
+        return uniqueSorted([...baseVals, ...starVals]);
+    }
+    
+    let evens = baseVals.filter(n => n % 2 === 0).length;
+    let odds  = baseVals.filter(n => n % 2 !== 0).length;
+    
+    let result = [...baseVals];
+    
+    // The Base Entity (e.g., Sublord) forces the Starlord to match its dominant parity
+    if (evens > odds) {
+        result.push(...starVals.filter(n => n % 2 === 0));
+    } else if (odds > evens) {
+        result.push(...starVals.filter(n => n % 2 !== 0));
+    } else {
+        result.push(...starVals);
+    }
+    
+    return uniqueSorted(result);
+}
+
+
+
+
+
+
+
+
+
+/* ---------- MAIN COMPUTE FOR TABLE 9 ---------- */
 function computeEffectiveLinksRow(p){
 
     let kp = getPlanetKPLords(p);
@@ -5862,7 +5971,7 @@ function computeEffectiveLinksRow(p){
 		formatHBPlanet(kp.ssl)?.includes("$");
 
 	/* =============================
-	   PART BUILD (RESTORED TO ORIGINAL)
+	   PART BUILD (WITH LION KILLS SHEEP DOMINANCE)
 	   ============================= */
 	let partA = [];
 	let partB = [];
@@ -5872,29 +5981,23 @@ function computeEffectiveLinksRow(p){
 	let srcB = [kp.sub];
 	let srcC = [kp.ssl];
 
-	/* ---- PLANET LEVEL ---- */
-	partA = partA.concat(getHBValuesRaw(p));
+	/* ---- PLANET LEVEL (EFF A) ---- */
+    let valsA1 = getHBValuesRaw(p) || [];
+    let valsA2 = (!(HB_UNTENANTED_RULE && planetUntenanted) && kp.star) ? (getHBValuesRaw(kp.star) || []) : [];
+    partA = mergeLionSheep(valsA1, valsA2);
+    if(valsA2.length) srcA.push(kp.star);
 
-	if(!(HB_UNTENANTED_RULE && planetUntenanted) && kp.star){
-		partA = partA.concat(getHBValuesRaw(kp.star));
-		srcA.push(kp.star); // Track contributing planet
-	}
+	/* ---- SUB LEVEL (EFF B) ---- */
+    let valsB1 = getHBValuesRaw(kp.sub) || [];
+    let valsB2 = (!(HB_UNTENANTED_RULE && subUntenanted) && starOfSub) ? (getHBValuesRaw(starOfSub) || []) : [];
+    partB = mergeLionSheep(valsB1, valsB2);
+    if(valsB2.length) srcB.push(starOfSub);
 
-	/* ---- SUB LEVEL ---- */
-	partB = partB.concat(getHBValuesRaw(kp.sub));
-
-	if(!(HB_UNTENANTED_RULE && subUntenanted) && starOfSub){
-		partB = partB.concat(getHBValuesRaw(starOfSub));
-		srcB.push(starOfSub); // Track contributing planet
-	}
-
-	/* ---- SUB-SUB LEVEL ---- */
-	partC = partC.concat(getHBValuesRaw(kp.ssl));
-
-	if(!(HB_UNTENANTED_RULE && sslUntenanted) && starOfSSL){
-		partC = partC.concat(getHBValuesRaw(starOfSSL));
-		srcC.push(starOfSSL); // Track contributing planet
-	}
+	/* ---- SUB-SUB LEVEL (EFF C) ---- */
+    let valsC1 = getHBValuesRaw(kp.ssl) || [];
+    let valsC2 = (!(HB_UNTENANTED_RULE && sslUntenanted) && starOfSSL) ? (getHBValuesRaw(starOfSSL) || []) : [];
+    partC = mergeLionSheep(valsC1, valsC2);
+    if(valsC2.length) srcC.push(starOfSSL);
 
 	/* =========================================
 	   EXCEPTION RULE (8th and 12th from House)
@@ -5946,6 +6049,15 @@ function computeEffectiveLinksRow(p){
 		C: splitBySourceLevel(srcC, outC)
 	};
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -7958,21 +8070,16 @@ function enforceTableOrder(){
 
 
 
-
-
-
-
 /* =========================================================
    DYNAMIC BAR CHARTS (OUTER LIFE & INNER LIFE) - EXTRACTION PROTOCOL
    ========================================================= */
 
 // Global states for Chart Checkboxes & Modes
-let CHART_SOURCE_MODE = "short";  // Changed to 'eff' by default
+let CHART_SOURCE_MODE = "short";  
 let CHART_SHOW_EFF_A = true;
-let CHART_SHOW_EFF_B = true;   // Changed to true
+let CHART_SHOW_EFF_B = true;   
 let CHART_SHOW_EFF_C = false;
-let CHART_REDUCE_8_12 = true;  // Changed to true
-let CHART_SECTION_OPEN = true; // 🔥 CHANGED: Now expanded by default
+let CHART_SECTION_OPEN = true; 
 
 // Global State for Manual Overrides
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
@@ -7990,22 +8097,8 @@ function clearAllOverrides() {
     buildBarCharts();
 }
 
-function extractEFFNumbers(p) {
-    let groups = getSelectedEFFGroupsForCharts(p);
-    let parts = [];
-
-    groups.forEach(arr => {
-        parts.push(...arr);
-    });
-
-    if (parts.length === 0) return [];
-
-    let nums = parts.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 12);
-    return [...new Set(nums)].sort((a,b) => a-b);
-}
-
 /* =========================================================
-   CHART GROUP EXTRACTOR
+   CHART GROUP EXTRACTOR (KEEPS GROUPS SEPARATE FOR SCORING)
    ========================================================= */
 function getSelectedEFFGroupsForCharts(p) {
     let out = [];
@@ -8022,10 +8115,18 @@ function getSelectedEFFGroupsForCharts(p) {
         )].sort((a,b)=>a-b);
     }
 
-    function parseEffStr(str) {
+    // 🔥 FIX: Split by ">" AND "+" so separated groups are evaluated independently
+    function parseEffStrToMultipleGroups(str) {
         if (!str) return [];
-        let matches = String(str).match(/\d+/g);
-        return matches ? cleanNums(matches.map(Number)) : [];
+        let parts = String(str).split(/[>+]/);
+        let groups = [];
+        parts.forEach(part => {
+            let matches = part.match(/\d+/g);
+            if (matches) {
+                groups.push(cleanNums(matches.map(Number)));
+            }
+        });
+        return groups;
     }
 
     if (CHART_SOURCE_MODE === "raw") {
@@ -8050,86 +8151,20 @@ function getSelectedEFFGroupsForCharts(p) {
             out.push(cleanNums(grpC));
         }
 		
-		
     } else if (CHART_SOURCE_MODE === "short") {
-        /* 🔥 NEW SHORTENED MODE (TABLE 10 DIRECT) */
+        /* Shortened Mode (Table 10) */
         let shortEff = computeTable10Row(p);
-        out.push(parseEffStr(shortEff)); // Safe parsing for Split by Source level string!
+        out.push(...parseEffStrToMultipleGroups(shortEff)); 
     } else {
-	
-	
+        /* Effective Mode (Table 9) */
         let eff = computeEffectiveLinksRow(p);
 
-        if (CHART_SHOW_EFF_A) out.push(parseEffStr(eff.A));
-        if (CHART_SHOW_EFF_B) out.push(parseEffStr(eff.B));
-        if (CHART_SHOW_EFF_C) out.push(parseEffStr(eff.C));
+        if (CHART_SHOW_EFF_A) out.push(...parseEffStrToMultipleGroups(eff.A));
+        if (CHART_SHOW_EFF_B) out.push(...parseEffStrToMultipleGroups(eff.B));
+        if (CHART_SHOW_EFF_C) out.push(...parseEffStrToMultipleGroups(eff.C));
     }
 
     return out;
-}
-
-
-
-
-
-
-
-
-
-function getVisualScoreCap(p) {
-    let groups = getSelectedEFFGroupsForCharts(p);
-    if (!groups.length) return 100;
-
-    const cap30Rules = [
-        [2,4,6,8,10,12], [2,6,8,12], [6,8,12], [4,8,12], [2,8,12], [8,10,12]
-    ];
-
-    /* 🔥 ADDED NEW AXIS RULES FOR 70% CAP: [1,7], [2,8], [4,10], [6,12] */
-    const cap70Rules = [
-        [1,7], [2,8], [4,10], [6,12], 
-        [4,12], [2,12], [10,12], [4,8], [6,8], [8,10]
-    ];
-
-    function hasCombo(group, combo) {
-        return combo.every(n => group.includes(n));
-    }
-
-    let finalCap = 100;
-
-    groups.forEach(group => {
-        if (!group || !group.length) return;
-
-        for (let combo of cap30Rules) {
-            if (hasCombo(group, combo)) {
-                finalCap = Math.min(finalCap, 30);
-                return;
-            }
-        }
-
-        for (let combo of cap70Rules) {
-            if (hasCombo(group, combo)) {
-                finalCap = Math.min(finalCap, 70);
-            }
-        }
-    });
-
-    return finalCap;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-function applyVisualScoreCap(p, score) {
-    let cap = getVisualScoreCap(p);
-    return Math.min(score, cap);
 }
 
 // Elegant Gradient & Outline Theme Engine
@@ -8152,189 +8187,201 @@ function getBarTheme(score) {
     };
 }
 
+/* =========================================================
+   STRICT COMBINATION SCORE MAPPINGS (OUTER & INNER)
+   ========================================================= */
 
+const OUTER_SCORE_MAP = {
+    // 1. Squares / Kendras
+    "1,4,7,10": 100, "1,4,7": 90, "1,4,10": 90, "1,7,10": 90, "4,7,10": 90, 
+    "1,4": 60, "1,10": 70, "4,7": 60, "7,10": 80,
+    "2,5,8,11": 30, "2,5,8": 40, "2,5,11": 30, "2,8,11": 40, "5,8,11": 30, 
+    "2,5": 30, "2,11": 30, "5,8": 10, "8,11": 20,
+    "3,6,9,12": 50, "3,6,9": 40, "3,6,12": 50, "3,9,12": 20, "6,9,12": 50, 
+    "3,6": 40, "3,12": 20, "6,9": 40, "9,12": 20,
 
+    // 2. Trines / Trikonas
+    "1,5,9": 0, "1,5": 0, "1,9": 0, "5,9": 0,
+    "2,6,10": 100, "2,6": 70, "2,10": 80, "6,10": 90,
+    "3,7,11": 20, "3,7": 20, "3,11": 10, "7,11": 20,
+    "4,8,12": 50, "4,8": 60, "4,12": 70, "8,12": 40,
 
+    // 3. Axes / Oppositions
+    "1,7": 60, "2,8": 40, "3,9": 10, "4,10": 80, "5,11": 0, "6,12": 50,
 
+    // 4. Odd Numbers
+    "1,3,5,7,9,11": 30,
+    "1,3,5,7,9": 30, "1,3,5,7,11": 30, "1,3,5,9,11": 20, "1,3,7,9,11": 30, "1,5,7,9,11": 30, "3,5,7,9,11": 30,
+    "1,3,5,7": 30, "1,3,5,9": 20, "1,3,5,11": 20, "1,3,7,9": 30, "1,3,7,11": 30, "1,3,9,11": 20, 
+    "1,5,7,9": 30, "1,5,7,11": 30, "1,5,9,11": 20, "1,7,9,11": 30, 
+    "3,5,7,9": 20, "3,5,7,11": 20, "3,5,9,11": 0, "3,7,9,11": 20, "5,7,9,11": 20,
+    "1,3,5": 20, "1,3,7": 40, "1,3,9": 20, "1,3,11": 20, "1,5,7": 40, "1,5,11": 20, "1,7,9": 40, "1,7,11": 40, "1,9,11": 20, 
+    "3,5,7": 30, "3,5,9": 10, "3,5,11": 10, "3,7,9": 20, "3,9,11": 10, "5,7,9": 20, "5,7,11": 30, "5,9,11": 0, "7,9,11": 20,
+    "1,3": 20, "1,5": 20, "1,9": 20, "1,11": 30, 
+    "3,5": 10, "3,7": 20, "3,9": 10, "3,11": 0, 
+    "5,7": 20, "5,9": 0, "7,9": 20, "7,11": 40, "9,11": 10,
 
-
-
-
-
-
-// OUTER LIFE (Official / Material)
-function calculateOuterScore(nums){
-    if(!nums || nums.length === 0) return 10;
-
-    /* 🔥 READY-MADE MARKS DIRECT OVERRIDE */
-    let str = nums.slice().sort((a,b)=>a-b).join(",");
+    // 5. Even Numbers 
+    "2,4,6,8,10,12": 30,
+    "2,4,6,8,10": 60, "2,4,6,8,12": 40, "2,4,6,10,12": 70, "2,4,8,10,12": 30, "2,6,8,10,12": 30, "4,6,8,10,12": 30,
+    "2,4,6,8": 60, "2,4,6,10": 100, "2,4,6,12": 80, "2,4,8,10": 70, "2,4,8,12": 40, "2,4,10,12": 80, 
+    "2,6,8,10": 70, "2,6,8,12": 30, "2,6,10,12": 70, "2,8,10,12": 30, 
+    "4,6,8,10": 60, "4,6,8,12": 30, "4,6,10,12": 70, "4,8,10,12": 50, "6,8,10,12": 40,
+    "2,4,6": 80, "2,4,8": 60, "2,4,10": 90, "2,4,12": 80, "2,6,8": 70, "2,6,12": 70, "2,8,10": 60, "2,8,12": 40, "2,10,12": 70, 
+    "4,6,8": 60, "4,6,10": 100, "4,6,12": 70, "4,8,10": 70, "4,10,12": 80, 
+    "6,8,10": 70, "6,8,12": 30, "6,10,12": 70, "8,10,12": 30,
+    "2,4": 60, "2,6": 80, "2,10": 70, "2,12": 40, 
+    "4,6": 60, "4,8": 50, "4,10": 80, "4,12": 50, 
+    "6,8": 40, "6,10": 80, "8,10": 40, "8,12": 30, "10,12": 40,
     
-    // --- NEW REQUESTED EXCEPTIONS ---
-    if (str === "1,4,7,10") return 90;
-    if (str === "2,4,8,10") return 70;
-    if (str === "2,4,6,10") return 100;
-    if (str === "2,4,10") return 90;
-    if (str === "2,6,10") return 100;
-    if (str === "4,6,10") return 100;
-    if (str === "6,10") return 90;
-    if (str === "4,10") return 80; 
-    // --------------------------------
+    // 6. Single Houses 
+    "1": 20, "2": 30, "3": 10, "4": 30, "5": 0, "6": 50, "7": 20, "8": 10, "9": 0, "10": 50, "11": 10, "12": 10
+};
 
-    // --- EXISTING RULES ---
-    if (str === "1,7") return 70;
-    if (str === "2,8") return 60;
-    if (str === "6,12") return 60;
-    
-    // --- HARDCODED EXCEPTIONS ---
-    if (str === "3,7,9") return 60;
-    if (str === "3,6,9,12") return 40;
-    if (str === "3,9") return 50;
-    if (str === "2,5,8,11") return 30;
-    // --------------------------------
+const INNER_SCORE_MAP = {
+    // 1. Squares / Kendras
+    "1,4,7,10": 70, "1,4,7": 70, "1,4,10": 60, "1,7,10": 70, "4,7,10": 50, 
+    "1,4": 60, "1,10": 60, "4,7": 50, "7,10": 50,
+    "2,5,8,11": 60, "2,5,8": 40, "2,5,11": 60, "2,8,11": 60, "5,8,11": 60, 
+    "2,5": 40, "2,11": 40, "5,8": 30, "8,11": 40,
+    "3,6,9,12": 50, "3,6,9": 50, "3,6,12": 30, "3,9,12": 50, "6,9,12": 30, 
+    "3,6": 30, "3,12": 40, "6,9": 30, "9,12": 30,
 
-    if (nums.every(n => n % 2 !== 0)) {
-        if (nums.length === 1 && nums.includes(1)) return 50;
-        if (nums.length === 1 && nums.includes(7)) return 50;
-        return 10;
+    // 2. Trines / Trikonas
+    "1,5,9": 100, "1,5": 70, "1,9": 70, "5,9": 80,
+    "2,6,10": 20, "2,6": 20, "2,10": 20, "6,10": 10,
+    "3,7,11": 100, "3,7": 70, "3,11": 70, "7,11": 80,
+    "4,8,12": 10, "4,8": 20, "4,12": 20, "8,12": 0,
+
+    // 3. Axes / Oppositions
+    "1,7": 70, "2,8": 10, "3,9": 70, "4,10": 40, "5,11": 80, "6,12": 20,
+
+    // 4. Odd Numbers
+    "1,3,5,7,9,11": 100,
+    "1,3,5,7,9": 90, "1,3,5,7,11": 90, "1,3,5,9,11": 90, "1,3,7,9,11": 90, "1,5,7,9,11": 90, "3,5,7,9,11": 90,
+    "1,3,5,7": 70, "1,3,5,9": 70, "1,3,5,11": 70, "1,3,7,9": 70, "1,3,7,11": 70, "1,3,9,11": 70, 
+    "1,5,7,9": 70, "1,5,7,11": 70, "1,5,9,11": 70, "1,7,9,11": 70, 
+    "3,5,7,9": 70, "3,5,7,11": 70, "3,5,9,11": 70, "3,7,9,11": 70, "5,7,9,11": 70,
+    "1,3,5": 50, "1,3,7": 60, "1,3,9": 60, "1,3,11": 60, "1,5,7": 50, "1,5,11": 50, "1,7,9": 60, "1,7,11": 60, "1,9,11": 60, 
+    "3,5,7": 50, "3,5,9": 50, "3,5,11": 50, "3,7,9": 50, "3,9,11": 50, "5,7,9": 50, "5,7,11": 50, "5,9,11": 50, "7,9,11": 50,
+    "1,3": 40, "1,5": 40, "1,9": 40, "1,11": 40, 
+    "3,5": 40, "3,7": 40, "3,11": 40, 
+    "5,7": 40, "5,9": 40, "7,9": 40, "7,11": 40, "9,11": 40,
+
+    // 5. Even Numbers 
+    "2,4,6,8,10,12": 30,
+    "2,4,6,8,10": 30, "2,4,6,8,12": 30, "2,4,6,10,12": 30, "2,4,8,10,12": 30, "2,6,8,10,12": 30, "4,6,8,10,12": 30,
+    "2,4,6,8": 30, "2,4,6,10": 30, "2,4,6,12": 30, "2,4,8,10": 30, "2,4,8,12": 20, "2,4,10,12": 30, 
+    "2,6,8,10": 20, "2,6,8,12": 20, "2,6,10,12": 20, "2,8,10,12": 20, 
+    "4,6,8,10": 30, "4,6,8,12": 20, "4,6,10,12": 30, "4,8,10,12": 10, "6,8,10,12": 10,
+    "2,4,6": 40, "2,4,8": 30, "2,4,10": 50, "2,4,12": 40, "2,6,8": 40, "2,6,12": 40, "2,8,10": 40, "2,8,12": 20, "2,10,12": 30, 
+    "4,6,8": 20, "4,6,10": 50, "4,6,12": 40, "4,8,10": 30, "4,10,12": 30, 
+    "6,8,10": 30, "6,8,12": 10, "6,10,12": 30, "8,10,12": 20,
+    "2,4": 40, "2,6": 40, "2,10": 40, "2,12": 30, 
+    "4,6": 20, "4,8": 10, "4,12": 20, 
+    "6,8": 10, "6,10": 30, "8,10": 10, "8,12": 0, "10,12": 30,
+
+    // 6. Single Houses 
+    "1": 50, "2": 30, "3": 30, "4": 30, "5": 40, "6": 10, "7": 30, "8": 0, "9": 40, "10": 10, "11": 30, "12": 0
+};
+
+// =========================================================
+// SCORING ENGINES (Strict Base Matching)
+// =========================================================
+function calculateOuterScore(nums) {
+    if (!nums || nums.length === 0) return 0;
+    let str = nums.slice().sort((a,b) => a - b).join(",");
+    if (OUTER_SCORE_MAP.hasOwnProperty(str)) {
+        return OUTER_SCORE_MAP[str];
     }
+    return 0; 
+}
 
-    const strongHouses = [1,2,4,6,7,10];
-    const blockers = [5,8,9,12]; 
+function calculateInnerScore(nums) {
+    if (!nums || nums.length === 0) return 0;
+    let str = nums.slice().sort((a,b) => a - b).join(",");
+    if (INNER_SCORE_MAP.hasOwnProperty(str)) {
+        return INNER_SCORE_MAP[str];
+    }
+    return 0; 
+}
 
-    let strongCount = nums.filter(n => strongHouses.includes(n)).length;
-    let hasBlocker = nums.some(n => blockers.includes(n));
+// =========================================================
+// DATA RESOLVERS (Evaluates multiple groups and takes MAX)
+// =========================================================
 
-    if(strongCount >= 3 && !hasBlocker) return 100;
-
-    const goodEven = [1, 2, 4, 6, 7, 10];
-    const badEven = [8,12];
+function getCalculatedOuterScore(p) {
+    let groups = getSelectedEFFGroupsForCharts(p);
+    if (!groups || groups.length === 0) return 0;
     
-    let score = 0;
-    nums.forEach(n => {
-        if(goodEven.includes(n)) score += 30;
-        if(badEven.includes(n)) score += 20;
+    // 1. Calculate scores for all groups
+    let scoredGroups = groups.map(grp => ({
+        length: grp.length,
+        score: calculateOuterScore(grp)
+    }));
+    
+    // 2. Keep ONLY groups that have a valid score in your dictionary (> 0)
+    let validGroups = scoredGroups.filter(g => g.score > 0);
+    
+    // If nothing matched the dictionary, return 0
+    if (validGroups.length === 0) return 0;
+    
+    // 3. Find the maximum length among the VALID groups
+    let maxLength = Math.max(...validGroups.map(g => g.length));
+    
+    // 4. Take the highest score among the valid groups of that maximum length
+    let maxScore = 0;
+    validGroups.forEach(g => {
+        if (g.length === maxLength && g.score > maxScore) {
+            maxScore = g.score;
+        }
     });
-
-    if(score > 100) score = 100;
-
-    let goodEvenCount = nums.filter(n => goodEven.includes(n)).length;
-    if(goodEvenCount >= 1 && CHART_REDUCE_8_12){
-        if(nums.includes(5)) score -= 15;
-        if(nums.includes(8)) score -= 15;
-        if(nums.includes(9)) score -= 15;
-        if(nums.includes(12)) score -= 15;
-    }
-
-    if(score < 10) score = 10;
-    if(score > 100) score = 100;
-    return score;
+    
+    return maxScore;
 }
 
-
-
-
-
-
-
-
-
-// INNER LIFE (Personal / Non-Material) - UPDATED 1,7 LOGIC
-function calculateInnerScore(nums){
-    if(!nums || nums.length === 0) return 10;
-
-    /* 🔥 READY-MADE MARKS DIRECT OVERRIDE */
-    let str = nums.slice().sort((a,b)=>a-b).join(",");
+function getCalculatedInnerScore(p) {
+    let groups = getSelectedEFFGroupsForCharts(p);
+    if (!groups || groups.length === 0) return 0;
     
-    if (str === "1,7") return 70;
-    if (str === "4,10") return 70;
-    if (str === "2,8") return 60;
-    if (str === "6,12") return 60;
+    // 1. Calculate scores for all groups
+    let scoredGroups = groups.map(grp => ({
+        length: grp.length,
+        score: calculateInnerScore(grp)
+    }));
     
-    // --- HARDCODED EXCEPTIONS ---
-    if (str === "3,7,9") return 60;
-    if (str === "3,6,9,12") return 40;
-    if (str === "3,9") return 50;
-    if (str === "2,5,8,11") return 30;
-
-    // 🔥 FIX: 1 and 7 are now included as favorable Inner Life houses
-    // Note: The "All-Odd" return 10 trap has been removed.
-    const fav = [1,3,5,7,9,11]; 
-    let score = 10;
-    let favCount = nums.filter(n => fav.includes(n)).length;
-
-    if(favCount === 1) score = 40;
-    else if(favCount === 2) score = 60;
-    else if(favCount === 3) score = 70;
-    else if(favCount >= 4) score = 100;
-
-    if(CHART_REDUCE_8_12){
-        if(nums.includes(5)) score -= 15;
-        if(nums.includes(8)) score -= 15;
-        if(nums.includes(9)) score -= 15;
-        if(nums.includes(12)) score -= 15;
-    }
-
-    if(score < 10) score = 10;
-    if(score > 100) score = 100;
-    return score;
+    // 2. Keep ONLY groups that have a valid score in your dictionary (> 0)
+    let validGroups = scoredGroups.filter(g => g.score > 0);
+    
+    // If nothing matched the dictionary, return 0
+    if (validGroups.length === 0) return 0;
+    
+    // 3. Find the maximum length among the VALID groups
+    let maxLength = Math.max(...validGroups.map(g => g.length));
+    
+    // 4. Take the highest score among the valid groups of that maximum length
+    let maxScore = 0;
+    validGroups.forEach(g => {
+        if (g.length === maxLength && g.score > maxScore) {
+            maxScore = g.score;
+        }
+    });
+    
+    return maxScore;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Data Resolvers 
-function getFinalOuterScore(p, nums) {
+function getFinalOuterScore(p) {
     if (window.OVERRIDE_SCORES[p] && window.OVERRIDE_SCORES[p].outer !== null) {
         return window.OVERRIDE_SCORES[p].outer;
     }
-    
-    let score = calculateOuterScore(nums);
-
-    /* 🔥 FIX: Bypass visual caps for exact requested combinations */
-    if (nums && nums.length > 0) {
-        let str = nums.slice().sort((a,b)=>a-b).join(",");
-        
-        // If it matches your custom list, return the exact score immediately
-        const bypassCaps = [
-            "1,4,7,10", "2,4,8,10", "2,4,6,10", "2,4,10", 
-            "2,6,10", "4,6,10", "6,10", "4,10"
-        ];
-        
-        if (bypassCaps.includes(str)) {
-            return score; 
-        }
-    }
-
-    return applyVisualScoreCap(p, score);
+    return getCalculatedOuterScore(p);
 }
 
-
-
-
-
-
-
-
-
-function getFinalInnerScore(p, nums) {
+function getFinalInnerScore(p) {
     if (window.OVERRIDE_SCORES[p] && window.OVERRIDE_SCORES[p].inner !== null) {
         return window.OVERRIDE_SCORES[p].inner;
     }
-    let score = calculateInnerScore(nums);
-    return applyVisualScoreCap(p, score);
+    return getCalculatedInnerScore(p);
 }
 
 /* =========================================================
@@ -8359,10 +8406,8 @@ function renderOverrideTable(planetsOrder) {
     `;
 
     planetsOrder.forEach(p => {
-        let nums = extractEFFNumbers(p);
-        
-        let calcOuter = calculateOuterScore(nums);
-        let calcInner = calculateInnerScore(nums);
+        let calcOuter = getCalculatedOuterScore(p);
+        let calcInner = getCalculatedInnerScore(p);
         
         let overOuter = window.OVERRIDE_SCORES[p] ? window.OVERRIDE_SCORES[p].outer : null;
         let overInner = window.OVERRIDE_SCORES[p] ? window.OVERRIDE_SCORES[p].inner : null;
@@ -8402,8 +8447,8 @@ function renderOverrideTable(planetsOrder) {
 function renderVerticalChart(planetsOrder, type) {
     let isOuter = type === "outer";
     
-    let titleLeft = isOuter ? "Outer Life ( Career , Money , Property , Investments )" : "Inner Life ( Education , Marriage , Children )";
-    let titleRight = isOuter ? "Logical Life" : "Sentimental Life";
+    let titleLeft = isOuter ? "Outer Life ( Career , Money , Property , Investments )" : "Inner Life ( Education , Health , Marriage , Children )";
+    let titleRight = isOuter ? "Material Life" : "Personal Life";
     
     let subTitle = isOuter 
         ? "Planet Strength (Based on Dasa Bhukti) for Economic Growth, Profession, Property, Investment, Responsibility, Status, Self-Control and Official Life"
@@ -8433,8 +8478,7 @@ function renderVerticalChart(planetsOrder, type) {
     let labelsHtml = `<div style="display:flex; justify-content:space-around; align-items:flex-start; margin-top:20px;">`;
 
     planetsOrder.forEach(p => {
-        let nums = extractEFFNumbers(p); 
-        let score = isOuter ? getFinalOuterScore(p, nums) : getFinalInnerScore(p, nums);
+        let score = isOuter ? getFinalOuterScore(p) : getFinalInnerScore(p);
         
         let theme = getBarTheme(score);
         let shortName = markPlanet(p).split(' ')[0]; 
@@ -8494,9 +8538,8 @@ function renderComparisonTable(planetsOrder) {
     
     let rowsHtml = "";
     planetsOrder.forEach(p => {
-        let nums = extractEFFNumbers(p); 
-        let outerScore = getFinalOuterScore(p, nums);
-        let innerScore = getFinalInnerScore(p, nums);
+        let outerScore = getFinalOuterScore(p);
+        let innerScore = getFinalInnerScore(p);
         
         totalOuter += outerScore;
         totalInner += innerScore;
@@ -8611,6 +8654,154 @@ function renderComparisonTable(planetsOrder) {
 
 
 
+/* =========================================================
+   12 BHAVA CSL POTENTIAL TABLE (FATE)
+   ========================================================= */
+
+
+
+
+/* =========================================================
+   12 BHAVA CSL POTENTIAL TABLE (FATE) - DARK MODE THEME
+   ========================================================= */
+function renderBhavaCSLTable() {
+    if (!cuspsData || cuspsData.length === 0) return "";
+
+    // 1. Get rotated cusps exactly like Table 3
+    let pivotHouse = getPivotHouse();
+    let base = [...cuspsData].sort((a,b)=>a.bhava-b.bhava);
+    let rotated = [];
+    let start = base.findIndex(c=>c.bhava===pivotHouse);
+    if(start < 0) start = 0;
+    for(let i=0;i<12;i++){
+        rotated.push(base[(start+i)%12]);
+    }
+
+    let rowsHtml = "";
+    
+    // 2. Build the 12 rows dynamically
+    rotated.forEach((c, i) => {
+        let bhava = i + 1;
+        let csl = c.subLord;
+        
+        // Grab the exact Vedic name from your script (e.g. "Budha", "Surya")
+        let displayName = markPlanet(csl).split(' ')[0]; 
+        
+        // Grab scores natively
+        let innerScore = getFinalInnerScore(csl);
+        let outerScore = getFinalOuterScore(csl);
+        
+        // Match the bar colors to your existing comparison logic
+        let innerColor = getComparisonBarColor(innerScore);
+        let outerColor = getComparisonBarColor(outerScore);
+        
+        rowsHtml += `
+        <tr style="border-bottom: 1px solid #3a1a12; background: #0c0505;">
+            <td style="padding: 10px; font-weight: 900; color: #ff9f1c; border-right: 1px solid #3a1a12; text-align: center; font-size: 18px;">${bhava}</td>
+            <td style="padding: 10px; font-weight: 900; color: #facc15; border-right: 1px solid #3a1a12; text-align: center; font-size: 16px;">${displayName}</td>
+            <td style="padding: 10px; border-right: 1px solid #3a1a12; width: 40%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #1a0808; height: 20px; border-radius: 2px; border: 1px solid #3a1a12; overflow: hidden;">
+                        <div style="width: ${innerScore}%; background: ${innerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; font-size: 15px; color: #f3e8d0; width: 45px; text-align: right;">${innerScore} %</span>
+                </div>
+            </td>
+            <td style="padding: 10px; width: 40%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #1a0808; height: 20px; border-radius: 2px; border: 1px solid #3a1a12; overflow: hidden;">
+                        <div style="width: ${outerScore}%; background: ${outerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; font-size: 15px; color: #f3e8d0; width: 45px; text-align: right;">${outerScore} %</span>
+                </div>
+            </td>
+        </tr>
+        `;
+    });
+
+    // 3. Wrap everything in the dark-themed container matching the other charts
+    let html = `
+    <div style="background:#0c0505; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8); display: flex; flex-wrap: wrap; gap: 20px;">
+        
+        <div style="flex: 1 1 600px;">
+            <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #facc15; font-size: 24px; font-weight: 900; text-shadow: 0 0 8px rgba(250,204,21,0.4);">
+                    12 Bhava CSL Potential (FATE)
+                </h2>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; background: #120606; border: 2px solid #a86b17;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #a86b17;">
+                        <th colspan="2" style="background: linear-gradient(180deg, #2a0f0f, #140707); border-right: 1px solid #3a1a12;"></th>
+                        <th style="width: 45%; padding: 15px; color: #86efac; font-size: 20px; background: linear-gradient(180deg, #064e3b, #022c22); border-right: 1px solid #3a1a12;">
+                            Inner Life<br><span style="font-size: 15px; color: #6ee7b7;">(Non-Material)</span>
+                        </th>
+                        <th style="width: 45%; padding: 15px; color: #facc15; font-size: 20px; background: linear-gradient(180deg, #431407, #1f0505);">
+                            Outer Life<br><span style="font-size: 15px; color: #fdba74;">(Material)</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 20px; margin-top: 50px;">
+            <div style="background: #120606; border: 1px solid #3a1a12; padding: 15px; border-radius: 8px;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #22c55e; color: #000; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">71 - 100 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Very Good</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #eab308; color: #000; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">51 - 70 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Good</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #2563eb; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">31 - 50 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Average</div>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: #374151; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">11 - 30 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Bad</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="background: #ef4444; color: #fff; font-weight: 900; padding: 6px 10px; width: 100px; text-align: center; margin-right: 15px;">0 - 10 %</div>
+                    <div style="font-weight: 900; color: #f3e8d0; font-size: 17px;">Very Bad</div>
+                </div>
+            </div>
+            
+            <div style="background: #120606; border: 1px solid #3a1a12; padding: 20px; border-radius: 8px;">
+                <div style="color: #86efac; font-weight: 900; font-size: 18px; margin-bottom: 8px;">Inner Life (Non-Material)</div>
+                <div style="font-size: 13px; color: #a8a29e; line-height: 1.4; margin-bottom: 20px;">
+                    Favorable Planet (based Dasa Bhukti) for Education, Happiness, Health, Marriage Life and sentiment sense.
+                </div>
+                <div style="color: #facc15; font-weight: 900; font-size: 18px; margin-bottom: 8px;">Outer Life (Material)</div>
+                <div style="font-size: 13px; color: #a8a29e; line-height: 1.4;">
+                    Favorable Planet (based Dasa Bhukti) for Economic, Profession, Property developing, logical sense.
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    `;
+    return html;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -8630,10 +8821,6 @@ function buildBarCharts() {
     
     let html = `<div id="planet-charts-wrapper" style="margin-top:50px;">`;
     
-	
-	
-	
-	
  // --- COLLAPSIBLE HEADING ---
     let collapsedClass = CHART_SECTION_OPEN ? "" : "collapsed";
     let displayState = CHART_SECTION_OPEN ? "block" : "none";
@@ -8660,9 +8847,6 @@ function buildBarCharts() {
     </h2>
     <div id="charts-body" class="collapsible-content" style="display:${displayState};">
     `;
-	
-	
-	
 
     // --- MODE SELECTION BAR ---
     html += `
@@ -8689,7 +8873,7 @@ function buildBarCharts() {
     let labelB = CHART_SOURCE_MODE === "raw" ? "Sub + Star of Sub" : "EFF B";
     let labelC = CHART_SOURCE_MODE === "raw" ? "Sub-Sub + Star of Sub-Sub" : "EFF C";
 
-    // --- EFF CHECKBOXES (PERMANENTLY VISIBLE NOW) ---
+    // --- EFF CHECKBOXES ---
     html += `
     <div style="display:flex; justify-content:center; gap:30px; margin-bottom:25px; font-weight:800; color:#facc15; background:#120606; padding:18px; border:1px solid #a86b17; border-radius:8px; box-shadow: 0 0 15px rgba(255,159,28,0.2); flex-wrap:wrap;">
         <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
@@ -8707,11 +8891,6 @@ function buildBarCharts() {
                    onchange="CHART_SHOW_EFF_C = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
             ${labelC}
         </label>
-        <label style="cursor:pointer; display:flex; align-items:center; gap:8px; margin-left:15px; border-left:2px solid #a86b17; padding-left:15px;">
-            <input type="checkbox" id="chkReduce812" ${CHART_REDUCE_8_12 ? "checked" : ""} 
-                   onchange="CHART_REDUCE_8_12 = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#dc2626;">
-            <span style="color:#ff6a00;">5,8,9,12 Reduction</span>
-        </label>
     </div>
     `;
 
@@ -8720,6 +8899,9 @@ function buildBarCharts() {
     
     // 2. Render Inner Life Chart 
     html += renderVerticalChart(planetsOrder, "inner");
+	
+	// ---> NEW: Render the 12 Bhava CSL Table
+    html += renderBhavaCSLTable();
     
     // 3. Render The Consolidated Comparison Table 
     html += renderComparisonTable(planetsOrder);
@@ -8730,22 +8912,92 @@ function buildBarCharts() {
     // Close the collapsible body & wrapper
     html += `</div>`; 
     html += `</div>`;
-
     anchor.insertAdjacentHTML("beforebegin", html);
 }
 
 
 
 
+</script> 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+
+
+
+
+/* =========================================================
+   MINI NAV / TIME TOOL TOGGLE & BIDIRECTIONAL SYNC
+   ========================================================= */
+function initMiniNavToggle() {
+    const toggle = document.getElementById("navToggleMode");
+    const navBtns = document.getElementById("navButtons");
+    const timeTool = document.getElementById("navTimeTool");
+    const miniTime = document.getElementById("miniTimeInput");
+    const masterTime = document.getElementById("timeCtrl");
+
+    // 1. Toggle UI Logic
+    if(toggle) {
+        toggle.addEventListener("change", function() {
+            if(this.checked) {
+                navBtns.style.display = "flex";
+                timeTool.style.display = "none";
+            } else {
+                navBtns.style.display = "none";
+                timeTool.style.display = "block";
+                
+                // Sync from master to mini when opening
+                if(masterTime && masterTime.value) {
+                    miniTime.value = masterTime.value;
+                }
+            }
+        });
+        
+        // 🔥 ADDED THIS LINE: Force the logic to run immediately on load!
+        toggle.dispatchEvent(new Event("change"));
+    }
+
+    // 2. Edit from Top-Right Tool affects Entire Engine
+    if(miniTime) {
+        miniTime.addEventListener("input", function() {
+            if(masterTime) {
+                masterTime.value = this.value; // Push exact time to main controller
+                
+                // Trigger the main synthetic shift logic
+                if(typeof applyDateTimeChange === "function") {
+                    applyDateTimeChange(); 
+                }
+            }
+        });
+    }
+}
+
+// Run immediately to ensure it catches the checkbox
+initMiniNavToggle();
 
 
 
 </script>
+
+
+
+
 </body>
 </html>
-
-
 
 
 
