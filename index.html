@@ -344,8 +344,24 @@ input[type="time"] {
     color-scheme: dark; /* Forces browser popup calendar/clock to be dark */
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* =========================================================
-   TOP RIGHT MINI TIME TOOL STYLES
+   TOP RIGHT MINI TIME TOOL STYLES (UPDATED)
    ========================================================= */
 #navButtons {
     display: flex;
@@ -353,24 +369,42 @@ input[type="time"] {
     gap: 4px;
 }
 #navTimeTool {
-    background: #000000;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    backdrop-filter: blur(4px);     /* Glass effect */
     border: 1px solid #a86b17;
-    padding: 6px 8px;
+    padding: 4px 6px;               /* Reduced by 25% */
     border-radius: 6px;
-    box-shadow: 0 0 15px rgba(255,159,28,0.5);
+    box-shadow: 0 0 10px rgba(255,159,28,0.4);
+    display: flex;                  /* Flex container to align Pivot and Time */
+    align-items: center;
+    gap: 6px;
+}
+#miniPivotSelect {
+    background: transparent;        /* Max transparency */
+    color: rgba(250, 204, 21, 0.85);/* Faded gold text */
+    border: none;
+    outline: none;
+    font-weight: 800;
+    font-size: 11px;                /* Reduced size */
+    cursor: pointer;
+    font-family: "Segoe UI", Arial, sans-serif;
+    text-transform: uppercase;
+}
+#miniPivotSelect option {
+    background: #120606;            /* Solid dark bg for the dropdown menu items */
+    color: #facc15;
 }
 #miniTimeInput {
-    background: #000000;
+    background: transparent;
     color: #facc15;
     border: none;
     outline: none;
     font-weight: 900;
-    font-size: 16px;
+    font-size: 12px;                /* Reduced by 25% (was 16px) */
     cursor: pointer;
     font-family: monospace;
-    color-scheme: dark; /* 🔥 FORCES POPUP CLOCK TO DARK MODE */
+    color-scheme: dark;
 }
-
 
 
 
@@ -396,7 +430,10 @@ input[type="time"] {
 <!-- =========================================================
      MINI NAVIGATION BUTTONS
      ========================================================= -->
-<div id="miniNav">
+
+
+
+	<div id="miniNav">
     
     <div id="navButtons" style="display:none;">
         <button onclick="document.getElementById('table1').scrollIntoView({behavior:'smooth'})">1</button>
@@ -411,11 +448,11 @@ input[type="time"] {
     </div>
 
     <div id="navTimeTool" style="display:block;">
+        <select id="miniPivotSelect" title="Select Pivot"></select>
         <input type="time" id="miniTimeInput" step="1" title="HH:MM:SS">
     </div>
 
 </div>
-
 
 
 
@@ -5160,13 +5197,33 @@ function computeTable10Row(p) {
                 let evensX = subVals.filter(n => n % 2 === 0).length;
                 let oddsX  = subVals.filter(n => n % 2 !== 0).length;
                 
-                let base = [...subVals];
+                let base = [];
                 
-                // Add SSL (H) only if it conforms to the Sublord's dominant parity
+                // STRICT PARITY: Only keep the dominant parity from the Sublord
                 if (evensX > oddsX) {
+                    base = subVals.filter(n => n % 2 === 0);
                     base.push(...sslVals.filter(n => n % 2 === 0));
                 } else if (oddsX > evensX) {
+                    base = subVals.filter(n => n % 2 !== 0);
                     base.push(...sslVals.filter(n => n % 2 !== 0));
+                } else {
+                    // 🔥 TIE BREAKER: If Sublord is tied (e.g. 6,11), use the overall core weight to break the tie
+                    if (odds.length > evens.length) {
+                        base = core.filter(n => n % 2 !== 0);
+                        base.push(...sslVals.filter(n => n % 2 !== 0));
+                    } else if (evens.length > odds.length) {
+                        base = core.filter(n => n % 2 === 0);
+                        base.push(...sslVals.filter(n => n % 2 === 0));
+                    } else {
+                        // Dead Tie: Even wins (unless standard 1 & 2 exception)
+                        if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) {
+                            base = core.filter(n => n % 2 !== 0);
+                            base.push(...sslVals.filter(n => n % 2 !== 0));
+                        } else {
+                            base = core.filter(n => n % 2 === 0);
+                            base.push(...sslVals.filter(n => n % 2 === 0));
+                        }
+                    }
                 }
                 finalArrBase = uniqueSort(base);
             }
@@ -5175,13 +5232,33 @@ function computeTable10Row(p) {
                 let evensF = sVals.filter(n => n % 2 === 0).length;
                 let oddsF  = sVals.filter(n => n % 2 !== 0).length;
                 
-                let base = [...sVals];
+                let base = [];
                 
-                // Add SSL (H) only if it conforms to the Starlord's dominant parity
+                // STRICT PARITY: Only keep the dominant parity from the Starlord
                 if (evensF > oddsF) {
+                    base = sVals.filter(n => n % 2 === 0);
                     base.push(...sslVals.filter(n => n % 2 === 0));
                 } else if (oddsF > evensF) {
+                    base = sVals.filter(n => n % 2 !== 0);
                     base.push(...sslVals.filter(n => n % 2 !== 0));
+                } else {
+                     // 🔥 TIE BREAKER: If Starlord is tied, use the overall core weight to break the tie
+                    if (odds.length > evens.length) {
+                        base = core.filter(n => n % 2 !== 0);
+                        base.push(...sslVals.filter(n => n % 2 !== 0));
+                    } else if (evens.length > odds.length) {
+                        base = core.filter(n => n % 2 === 0);
+                        base.push(...sslVals.filter(n => n % 2 === 0));
+                    } else {
+                        // Dead Tie: Even wins (unless standard 1 & 2 exception)
+                        if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) {
+                            base = core.filter(n => n % 2 !== 0);
+                            base.push(...sslVals.filter(n => n % 2 !== 0));
+                        } else {
+                            base = core.filter(n => n % 2 === 0);
+                            base.push(...sslVals.filter(n => n % 2 === 0));
+                        }
+                    }
                 }
                 finalArrBase = uniqueSort(base);
             }
@@ -5623,7 +5700,15 @@ function rotateHouseList(values, shift){
         .join(" > ");
 }
 
-/* ---------- PARITY DOMINANCE (EVEN-ODD MODE) ---------- */
+
+
+
+
+
+
+
+
+/* ---------- PARITY DOMINANCE (EVEN-ODD MODE - MAJORITY WINS) ---------- */
 function evenOddDominance(values){
     if(!values.length) return [];
 
@@ -5635,13 +5720,23 @@ function evenOddDominance(values){
         return [1];
     }
 
-    // 🔥 RULE: Even ALWAYS wins over odd
-    if(even.length > 0){
+    // 🔥 RULE: Majority wins. If tied, Even wins.
+    if (odd.length > even.length) {
+        return uniqueSorted(odd);
+    } else if (even.length > odd.length) {
+        return uniqueSorted(even);
+    } else {
+        // Dead tie (e.g., one even, one odd) -> Even wins
         return uniqueSorted(even);
     }
-
-    return uniqueSorted(odd);
 }
+
+
+
+
+
+
+
 
 /* ---------- PATTERN DOMINANCE (PATTERN MODE) ---------- */
 function patternDominance(values){
@@ -5912,6 +6007,10 @@ function getPivotShift(){
    🔥 LION KILLS SHEEP MERGE (TAG DOMINANCE FOR TABLE 9)
    Base Entity (Lion) dictates Parity. Starlord (Sheep) must conform.
    ========================================================= */
+/* =========================================================
+   🔥 LION KILLS SHEEP MERGE (TAG DOMINANCE FOR TABLE 9)
+   Base Entity (Lion) dictates Parity. Starlord (Sheep) must conform.
+   ========================================================= */
 function mergeLionSheep(baseVals, starVals) {
     if (!baseVals || baseVals.length === 0) return starVals || [];
     if (!starVals || starVals.length === 0) return baseVals;
@@ -5919,6 +6018,14 @@ function mergeLionSheep(baseVals, starVals) {
     // 🔥 FIX: If Pattern or Mixed Mode is ON, allow Sheep and Lion to mix so patterns can form!
     if (typeof HB_MODE !== 'undefined' && (HB_MODE === "pattern" || HB_MODE === "mixed")) {
         return uniqueSorted([...baseVals, ...starVals]);
+    }
+
+    // 🔥 NEW: DUSTHANA ATTRACTION EXCEPTION (6, 8, 12)
+    // If 8 is present, and 6 & 12 are trying to join, they attract each other
+    // and bypass the Lion's parity shield so they can reach the final filter.
+    let pool = [...baseVals, ...starVals];
+    if (pool.includes(6) && pool.includes(8) && pool.includes(12)) {
+        return uniqueSorted(pool);
     }
     
     let evens = baseVals.filter(n => n % 2 === 0).length;
@@ -5937,6 +6044,13 @@ function mergeLionSheep(baseVals, starVals) {
     
     return uniqueSorted(result);
 }
+
+
+
+
+
+
+
 
 
 
@@ -5981,26 +6095,18 @@ function computeEffectiveLinksRow(p){
 	let srcB = [kp.sub];
 	let srcC = [kp.ssl];
 
-	/* ---- PLANET LEVEL (EFF A) ---- */
+	/* ---- 1. GET RAW ARRAYS FIRST ---- */
     let valsA1 = getHBValuesRaw(p) || [];
     let valsA2 = (!(HB_UNTENANTED_RULE && planetUntenanted) && kp.star) ? (getHBValuesRaw(kp.star) || []) : [];
-    partA = mergeLionSheep(valsA1, valsA2);
-    if(valsA2.length) srcA.push(kp.star);
-
-	/* ---- SUB LEVEL (EFF B) ---- */
+    
     let valsB1 = getHBValuesRaw(kp.sub) || [];
     let valsB2 = (!(HB_UNTENANTED_RULE && subUntenanted) && starOfSub) ? (getHBValuesRaw(starOfSub) || []) : [];
-    partB = mergeLionSheep(valsB1, valsB2);
-    if(valsB2.length) srcB.push(starOfSub);
-
-	/* ---- SUB-SUB LEVEL (EFF C) ---- */
+    
     let valsC1 = getHBValuesRaw(kp.ssl) || [];
     let valsC2 = (!(HB_UNTENANTED_RULE && sslUntenanted) && starOfSSL) ? (getHBValuesRaw(starOfSSL) || []) : [];
-    partC = mergeLionSheep(valsC1, valsC2);
-    if(valsC2.length) srcC.push(starOfSSL);
 
 	/* =========================================
-	   EXCEPTION RULE (8th and 12th from House)
+	   2. EXCEPTION RULE (FIGHT BEFORE PARITY FILTER)
 	   ========================================= */
 	if (HB_EXCEPTION_RULE) {
 		const badMap = {
@@ -6009,18 +6115,37 @@ function computeEffectiveLinksRow(p){
 			9: [4, 8], 10: [5, 9], 11: [6, 10], 12: [7, 11]
 		};
 
-		// If an array contains a "bad" number for a house, that house is eliminated
-		const applyException = (arr) => arr.filter(v => {
-			let badList = badMap[v] || [];
-			let hasBad = badList.some(bad => arr.includes(bad));
-			return !hasBad; 
-		});
+        // Let them fight in the raw combined pool
+		const applyException = (arr1, arr2) => {
+            let pool = [...arr1, ...arr2];
+            let newArr1 = arr1.filter(v => !badMap[v]?.some(bad => pool.includes(bad)));
+            let newArr2 = arr2.filter(v => !badMap[v]?.some(bad => pool.includes(bad)));
+            return { a1: newArr1, a2: newArr2 };
+        };
 
-		partA = applyException(partA);
-		partB = applyException(partB);
-		partC = applyException(partC);
+        let resA = applyException(valsA1, valsA2);
+        valsA1 = resA.a1; valsA2 = resA.a2;
+
+        let resB = applyException(valsB1, valsB2);
+        valsB1 = resB.a1; valsB2 = resB.a2;
+
+        let resC = applyException(valsC1, valsC2);
+        valsC1 = resC.a1; valsC2 = resC.a2;
 	}
 
+	/* ---- 3. APPLY PARITY DOMINANCE (MERGE) ---- */
+    partA = mergeLionSheep(valsA1, valsA2);
+    if(valsA2.length) srcA.push(kp.star);
+
+    partB = mergeLionSheep(valsB1, valsB2);
+    if(valsB2.length) srcB.push(starOfSub);
+
+    partC = mergeLionSheep(valsC1, valsC2);
+    if(valsC2.length) srcC.push(starOfSSL);
+
+    /* =========================================
+       4. FINAL DOMINANCE RESOLUTION
+       ========================================= */
 	let A, B, C;
 
 	if(HB_MODE === "evenodd"){
@@ -6049,11 +6174,6 @@ function computeEffectiveLinksRow(p){
 		C: splitBySourceLevel(srcC, outC)
 	};
 }
-
-
-
-
-
 
 
 
@@ -8197,7 +8317,7 @@ const OUTER_SCORE_MAP = {
     "1,4": 60, "1,10": 70, "4,7": 60, "7,10": 80,
     "2,5,8,11": 30, "2,5,8": 40, "2,5,11": 30, "2,8,11": 40, "5,8,11": 30, 
     "2,5": 30, "2,11": 30, "5,8": 10, "8,11": 20,
-    "3,6,9,12": 50, "3,6,9": 40, "3,6,12": 50, "3,9,12": 20, "6,9,12": 50, 
+    "3,6,9,12": 40, "3,6,9": 40, "3,6,12": 50, "3,9,12": 20, "6,9,12": 50, 
     "3,6": 40, "3,12": 20, "6,9": 40, "9,12": 20,
 
     // 2. Trines / Trikonas
@@ -8240,7 +8360,7 @@ const OUTER_SCORE_MAP = {
 
 const INNER_SCORE_MAP = {
     // 1. Squares / Kendras
-    "1,4,7,10": 70, "1,4,7": 70, "1,4,10": 60, "1,7,10": 70, "4,7,10": 50, 
+    "1,4,7,10": 80, "1,4,7": 70, "1,4,10": 70, "1,7,10": 70, "4,7,10": 70, 
     "1,4": 60, "1,10": 60, "4,7": 50, "7,10": 50,
     "2,5,8,11": 60, "2,5,8": 40, "2,5,11": 60, "2,8,11": 60, "5,8,11": 60, 
     "2,5": 40, "2,11": 40, "5,8": 30, "8,11": 40,
@@ -8991,6 +9111,489 @@ initMiniNavToggle();
 
 
 
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+function buildTable3_5() {
+    let container = document.getElementById("table3_5_container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "table3_5_container";
+        container.style.marginTop = "30px";
+        
+        let pivotTable = document.getElementById("pivotCuspalTable");
+        if (pivotTable) {
+            pivotTable.insertAdjacentElement("afterend", container);
+        } else {
+            return; 
+        }
+    }
+
+    if (!cuspsData || cuspsData.length === 0) return;
+
+    // Rotate cusps dynamically to respect the Pivot System
+    let pivotHouse = getPivotHouse();
+    let base = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+    let rotated = [];
+    let start = base.findIndex(c => c.bhava === pivotHouse);
+    if(start < 0) start = 0;
+    for(let i=0; i<12; i++){
+        rotated.push(base[(start+i)%12]);
+    }
+
+    // HELPER: Get the exact placements from Table 3 based on the specific column rule
+    const getPlanetNums = (pl, forceType) => {
+        if (!pl) return "";
+        let nums = [];
+        
+        // Strict matching for the Cusp Lord column
+        if (forceType) {
+            cuspsData.forEach(c => {
+                let h = rotateHouse(c.bhava, pivotHouse);
+                if (forceType === 'sub' && c.subLord === pl) nums.push(h);
+                if (forceType === 'ssl' && c.sslLord === pl) nums.push(h);
+                if (forceType === 'star' && c.starLord === pl) nums.push(h);
+            });
+            return nums.length ? [...new Set(nums)].sort((a,b)=>a-b).join(",") : "";
+        }
+        
+        // Fallback matching for the Star, Sub, and SSL columns (Prioritizes Sub Lord placement)
+        cuspsData.forEach(c => {
+            let h = rotateHouse(c.bhava, pivotHouse);
+            if (c.subLord === pl) nums.push(h);
+        });
+        if (nums.length) return [...new Set(nums)].sort((a,b)=>a-b).join(",");
+        
+        cuspsData.forEach(c => {
+            let h = rotateHouse(c.bhava, pivotHouse);
+            if (c.sslLord === pl) nums.push(h);
+        });
+        if (nums.length) return [...new Set(nums)].sort((a,b)=>a-b).join(",");
+        
+        cuspsData.forEach(c => {
+            let h = rotateHouse(c.bhava, pivotHouse);
+            if (c.starLord === pl) nums.push(h);
+        });
+        return nums.length ? [...new Set(nums)].sort((a,b)=>a-b).join(",") : "";
+    };
+
+    // HELPER: Formats the planet name and appends numbers (e.g., Budha - 1,5,7,11)
+    const formatCell = (pl, forceType) => {
+        if (!pl) return "";
+        let name = markPlanet(pl);
+        let nums = getPlanetNums(pl, forceType);
+        return nums ? `${name} - ${nums}` : name;
+    };
+
+    // Build the standalone Header Table so columns align perfectly across the 12 islands
+    // CHANGED: Removed 'open' class from h2 and set display to 'none' on the body div
+    let html = `
+    <h2 class="collapsible-heading" onclick="toggleCollapsible('table3_5-body', this)">
+    Table 3.5 - 12 Bhava Cuspal Inter Links
+    </h2>
+    <div id="table3_5-body" class="collapsible-body" style="display: none;">
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; border: 1px solid #a86b17; background: linear-gradient(180deg, #2a0f0f, #140707);">
+            <tr>
+                <th style="width: 5%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Cu</th>
+                <th style="width: 19%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Cusp Lord</th>
+                <th style="width: 19%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Star Lord</th>
+                <th style="width: 19%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Sub Lord</th>
+                <th style="width: 19%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Sub-Sub Lord</th>
+                <th style="width: 19%; border: 1px solid #a86b17; padding: 10px; color: #facc15;">Effective Links</th>
+            </tr>
+        </table>
+    `;
+
+    // Loop through all 12 Bhavas and create a separate "Island" table for each
+    rotated.forEach((c, i) => {
+        let bhava = i + 1;
+        
+        // Exact Structure: Row 1 = Sub Lord, Row 2 = Sub-Sub Lord, Row 3 = Star Lord
+        let rows = [
+            { p: c.subLord, type: 'sub' },
+            { p: c.sslLord, type: 'ssl' },
+            { p: c.starLord, type: 'star' }
+        ];
+
+        // Start a new isolated island table with lighter dark theme and visible borders
+        html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; border: 1px solid #a86b17; background: #1f1410; box-shadow: 0 4px 6px rgba(0,0,0,0.4);">`;
+
+        rows.forEach((row, idx) => {
+            let kp = getPlanetKPLords(row.p) || {};
+            
+            // Format cells, forcing the specific Table 3 column extraction for the first column
+            let cuspCell = formatCell(row.p, row.type); 
+            let starCell = formatCell(kp.star, null);
+            let subCell  = formatCell(kp.sub, null);
+            let sslCell  = formatCell(kp.ssl, null);
+            
+            // Generate Effective Links ONLY for the first row (Sub Lord)
+            let effLinks = "";
+            if (idx === 0) {
+                effLinks = computeTable10Row(row.p); 
+            }
+            
+            html += `<tr>`;
+            
+            // Cusp Number (Rowspan 3) - Only added on the first loop
+            if (idx === 0) {
+                html += `<td rowspan="3" style="width: 5%; text-align: center; font-weight: 900; font-size: 18px; color: #ff9f1c; border: 1px solid #a86b17; background: #160d0a;">${bhava}</td>`;
+            }
+
+            // Data Cells
+            html += `
+                <td style="width: 19%; border: 1px solid #a86b17; padding: 8px; font-weight: bold; color: #facc15;">${cuspCell}</td>
+                <td style="width: 19%; border: 1px solid #a86b17; padding: 8px; color: #e5e5e5;">${starCell}</td>
+                <td style="width: 19%; border: 1px solid #a86b17; padding: 8px; color: #e5e5e5;">${subCell}</td>
+                <td style="width: 19%; border: 1px solid #a86b17; padding: 8px; color: #e5e5e5;">${sslCell}</td>
+                <td style="width: 19%; border: 1px solid #a86b17; padding: 8px; font-weight: 900; color: #d8b4fe; text-align: center;">${effLinks}</td>
+            </tr>`;
+        });
+
+        // Close the Island
+        html += `</table>`;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+/* =========================================================
+   AUTO-TRIGGER HOOK (Safely waits for Table 9/10 Caches)
+   ========================================================= */
+(function(){
+    const _orig = buildTable9;
+    buildTable9 = function(){
+        if (_orig) _orig();
+        if(typeof buildTable3_5 === "function") buildTable3_5();
+    };
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+<script>
+// State for the Checkboxes in Table 3 & 4
+let DIVIDER_INC_A = true;
+let DIVIDER_INC_B = true;
+let DIVIDER_INC_C = false; // Off by default as requested
+
+/* =========================================================
+   DIVIDER RULES (UPDATED AS PER NEW PLANET RULES)
+   ========================================================= */
+
+const PLANET_DIVIDER = {
+    outG: [2, 4, 6, 8, 10, 12],
+    outA: [3, 7, 11],
+    outB: [1, 5, 9],
+    inG:  [1, 3, 5, 7, 9, 11],
+    inA:  [2, 6, 10],
+    inB:  [4, 8, 12]
+};
+
+const CUSP_DIVIDER = {
+    1:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    2:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    3:  { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    4:  { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] },
+    5:  { outA:[3,7,11],   outB:[1,5,9], inA:[2,6,10], inB:[4,8,12] },
+    6:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    7:  { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    8:  { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] },
+    9:  { outA:[3,7,11],   outB:[1,5,9], inA:[2,6,10], inB:[4,8,12] },
+    10: { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    11: { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    12: { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] }
+};
+
+const CUSP_OUT_G = [2, 4, 6, 8, 10, 12];
+const CUSP_IN_G = [1, 3, 5, 7, 9, 11];
+
+/* =========================================================
+   UTILITIES FOR EXTRACTION AND SORTING
+   ========================================================= */
+function extractDivNums(str) {
+    if (!str) return [];
+    return String(str).split(/[,>+ ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+}
+
+function intersectDiv(valStr, ruleArr) {
+    let nums = Array.isArray(valStr) ? valStr : extractDivNums(valStr);
+    let res = nums.filter(n => ruleArr.includes(n));
+    let finalStr = [...new Set(res)].sort((a, b) => a - b).join(",");
+    return finalStr === "" ? "&nbsp;" : finalStr; // Fixes white patch/collapse issue!
+}
+
+// Reusable Island Header Generator (Updated Labels)
+function getIslandHeaders(isPlanet) {
+    let outG = "2,4,6,8,10,12"; // Now the same for both Planets and Cusps
+    let outA = isPlanet ? "3,7,11" : "Varies";
+    let outB = isPlanet ? "1,5,9" : "Varies";
+    
+    let inG = "1,3,5,7,9,11"; // Same for both
+    let inA = isPlanet ? "2,6,10" : "Varies";
+    let inB = isPlanet ? "4,8,12" : "Varies";
+
+    return `
+        <th style="border: 1px solid #a86b17; padding:10px; color:#facc15;">Entity</th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#facc15;">Links</th>
+        
+        <th style="border:none; background:transparent; width:15px;"></th> <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = GOOD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outG}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = AVG<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outA}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = BAD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outB}</span></th>
+        
+        <th style="border:none; background:transparent; width:15px;"></th> <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = GOOD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inG}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = AVG<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inA}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = BAD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inB}</span></th>
+    `;
+}
+
+// Reusable Island Row Generator
+function getIslandRow(name, effStr, isPlanet, rules = null) {
+    let outG = isPlanet ? PLANET_DIVIDER.outG : CUSP_OUT_G;
+    let outA = isPlanet ? PLANET_DIVIDER.outA : rules.outA;
+    let outB = isPlanet ? PLANET_DIVIDER.outB : rules.outB;
+    
+    let inG = isPlanet ? PLANET_DIVIDER.inG : CUSP_IN_G;
+    let inA = isPlanet ? PLANET_DIVIDER.inA : rules.inA;
+    let inB = isPlanet ? PLANET_DIVIDER.inB : rules.inB;
+
+    return `
+    <tr style="background:#1f1410;">
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:900; color:#facc15;">${name}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:900; color:#d8b4fe;">${effStr || "&nbsp;"}</td>
+        
+        <td style="border:none; background:transparent;"></td> <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outG)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outA)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outB)}</td>
+        
+        <td style="border:none; background:transparent;"></td> <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inG)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inA)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inB)}</td>
+    </tr>`;
+}
+
+/* =========================================================
+   MAIN DIVIDER BUILDER
+   ========================================================= */
+function buildInnerOuterDivider() {
+    let oldWrapper = document.getElementById("function-divider-wrapper");
+    if (oldWrapper) oldWrapper.remove();
+
+    let anchor = document.getElementById("table10-content");
+    if (!anchor) return;
+
+    let html = `
+    <div id="function-divider-wrapper" style="margin-top: 50px;">
+        <h2 class="collapsible-heading" onclick="toggleCollapsible('function-divider-body', this)" 
+            style="text-align: center; color: #ff9f1c; font-weight: 900; letter-spacing: 2px; margin-bottom: 20px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: 0 0 15px rgba(255,159,28,0.2);">
+            Function Inner Outer Divider
+        </h2>
+        
+        <div id="function-divider-body" class="collapsible-body" style="display: block;">
+            
+            <h3 style="color: #38bdf8; margin-top: 30px; font-size: 22px;">1. Planets Divider (Table 10 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(true)}
+                </tr>
+                <tbody id="div-tb1-body"></tbody>
+            </table>
+
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">2. 12 Cuspal Sublords Divider (Table 10 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(false)}
+                </tr>
+                <tbody id="div-tb2-body"></tbody>
+            </table>
+
+            <div style="margin-top: 40px; margin-bottom:15px; background:#120606; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
+                <div style="color: #facc15; font-size: 16px; font-weight: bold; margin-bottom:12px;">Toggle Table 9 Source Data Below:</div>
+                <div style="display:flex; justify-content:center; gap:30px;">
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_A ? "checked" : ""} onchange="DIVIDER_INC_A=this.checked; renderDividerTables();" style="transform:scale(1.2); margin-right:8px;"> Include EFF A
+                    </label>
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_B ? "checked" : ""} onchange="DIVIDER_INC_B=this.checked; renderDividerTables();" style="transform:scale(1.2); margin-right:8px;"> Include EFF B
+                    </label>
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_C ? "checked" : ""} onchange="DIVIDER_INC_C=this.checked; renderDividerTables();" style="transform:scale(1.2); margin-right:8px;"> Include EFF C
+                    </label>
+                </div>
+            </div>
+
+            <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px;">3. Planets Divider (Table 9 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(true)}
+                </tr>
+                <tbody id="div-tb3-body"></tbody>
+            </table>
+
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">4. 12 Cuspal Sublords Divider (Table 9 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(false)}
+                </tr>
+                <tbody id="div-tb4-body"></tbody>
+            </table>
+
+        </div>
+    </div>`;
+
+    anchor.insertAdjacentHTML("afterend", html);
+    renderDividerTables();
+}
+
+function renderDividerTables() {
+    let order = getPivotSortedPlanets();
+
+    // ----------------------------------------------------
+    // TABLE 1: Planets Divider (Table 10)
+    // ----------------------------------------------------
+    let tb1Html = "";
+    order.forEach(p => {
+        let effStr = computeTable10Row(p);
+        let name = markPlanet(p).split(' ')[0];
+        tb1Html += getIslandRow(name, effStr, true);
+    });
+    document.getElementById("div-tb1-body").innerHTML = tb1Html;
+
+    // ----------------------------------------------------
+    // TABLE 3: Planets Divider (Table 9)
+    // ----------------------------------------------------
+    let tb3Html = "";
+    order.forEach(p => {
+        let name = markPlanet(p).split(' ')[0];
+        let rawEffs = computeEffectiveLinksRow(p); 
+        let combinedArr = [];
+        if (DIVIDER_INC_A) combinedArr.push(...extractDivNums(rawEffs.A));
+        if (DIVIDER_INC_B) combinedArr.push(...extractDivNums(rawEffs.B));
+        if (DIVIDER_INC_C) combinedArr.push(...extractDivNums(rawEffs.C));
+        let combinedStr = [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
+        
+        tb3Html += getIslandRow(name, combinedStr, true);
+    });
+    document.getElementById("div-tb3-body").innerHTML = tb3Html;
+
+    // ----------------------------------------------------
+    // CSL TABLES (Table 2 & 4)
+    // ----------------------------------------------------
+    if (cuspsData && cuspsData.length > 0) {
+        let pivotHouse = getPivotHouse();
+        let baseCusps = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+        let rotated = [];
+        let startIdx = baseCusps.findIndex(c => c.bhava === pivotHouse);
+        if(startIdx < 0) startIdx = 0;
+        for(let i=0; i<12; i++){
+            rotated.push(baseCusps[(startIdx + i) % 12]);
+        }
+
+        let tb2Html = "";
+        let tb4Html = "";
+        
+        rotated.forEach((c, i) => {
+            let bhava = i + 1;
+            let csl = c.subLord;
+            let name = markPlanet(csl).split(' ')[0];
+            let label = `${bhava} - ${name}`;
+            let rules = CUSP_DIVIDER[bhava];
+
+            // Table 2 (Table 10 Based)
+            let effStr10 = computeTable10Row(csl);
+            tb2Html += getIslandRow(label, effStr10, false, rules);
+
+            // Table 4 (Table 9 Based)
+            let rawEffs = computeEffectiveLinksRow(csl);
+            let combinedArr = [];
+            if (DIVIDER_INC_A) combinedArr.push(...extractDivNums(rawEffs.A));
+            if (DIVIDER_INC_B) combinedArr.push(...extractDivNums(rawEffs.B));
+            if (DIVIDER_INC_C) combinedArr.push(...extractDivNums(rawEffs.C));
+            let effStr9 = [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
+            
+            tb4Html += getIslandRow(label, effStr9, false, rules);
+        });
+        
+        document.getElementById("div-tb2-body").innerHTML = tb2Html;
+        document.getElementById("div-tb4-body").innerHTML = tb4Html;
+    }
+}
+
+/* =========================================================
+   AUTO-TRIGGER HOOK (Chains after Table 9 / 10 builds)
+   ========================================================= */
+(function(){
+    const _orig = buildTable9;
+    buildTable9 = function(){
+        if (_orig) _orig();
+        if(typeof buildInnerOuterDivider === "function") buildInnerOuterDivider();
+    };
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const mainPivot = document.getElementById("pivotSelect");
+    const miniPivot = document.getElementById("miniPivotSelect");
+
+    if (mainPivot && miniPivot) {
+        // 1. Copy options dynamically from the Main Pivot on load
+        miniPivot.innerHTML = mainPivot.innerHTML;
+        miniPivot.value = mainPivot.value;
+
+        // 2. Sync Mini -> Main (When you change top right, it updates the main chart)
+        miniPivot.addEventListener("change", function() {
+            mainPivot.value = this.value;
+            mainPivot.dispatchEvent(new Event("change"));
+        });
+
+        // 3. Sync Main -> Mini (When you change main UI, it updates the top right)
+        mainPivot.addEventListener("change", function() {
+            miniPivot.value = this.value;
+        });
+    }
+});
 </script>
 
 
