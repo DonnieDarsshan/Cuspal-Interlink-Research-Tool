@@ -356,43 +356,41 @@ input[type="time"] {
 
 
 
-
-
-
-
 /* =========================================================
-   TOP RIGHT MINI TIME TOOL STYLES (UPDATED)
+   TOP RIGHT MINI TIME TOOL STYLES (COMPACT BOX, LARGER TEXT)
    ========================================================= */
 #navButtons {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;                       /* Keep gaps tight */
 }
 #navTimeTool {
-    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-    backdrop-filter: blur(4px);     /* Glass effect */
+    background: rgba(0, 0, 0, 0.5); 
+    backdrop-filter: blur(4px);     
     border: 1px solid #a86b17;
-    padding: 4px 6px;               /* Reduced by 25% */
-    border-radius: 6px;
-    box-shadow: 0 0 10px rgba(255,159,28,0.4);
-    display: flex;                  /* Flex container to align Pivot and Time */
+    padding: 1px 4px;               /* 🔥 Squeezed padding to keep the box tiny */
+    border-radius: 4px;
+    box-shadow: 0 0 6px rgba(255,159,28,0.4);
+    display: flex;                  
     align-items: center;
-    gap: 6px;
+    gap: 4px;                       
 }
 #miniPivotSelect {
-    background: transparent;        /* Max transparency */
-    color: rgba(250, 204, 21, 0.85);/* Faded gold text */
+    background: transparent;        
+    color: rgba(250, 204, 21, 0.85);
     border: none;
     outline: none;
     font-weight: 800;
-    font-size: 11px;                /* Reduced size */
+    font-size: 12px;                /* 🔥 Bumped up for readability */
+    padding: 0;
     cursor: pointer;
     font-family: "Segoe UI", Arial, sans-serif;
     text-transform: uppercase;
 }
 #miniPivotSelect option {
-    background: #120606;            /* Solid dark bg for the dropdown menu items */
+    background: #120606;            
     color: #facc15;
+    font-size: 12px;                
 }
 #miniTimeInput {
     background: transparent;
@@ -400,11 +398,19 @@ input[type="time"] {
     border: none;
     outline: none;
     font-weight: 900;
-    font-size: 12px;                /* Reduced by 25% (was 16px) */
+    font-size: 13px;                /* 🔥 Bumped up for readability */
+    padding: 0;
     cursor: pointer;
     font-family: monospace;
     color-scheme: dark;
 }
+
+
+
+
+
+
+
 
 
 
@@ -4542,32 +4548,46 @@ document.getElementById("vedicMode")
    TABLE-9 GLOBAL STATE (MISSING VARIABLES FIX)
    ========================================================= */
 
-let HB_MODE = "evenodd";     
+let HB_EVENODD = true;       // Turned OFF
+let HB_PATTERN = true;        // Turned ON
+let HB_MIXED = false;
+
 let HB_ATTRACTION_MODE = false;
 let HB_USE_PLACEMENT = false;
 let HB_SHOW_STARS = false;
 let HB_SPLIT_SOURCE = false;
-let HB_SHOW_LEGENDS = false;  // 🔥 NEW: Master toggle for Legends
+let HB_SHOW_LEGENDS = false;  
 
-/* 🔥 STRICT SOURCE CONTROL */
-let HB_IGNORE_STAR = true; // 🔥 NOW ON BY DEFAULT
-let HB_IGNORE_SSL  = false; // Changed to true
-
-
-
-/* 🔥 EXCEPTION RULE */
+let HB_IGNORE_STAR = true; 
+let HB_IGNORE_SSL  = false; 
+let T10_IGNORE_SSL = false; // 🔥 NEW: Global state for Table 10 Ignore SSL
 let HB_EXCEPTION_RULE = false;
-
-/* 🔥 SUPERIOR RULE (NEW) */
 let HB_SUPERIOR_RULE = false;
 
+window.updateHBModes = function(src) {
+    if (src.id === "hb_mixed" && src.checked) {
+        document.getElementById("hb_evenodd").checked = true;
+        document.getElementById("hb_pattern").checked = true;
+    }
 
+    let e = document.getElementById("hb_evenodd").checked;
+    let p = document.getElementById("hb_pattern").checked;
+    let m = document.getElementById("hb_mixed").checked;
 
+    // 🔥 PREVENT TURNING OFF ALL MODES - At least ONE must be ON
+    if (!e && !p && !m) {
+        src.checked = true; // Revert the click
+        e = document.getElementById("hb_evenodd").checked;
+        p = document.getElementById("hb_pattern").checked;
+        m = document.getElementById("hb_mixed").checked;
+    }
 
-function setHBMode(mode){
-    HB_MODE = mode;
+    HB_EVENODD = e;
+    HB_PATTERN = p;
+    HB_MIXED = m;
+
     buildTable9();
-}
+};
 
 /* =========================================================
    GET RAW VALUES
@@ -5066,7 +5086,8 @@ function computeTable10Row(p) {
         sourcesTop3.push(kp.sub);
     }
 
-    if (kp.ssl) {
+    // 🔥 NEW: Check the T10_IGNORE_SSL toggle before fetching Sub-Sub values
+    if (kp.ssl && !T10_IGNORE_SSL) {
         sslValsRaw = getHBValuesRaw(kp.ssl) || [];
         sourcesSSL.push(kp.ssl);
     }
@@ -5118,172 +5139,107 @@ function computeTable10Row(p) {
     else if (pS==="" && stS==="11" && subS==="3,9") finalArrBase = [3,9,11];
     else if (pS==="3,6,12" && stS==="1,7" && subS==="12") finalArrBase = [1,3,7];
     else if (pS==="2,6,8,12" && stS==="8" && subS==="1") finalArrBase = [2,6,8,12];
-    else if (pS==="1,2,8" && stS==="1,2,8") finalArrBase = [1,2,8];
     else if (pS==="5" && stS==="2,4,8,10" && subS==="" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
 
-    // Generalized Sub > Star > Planet Logic (If it's a new combination)
+
+
+
+
+
+
+
+
+
+
+   // Generalized Context-Aware Engine (Dynamic Rules based on Situation)
     else {
         let core = uniqueSort([...pVals, ...sVals, ...subVals]);
         let all = uniqueSort([...core, ...sslVals]);
         
         let evens = core.filter(n => n % 2 === 0);
-        let odds = core.filter(n => n % 2 !== 0);
+        let odds  = core.filter(n => n % 2 !== 0);
+        let allEvens = all.filter(n => n % 2 === 0);
+        let allOdds  = all.filter(n => n % 2 !== 0);
 
-        // 🔥 PURE PARITY OVERRIDE: 
-        if (core.length > 0 && evens.length === core.length) {
-            let base = evens;
-            base.push(...sslVals.filter(n => n % 2 === 0)); 
-            finalArrBase = uniqueSort(base);
+        const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
+
+        // CONTEXT 2: OVERWHELMING VOLUME (Mob Rule: Heavy parity crushes hierarchies)
+        // If Evens outnumber Odds by 2 or more (or vice versa), the sheer volume dictates the outcome.
+        if (evens.length >= odds.length + 2) {
+            finalArrBase = allEvens;
         }
-        else if (core.length > 0 && odds.length === core.length) {
-            let base = odds;
-            base.push(...sslVals.filter(n => n % 2 !== 0)); 
-            finalArrBase = uniqueSort(base);
+        else if (odds.length >= evens.length + 2) {
+            finalArrBase = allOdds;
         }
-        else {
-            const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
-            const getOverlap = (arr, g) => arr.filter(n => g.includes(n));
 
-            let g1 = [1,4,7,10], g2 = [2,5,8,11], g3 = [3,6,9,12];
-            let attractedBase = null;
+        // CONTEXT 3: STRUCTURAL PATTERN (Specific roles like 1,4,7,10 form up)
+        else if ( core.filter(n => [1,4,7,10].includes(n)).length >= 2 && (hasAny(subVals, [2,4,10]) || hasAny(pVals, [2,4,10])) && (hasAny(sVals, [1,7]) || hasAny(pVals, [1,7])) ) {
+            finalArrBase = all.filter(n => [1,4,7,10].includes(n));
+        }
+        else if ( core.filter(n => [2,5,8,11].includes(n)).length >= 2 && (hasAny(subVals, [2,4,8,10]) || hasAny(sVals, [5,8,11])) && (hasAny(sVals, [5,11]) || hasAny(sslVals, [2,5])) ) {
+            finalArrBase = all.filter(n => [2,5,8,11].includes(n));
+        }
 
-            for (let g of [g1, g2, g3]) {
-                let pO = getOverlap(pVals, g);
-                let sO = getOverlap(sVals, g);
-                let subO = getOverlap(subVals, g);
-                
-                if ( (subO.length > 0 && uniqueSort([...pO, ...sO]).length > 1) ||
-                     (sO.length > 0 && pO.length > 1) ) {
-                    let combined = uniqueSort([...pO, ...sO, ...subO]);
-                    if (combined.length >= 2) {
-                        attractedBase = combined;
-                        break;
-                    }
+        // CONTEXT 4: SUBLORD DOMINANCE (Lion Kills Sheep)
+        // When there is no overwhelming volume and no strong pattern, the Sublord asserts authority.
+        else if (subVals.length > 0) {
+            let subEvens = subVals.filter(n => n % 2 === 0).length;
+            let subOdds  = subVals.filter(n => n % 2 !== 0).length;
+
+            if (subEvens > subOdds) {
+                finalArrBase = allEvens;
+            } else if (subOdds > subEvens) {
+                finalArrBase = allOdds;
+            } else {
+                // TIE BREAKER: If Sublord is tied (e.g., 6, 11), let overall core weight decide
+                if (odds.length > evens.length) finalArrBase = allOdds;
+                else if (evens.length > odds.length) finalArrBase = allEvens;
+                else {
+                    // Dead tie exception
+                    if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
+                    else finalArrBase = allEvens;
                 }
             }
+        }
 
-            let allEvens = all.filter(n => n % 2 === 0);
-            let allOdds  = all.filter(n => n % 2 !== 0);
-            let maxParityCount = Math.max(allEvens.length, allOdds.length);
+        // CONTEXT 5: STARLORD DOMINANCE (If Sublord is missing)
+        else if (sVals.length > 0) {
+            let sEvens = sVals.filter(n => n % 2 === 0).length;
+            let sOdds  = sVals.filter(n => n % 2 !== 0).length;
 
-            // Dusthana Lock: 6,12 + 8 -> 6,8,12
-            if ( (hasAny(sVals, [6,12]) || hasAny(subVals, [6,12])) && (hasAny(pVals, [8]) || hasAny(subVals, [8]) || hasAny(sVals, [8])) ) {
-                finalArrBase = [6,8,12].filter(n => all.includes(n));
-            }
-            // 3,6,9,12 Lock
-            else if ( (hasAny(sVals, [3,9]) || hasAny(subVals, [3,9])) && (hasAny(subVals, [6,12]) || hasAny(sVals, [6,12])) ) {
-                finalArrBase = [3,6,9,12].filter(n => all.includes(n));
-            }
-            // 🔥 OVERWHELMING PARITY RULE: Parity crushes Pattern if it's larger by 2 or more
-            else if (attractedBase && (maxParityCount - attractedBase.length < 2)) {
-                let sslMatch = sslVals.filter(n => attractedBase.includes(n));
-                finalArrBase = uniqueSort([...attractedBase, ...sslMatch]);
-            }
-            // Pattern matching 1,4,7,10
-            else if ( all.filter(n => [1,4,7,10].includes(n)).length >= 2 && (maxParityCount - all.filter(n => [1,4,7,10].includes(n)).length < 2) && (hasAny(subVals, [2,4,10]) || hasAny(pVals, [2,4,10])) && (hasAny(sVals, [1,7]) || hasAny(pVals, [1,7])) ) {
-                finalArrBase = all.filter(n => [1,4,7,10].includes(n));
-            }
-            // Pattern matching 2,5,8,11
-            else if ( all.filter(n => [2,5,8,11].includes(n)).length >= 2 && (maxParityCount - all.filter(n => [2,5,8,11].includes(n)).length < 2) && (hasAny(subVals, [2,4,8,10]) || hasAny(sVals, [5,8,11])) && (hasAny(sVals, [5,11]) || hasAny(sslVals, [2,5])) ) {
-                finalArrBase = all.filter(n => [2,5,8,11].includes(n));
-            }
-            
-            // =========================================================================
-            // 🔥🔥🔥 NEW: LION KILLS SHEEP (Sublord > Starlord Tag Dominance) 🔥🔥🔥
-            // =========================================================================
-            else if (subVals.length > 0) {
-                // Sublord (X) is the Prime Minister. It marries X level values only.
-                // We ignore the cheaper Starlord (F).
-                let evensX = subVals.filter(n => n % 2 === 0).length;
-                let oddsX  = subVals.filter(n => n % 2 !== 0).length;
-                
-                let base = [];
-                
-                // STRICT PARITY: Only keep the dominant parity from the Sublord
-                if (evensX > oddsX) {
-                    base = subVals.filter(n => n % 2 === 0);
-                    base.push(...sslVals.filter(n => n % 2 === 0));
-                } else if (oddsX > evensX) {
-                    base = subVals.filter(n => n % 2 !== 0);
-                    base.push(...sslVals.filter(n => n % 2 !== 0));
-                } else {
-                    // 🔥 TIE BREAKER: If Sublord is tied (e.g. 6,11), use the overall core weight to break the tie
-                    if (odds.length > evens.length) {
-                        base = core.filter(n => n % 2 !== 0);
-                        base.push(...sslVals.filter(n => n % 2 !== 0));
-                    } else if (evens.length > odds.length) {
-                        base = core.filter(n => n % 2 === 0);
-                        base.push(...sslVals.filter(n => n % 2 === 0));
-                    } else {
-                        // Dead Tie: Even wins (unless standard 1 & 2 exception)
-                        if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) {
-                            base = core.filter(n => n % 2 !== 0);
-                            base.push(...sslVals.filter(n => n % 2 !== 0));
-                        } else {
-                            base = core.filter(n => n % 2 === 0);
-                            base.push(...sslVals.filter(n => n % 2 === 0));
-                        }
-                    }
-                }
-                finalArrBase = uniqueSort(base);
-            }
-            else if (sVals.length > 0) {
-                // If no Sublord is available, Starlord (F) takes command
-                let evensF = sVals.filter(n => n % 2 === 0).length;
-                let oddsF  = sVals.filter(n => n % 2 !== 0).length;
-                
-                let base = [];
-                
-                // STRICT PARITY: Only keep the dominant parity from the Starlord
-                if (evensF > oddsF) {
-                    base = sVals.filter(n => n % 2 === 0);
-                    base.push(...sslVals.filter(n => n % 2 === 0));
-                } else if (oddsF > evensF) {
-                    base = sVals.filter(n => n % 2 !== 0);
-                    base.push(...sslVals.filter(n => n % 2 !== 0));
-                } else {
-                     // 🔥 TIE BREAKER: If Starlord is tied, use the overall core weight to break the tie
-                    if (odds.length > evens.length) {
-                        base = core.filter(n => n % 2 !== 0);
-                        base.push(...sslVals.filter(n => n % 2 !== 0));
-                    } else if (evens.length > odds.length) {
-                        base = core.filter(n => n % 2 === 0);
-                        base.push(...sslVals.filter(n => n % 2 === 0));
-                    } else {
-                        // Dead Tie: Even wins (unless standard 1 & 2 exception)
-                        if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) {
-                            base = core.filter(n => n % 2 !== 0);
-                            base.push(...sslVals.filter(n => n % 2 !== 0));
-                        } else {
-                            base = core.filter(n => n % 2 === 0);
-                            base.push(...sslVals.filter(n => n % 2 === 0));
-                        }
-                    }
-                }
-                finalArrBase = uniqueSort(base);
-            }
-            // =========================================================================
-            
+            if (sEvens > sOdds) finalArrBase = allEvens;
+            else if (sOdds > sEvens) finalArrBase = allOdds;
             else {
-                // Parity Dominance (Even always wins over Odd)
-                if (evens.length === 1 && odds.length === 1 && evens.includes(2) && odds.includes(1)) {
-                    let base = [1];
-                    base.push(...sslVals.filter(n => n % 2 !== 0)); 
-                    finalArrBase = uniqueSort(base);
-                } else if (evens.length > 0) {
-                    let base = evens;
-                    base.push(...sslVals.filter(n => n % 2 === 0)); 
-                    finalArrBase = uniqueSort(base);
-                } else if (odds.length > 0) {
-                    let base = odds;
-                    base.push(...sslVals.filter(n => n % 2 !== 0)); 
-                    finalArrBase = uniqueSort(base);
-                } else {
-                    finalArrBase = core.length > 0 ? core : sslVals;
+                if (odds.length > evens.length) finalArrBase = allOdds;
+                else if (evens.length > odds.length) finalArrBase = allEvens;
+                else {
+                    if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
+                    else finalArrBase = allEvens;
                 }
+            }
+        }
+
+        // CONTEXT 6: DEFAULT FALLBACK
+        else {
+            if (evens.length === 1 && odds.length === 1 && evens.includes(2) && odds.includes(1)) {
+                finalArrBase = [1, ...sslVals.filter(n => n % 2 !== 0)];
+            } else if (evens.length > odds.length) {
+                finalArrBase = allEvens;
+            } else if (odds.length > evens.length) {
+                finalArrBase = allOdds;
+            } else {
+                finalArrBase = allEvens;
             }
         }
     }
+
+
+
+
+
+
+
+
 
    // 🔥 ROTATE back to Pivot
     const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
@@ -5317,7 +5273,7 @@ function computeTable10Row(p) {
    ========================================================= */
 
 /* HB UNTENANTED RULE (default ON) */
-let HB_UNTENANTED_RULE = false;
+let HB_UNTENANTED_RULE = true; // Turned ON
 
 function buildTable9(){
 
@@ -5333,29 +5289,26 @@ function buildTable9(){
         
         <div style="margin:10px 0 14px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap;">
             <label style="margin-right:20px;">
-                <input type="radio"
-                       name="hb_mode"
-                       value="evenodd"
-                       ${HB_MODE === "evenodd" ? "checked" : ""}
-                       onchange="setHBMode('evenodd')">
+                <input type="checkbox"
+                       id="hb_evenodd"
+                       ${HB_EVENODD ? "checked" : ""}
+                       onchange="updateHBModes(this)">
                 Even-Odd Mode
             </label>
 
             <label style="margin-right:20px;">
-                <input type="radio"
-                       name="hb_mode"
-                       value="pattern"
-                       ${HB_MODE === "pattern" ? "checked" : ""}
-                       onchange="setHBMode('pattern')">
+                <input type="checkbox"
+                       id="hb_pattern"
+                       ${HB_PATTERN ? "checked" : ""}
+                       onchange="updateHBModes(this)">
                 Pattern Mode
             </label>
 
             <label style="margin-right:20px;">
-                <input type="radio"
-                       name="hb_mode"
-                       value="mixed"
-                       ${HB_MODE === "mixed" ? "checked" : ""}
-                       onchange="setHBMode('mixed')">
+                <input type="checkbox"
+                       id="hb_mixed"
+                       ${HB_MIXED ? "checked" : ""}
+                       onchange="updateHBModes(this)">
                 Mixed Mode
             </label>
             
@@ -5557,6 +5510,18 @@ function buildTable9(){
 
     html += `</table>`;
 
+    /* 🔥 NEW: ADD IGNORE SUB-SUB CHECKBOX UNDER TABLE 10 */
+    html += `
+        <div style="margin-top: 15px; margin-bottom: 20px;">
+            <label style="font-weight: 800; color: #f472b6; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
+                <input type="checkbox" id="t10_ignore_ssl" ${T10_IGNORE_SSL ? "checked" : ""} 
+                       onchange="T10_IGNORE_SSL = this.checked; let scrollPos = window.scrollY; buildTable9(); window.scrollTo(0, scrollPos);" 
+                       style="transform: scale(1.2); margin-right: 8px; accent-color: #f472b6;">
+                Ignore Sub-Sub Lord
+            </label>
+        </div>
+    `;
+
    /* 🔥 ADD LEGENDS UNDER TABLE 10 (RESPECTS TOGGLE) */
     if (HB_SHOW_LEGENDS) {
         html += `
@@ -5708,89 +5673,58 @@ function rotateHouseList(values, shift){
 
 
 
-/* ---------- PARITY DOMINANCE (EVEN-ODD MODE - MAJORITY WINS) ---------- */
-function evenOddDominance(values){
-    if(!values.length) return [];
+/* ---------- PARITY DOMINANCE (EVEN-ODD) ---------- */
+function evenOddDominance(values) {
+    if (!values.length) return [];
 
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
-    // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins 
+    // 1 & 2 Exception
     if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
         return [1];
     }
 
-    // 🔥 RULE: Majority wins. If tied, Even wins.
+    // Majority Wins
     if (odd.length > even.length) {
         return uniqueSorted(odd);
     } else if (even.length > odd.length) {
         return uniqueSorted(even);
     } else {
-        // Dead tie (e.g., one even, one odd) -> Even wins
+        // Dead Tie -> Even wins
         return uniqueSorted(even);
     }
 }
 
-
-
-
-
-
-
-
 /* ---------- PATTERN DOMINANCE (PATTERN MODE) ---------- */
 function patternDominance(values){
-
     if(!values.length) return [];
-
     values = uniqueSorted(values);
 
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
-    /* if all even OR all odd → return as is */
     if(even.length === values.length) return values;
     if(odd.length === values.length)  return values;
 
-	/* ==============================
-       🔥 MULTI PATTERN ENGINE
-       ============================== */
-
-	/* --- Square Patterns (Existing) --- */
 	const SQ1 = [1,4,7,10];
 	const SQ2 = [2,5,8,11];
 	const SQ3 = [3,6,9,12];
-
-	/* --- Samasapthaka (Axis) --- */
 	const AX1 = [1,7];
 	const AX2 = [2,8];
 	const AX3 = [3,9];
 	const AX4 = [4,10];
 	const AX5 = [5,11];
 	const AX6 = [6,12];
-
-	/* --- Trine (1-5-9 Type) --- */
 	const TR1 = [1,5,9];
 	const TR2 = [2,6,10];
 	const TR3 = [3,7,11];
 	const TR4 = [4,8,12];
 
-	/* --- MATCHING --- */
-	let patterns = [
-		SQ1,SQ2,SQ3,
-		AX1,AX2,AX3,AX4,AX5,AX6,
-		TR1,TR2,TR3,TR4
-	];
-
-	/* collect matches */
+	let patterns = [SQ1,SQ2,SQ3,AX1,AX2,AX3,AX4,AX5,AX6,TR1,TR2,TR3,TR4];
 	let matches = patterns.map(p => values.filter(v => p.includes(v)));
-
-	/* find strongest pattern */
 	let maxPattern = Math.max(...matches.map(m => m.length));
-
 	let bestPatterns = matches.filter(m => m.length === maxPattern);
-
-	/* parity strength */
 	let maxParity = Math.max(even.length, odd.length);
 
     if (HB_SUPERIOR_RULE) {
@@ -5798,35 +5732,19 @@ function patternDominance(values){
             if(m.length > 0) return uniqueSorted(m);
         }
         return values;
-		
-		
 	} else {
-            /* If you find more odd or even numbers than the pattern, SKIP PATTERN */
-            /* 🔥 FIX: A strong pattern of 3 can defeat a parity of 4. 
-               BUT if the parity is overwhelmingly dominating (difference of 2 or more, like 5 vs 3), Parity crushes the pattern! */
-            if (maxParity > maxPattern && (maxPattern < 3 || maxParity - maxPattern >= 2)) {
-                // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins
+        if (maxParity > maxPattern && (maxPattern < 3 || maxParity - maxPattern >= 2)) {
             if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
                 return [1];
             }
-			
-			
-			
-            // 🔥 RULE: Even ALWAYS wins over odd
             return even.length > 0 ? uniqueSorted(even) : uniqueSorted(odd);
         }
-
-        /* Otherwise, keep the strong pattern */
         let candidates = bestPatterns;
-
         if(candidates.length === 1){
             return uniqueSorted(candidates[0]);
         }
-
-        /* tie → choose cluster with more EVEN numbers (since Even dominates) */
         let best = candidates[0];
         let bestEven = best.filter(v => v % 2 === 0).length;
-
         candidates.forEach(c=>{
             let evenCount = c.filter(v => v % 2 === 0).length;
             if(evenCount > bestEven){
@@ -5834,39 +5752,16 @@ function patternDominance(values){
                 bestEven = evenCount;
             }
         });
-
         return uniqueSorted(best);
     }
 }
 
-/* ---------- MIXED MODE (STRUCTURAL CLUSTERS) ---------- */
+/* ---------- MIXED MODE (COMBINED BOTH ENGINES) ---------- */
 function mixedStructural(values){
-
     if(!values.length) return [];
-
     values = uniqueSorted(values);
 
-    /* ==============================
-       STEP 1 : PATTERN CLUSTERS
-       ============================== */
-
-    const P1 = [1,4,7,10];
-    const P2 = [2,5,8,11];
-    const P3 = [3,6,9,12];
-
-    let c1 = values.filter(v => P1.includes(v));
-    let c2 = values.filter(v => P2.includes(v));
-    let c3 = values.filter(v => P3.includes(v));
-
-    let patternClusters = [];
-    if(c1.length >= 2) patternClusters.push(uniqueSorted(c1));
-    if(c2.length >= 2) patternClusters.push(uniqueSorted(c2));
-    if(c3.length >= 2) patternClusters.push(uniqueSorted(c3));
-
-    /* ==============================
-       STEP 2 : SAMASAPTHAKA SPOILING
-       ============================== */
-
+    /* STEP 1 : SAMASAPTHAKA SPOILING */
     const AXIS = [
         { axis:[1,7],  spoil:[6,12] },
         { axis:[2,8],  spoil:[1,7]  },
@@ -5877,53 +5772,40 @@ function mixedStructural(values){
     ];
 
     let remaining = [...values];
-    let spoiledSomething = false;
-
     AXIS.forEach(rule => {
         const hasAxis = rule.axis.every(v => remaining.includes(v));
         if(!hasAxis) return;
         const hasSpoiler = rule.spoil.every(v => remaining.includes(v));
-
         if(hasSpoiler){
             remaining = remaining.filter(v => !rule.axis.includes(v));
-            spoiledSomething = true;
         }
     });
 
     remaining = uniqueSorted(remaining);
+    if(remaining.length === 0) remaining = [...values];
 
-    /* IF SPOILING HAPPENED → RETURN CLEAN RESULT */
-    if(spoiledSomething){
-        return remaining.length ? [remaining] : [];
+    /* STEP 2 : FETCH RESULTS FROM BOTH ENGINES */
+    let pOut = patternDominance(remaining);
+    let eOut = evenOddDominance(remaining);
+
+    /* STEP 3 : RETURN BOTH GROUPS (E.g. 5,8,11 + 6,8,12) */
+    if (pOut.length === 0) return [eOut];
+    if (eOut.length === 0) return [pOut];
+
+    // If both engines returned the exact same thing, don't duplicate
+    if (pOut.join(",") === eOut.join(",")) {
+        return [pOut];
     }
 
-    /* ==============================
-       STEP 3 : IF NO SPOILING → USE PATTERN
-       ============================== */
-
-    if(patternClusters.length){
-        return patternClusters;
-    }
-
-    /* ==============================
-       STEP 4 : EVEN-ODD FALLBACK
-       ============================== */
-
-    let even = values.filter(v => v % 2 === 0);
-    let odd  = values.filter(v => v % 2 !== 0);
-
-    // 🔥 EXCEPTION: 1 & 2 compete -> 1 wins 
-    if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
-        return [[1]];
-    }
-
-    // 🔥 RULE: Even ALWAYS wins over odd
-    if(even.length > 0){
-        return [uniqueSorted(even)];
-    }
-
-    return [uniqueSorted(odd)];
+    return [pOut, eOut];
 }
+
+
+
+
+
+
+
 
 
 
@@ -6003,49 +5885,33 @@ function getPivotShift(){
 
 
 
-/* =========================================================
-   🔥 LION KILLS SHEEP MERGE (TAG DOMINANCE FOR TABLE 9)
-   Base Entity (Lion) dictates Parity. Starlord (Sheep) must conform.
-   ========================================================= */
-/* =========================================================
-   🔥 LION KILLS SHEEP MERGE (TAG DOMINANCE FOR TABLE 9)
-   Base Entity (Lion) dictates Parity. Starlord (Sheep) must conform.
-   ========================================================= */
-function mergeLionSheep(baseVals, starVals) {
-    if (!baseVals || baseVals.length === 0) return starVals || [];
-    if (!starVals || starVals.length === 0) return baseVals;
-    
-    // 🔥 FIX: If Pattern or Mixed Mode is ON, allow Sheep and Lion to mix so patterns can form!
-    if (typeof HB_MODE !== 'undefined' && (HB_MODE === "pattern" || HB_MODE === "mixed")) {
-        return uniqueSorted([...baseVals, ...starVals]);
-    }
 
-    // 🔥 NEW: DUSTHANA ATTRACTION EXCEPTION (6, 8, 12)
-    // If 8 is present, and 6 & 12 are trying to join, they attract each other
-    // and bypass the Lion's parity shield so they can reach the final filter.
-    let pool = [...baseVals, ...starVals];
+
+
+
+
+
+
+
+
+/* =========================================================
+   🔥 PLANET + STAR MERGE (POOLED FOR ENGINE RESOLUTION)
+   ========================================================= */
+function mergeLionSheep(sheepVals, lionVals) {
+    if (!sheepVals || sheepVals.length === 0) return lionVals || [];
+    if (!lionVals || lionVals.length === 0) return sheepVals;
+
+    // Combine them completely so Pattern & Even-Odd engines can see all numbers
+    let pool = uniqueSorted([...sheepVals, ...lionVals]);
+
+    // DUSTHANA ATTRACTION EXCEPTION (6, 8, 12)
+    // We keep this specific hard rule as it overrides everything
     if (pool.includes(6) && pool.includes(8) && pool.includes(12)) {
         return uniqueSorted(pool);
     }
-    
-    let evens = baseVals.filter(n => n % 2 === 0).length;
-    let odds  = baseVals.filter(n => n % 2 !== 0).length;
-    
-    let result = [...baseVals];
-    
-    // The Base Entity (e.g., Sublord) forces the Starlord to match its dominant parity
-    if (evens > odds) {
-        result.push(...starVals.filter(n => n % 2 === 0));
-    } else if (odds > evens) {
-        result.push(...starVals.filter(n => n % 2 !== 0));
-    } else {
-        result.push(...starVals);
-    }
-    
-    return uniqueSorted(result);
+
+    return pool;
 }
-
-
 
 
 
@@ -6143,26 +6009,98 @@ function computeEffectiveLinksRow(p){
     partC = mergeLionSheep(valsC1, valsC2);
     if(valsC2.length) srcC.push(starOfSSL);
 
-    /* =========================================
-       4. FINAL DOMINANCE RESOLUTION
-       ========================================= */
-	let A, B, C;
 
-	if(HB_MODE === "evenodd"){
-		A = evenOddDominance(partA);
-		B = evenOddDominance(partB);
-		C = evenOddDominance(partC);
-	}
-	else if(HB_MODE === "pattern"){
-		A = patternDominance(partA);
-		B = patternDominance(partB);
-		C = patternDominance(partC);
-	}
-	else{ /* mixed */
-		A = mixedStructural(partA);
-		B = mixedStructural(partB);
-		C = mixedStructural(partC);
-	}
+
+
+
+
+
+
+
+/* =========================================
+       4. FINAL DOMINANCE RESOLUTION (COMPETITIVE SIMULTANEOUS)
+       ========================================= */
+    function resolveDominance(sheepVals, lionVals) {
+        let values = mergeLionSheep(sheepVals, lionVals);
+        if (!values || !values.length) return [];
+        
+        // 1. Mixed Mode ALWAYS triggers the "+" separated format
+        if (HB_MIXED) {
+            return mixedStructural(values);
+        }
+        
+        let combined = [];
+
+        // 2. COMPETITION MODE: Both are checked, find the dominant one
+        if (HB_PATTERN && HB_EVENODD) {
+            let pOut = patternDominance(values);
+            let eOut = evenOddDominance(values);
+
+            let pE = pOut.filter(x => x % 2 === 0).length;
+            let pO = pOut.filter(x => x % 2 !== 0).length;
+            let pMax = Math.max(pE, pO);
+
+            let eE = eOut.filter(x => x % 2 === 0).length;
+            let eO = eOut.filter(x => x % 2 !== 0).length;
+            let eMax = Math.max(eE, eO);
+
+            // 🔥 NEW: LION OVERLAP CHECK
+            // We check which result respects the Lion (Higher-Level Planet) more.
+            let pLionOverlap = 0;
+            let eLionOverlap = 0;
+            
+            if (lionVals && lionVals.length > 0) {
+                pLionOverlap = pOut.filter(x => lionVals.includes(x)).length;
+                eLionOverlap = eOut.filter(x => lionVals.includes(x)).length;
+            }
+
+            // --- TIE BREAKER HIERARCHY ---
+            // 1. Does one outcome preserve the Lion's numbers better?
+            if (pLionOverlap > eLionOverlap) {
+                combined = pOut;
+            } else if (eLionOverlap > pLionOverlap) {
+                combined = eOut;
+            } 
+            // 2. If Lion Overlaps are tied (or no Lion exists), fall back to Length
+            else if (pOut.length > eOut.length) {
+                combined = pOut;
+            } else if (eOut.length > pOut.length) {
+                combined = eOut;
+            } 
+            // 3. If Lengths are tied, fall back to Parity Purity
+            else if (eMax > pMax) {
+                combined = eOut;
+            } else if (pMax > eMax) {
+                combined = pOut;
+            } 
+            // 4. If Parity Purity is tied, fall back to absolute Even counts
+            else if (eE > pE) {
+                combined = eOut;
+            } else if (pE > eE) {
+                combined = pOut;
+            } else {
+                combined = eOut; // Ties go to Even-Odd
+            }
+        }
+        // 3. INDIVIDUAL MODES
+        else if (HB_PATTERN) {
+            combined = patternDominance(values);
+        }
+        else if (HB_EVENODD) {
+            combined = evenOddDominance(values);
+        }
+        else {
+            combined = values;
+        }
+        
+        return [uniqueSorted(combined)]; // Output as normal array, no "+"
+    }
+	
+	
+	
+	let A = resolveDominance(valsA1, valsA2);
+	let B = resolveDominance(valsB1, valsB2);
+	let C = resolveDominance(valsC1, valsC2);
 
 	let outA = formatEffectiveDisplay(A);
 	let outB = formatEffectiveDisplay(B);
@@ -7994,14 +7932,15 @@ document.getElementById("trueNodeModeKP")
 }
 
 #miniNav button{
-    font-size:11px;
-    padding:3px 6px;
-    border-radius:4px;
-    background:#1a0808;
-    color:#facc15;
-    border:1px solid #a86b17;
-    cursor:pointer;
-    opacity:0.65;
+    font-size: 12px;               /* 🔥 Bumped up */
+    font-weight: 800;              /* Keep bold so it pops */
+    padding: 1px 5px;              /* 🔥 Aggressively tight padding */
+    border-radius: 3px;
+    background: #1a0808;
+    color: #facc15;
+    border: 1px solid #a86b17;
+    cursor: pointer;
+    opacity: 0.85;
 }
 
 #miniNav button:hover{
@@ -8199,7 +8138,7 @@ let CHART_SOURCE_MODE = "short";
 let CHART_SHOW_EFF_A = true;
 let CHART_SHOW_EFF_B = true;   
 let CHART_SHOW_EFF_C = false;
-let CHART_SECTION_OPEN = true; 
+let CHART_SECTION_OPEN = false; 
 
 // Global State for Manual Overrides
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
@@ -8963,7 +8902,7 @@ function buildBarCharts() {
             box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); 
             text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
         ">
-        PLANETARY STRENGTH BAR CHART
+        Table 12 - PLANETARY STRENGTH BAR CHART
     </h2>
     <div id="charts-body" class="collapsible-content" style="display:${displayState};">
     `;
@@ -9406,11 +9345,11 @@ function buildInnerOuterDivider() {
     let html = `
     <div id="function-divider-wrapper" style="margin-top: 50px;">
         <h2 class="collapsible-heading" onclick="toggleCollapsible('function-divider-body', this)" 
-            style="text-align: center; color: #ff9f1c; font-weight: 900; letter-spacing: 2px; margin-bottom: 20px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: 0 0 15px rgba(255,159,28,0.2);">
-            Function Inner Outer Divider
+            style="text-align: center; color: #facc15; font-weight: 900; letter-spacing: 3px; margin-bottom: 25px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); text-shadow: 2px 2px 5px rgba(0,0,0,0.9);">
+            Table 11 - Function Inner Outer Divider
         </h2>
         
-        <div id="function-divider-body" class="collapsible-body" style="display: block;">
+        <div id="function-divider-body" class="collapsible-body" style="display: none;">
             
             <h3 style="color: #38bdf8; margin-top: 30px; font-size: 22px;">1. Planets Divider (Table 10 Based)</h3>
             <table style="width: 100%; border-collapse: collapse; text-align: center;">
