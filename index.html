@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 
@@ -15,19 +14,19 @@
    ========================================================= */
 
 :root{
-    --bg-main: radial-gradient(circle at top, #1b0a0a, #070303 70%);
-    --panel-bg: #120606;
+    --bg-main: #290413; /* Solid, clear maroon - no fog */
+    --panel-bg: #1f1410; /* Balanced dark from table 3.5 */
     --border-gold: #a86b17;
-    --border-soft: #3a1a12;
+    --border-soft: #4a2a1a;
 
-    --text-main: #f3e8d0;
-    --text-dim: #c7b38a;
+    --text-main: #f5e9c6;
+    --text-dim: #d1bfae;
 
     --accent-saffron: #ff9f1c;
     --accent-fire: #ff6a00;
     --accent-crimson: #b11226;
 
-    --table-head-bg: linear-gradient(180deg, #2a0f0f, #140707);
+    --table-head-bg: linear-gradient(180deg, #36221c, #1f1410);
     --table-row-hover: rgba(255,159,28,0.08);
 
     --btn-bg: linear-gradient(135deg, #ff9f1c, #b11226);
@@ -84,7 +83,7 @@ tr:hover td{
 
 /* ---------- SELECT / INPUT ---------- */
 select{
-    background: #1a0808;
+    background: #1f1410;
     color: var(--text-main);
     border: 1px solid var(--border-gold);
     padding: 6px;
@@ -150,7 +149,7 @@ input[type="radio"]{
 
 .collapsible-heading{
     cursor:pointer;
-    user-select:none;
+    user-select: auto; /* <-- Changed from none */
     position:relative;
 }
 
@@ -179,7 +178,7 @@ input[type="radio"]{
 .collapsible-heading{
     cursor:pointer;
     position:relative;
-    user-select:none;
+    user-select: auto; /* <-- Changed from none */
 }
 
 .collapsible-heading::after{
@@ -223,7 +222,7 @@ hr{
    PERSON NAME INPUT – DARK MODE FIX
    ========================================================= */
 #personName{
-    background:#020617;          /* black / dark */
+    background:var(--panel-bg);  /* balanced dark */
     color:#f8fafc;               /* light text */
     border:1px solid #334155;    /* same as other inputs */
     border-radius:6px;
@@ -433,13 +432,7 @@ input[type="time"] {
 
 
 
-<!-- =========================================================
-     MINI NAVIGATION BUTTONS
-     ========================================================= -->
-
-
-
-	<div id="miniNav">
+<div id="miniNav">
     
     <div id="navButtons" style="display:none;">
         <button onclick="document.getElementById('table1').scrollIntoView({behavior:'smooth'})">1</button>
@@ -463,374 +456,137 @@ input[type="time"] {
 
 
 
-<!-- =========================================================
-     MAIN HEADING
-     ========================================================= -->
-
-
-
-
-
-
-
-
-
-
-
 <h2 style="text-align:center; margin-bottom: 25px;">Cuspal Interlink Research Tool </h2>
 
-<label style="display:block;margin:10px 0;font-weight:600">
-Person Name :
-<input
-  type="text"
-  id="personName"
-  placeholder="ENTER NAME (CAPS ONLY)"
-  oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\s]/g,'')"
-  style="margin-left:8px;padding:4px 6px"
-/>
 
-<button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
 
 
-</label>
 
 
 
 
 
-
-
-
-
-
-
-<div id="table1"></div>
-
-
-
-
-
-
-
-
-
-
-
-
-<div id="table1"></div>
-
-<!-- TABLE-1 HEADING (NOW INSIDE SECTION) -->
-
-
-
-
-
-
-
-
-
-
-<h2 class="collapsible-heading"
-onclick="toggleCollapsible('table1-body', this)"
-style="
-    margin-top:10px;
-    margin-bottom:10px;
-    text-align:center;
-    color:#ff9f1c;
-    font-weight:900;
-    letter-spacing:3.2px;
-    font-size:33px;
-">
-CUSP DATA &amp; PLANETS DATA INPUT TABLE-1
-</h2>
-
-<div id="table1-body" class="collapsible-body">
-
-
-
-
-
-
-
-
-<!-- ===== ROW 1 : MANUAL CUSPS ONLY ===== -->
-<div style="
-    display:flex;
-    justify-content:center;
-    margin-bottom:8px;
-    font-weight:700;
-">
-<label>
-<input type="checkbox" id="manualMode" checked>
-Manual Cusps (unchecked = Equal cusps from Lagna)
-</label>
-</div>
-
-<!-- ===== ROW 2 : AUTO FILL ===== -->
-<div style="
-    display:flex;
-    justify-content:center;
-    margin-bottom:12px;
-">
-<button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
-
-<button onclick="buildCuspalChart()">Build Cuspal Chart</button>
-<button onclick="saveJSON()">Save</button>
-<button onclick="loadJSON()">Load</button>
-<button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
-<button onclick="clearAll()">Clear All</button>
-
-</div>
-
-
-
-
-
-
-
-<table id="inputTable">
-<tr>
-<th>Bhava / Planet</th>
-<th>Zodiac Sign</th>
-<th>Degree</th>
-<th>Minute</th>
-<th>Second</th>
-</tr>
-</table>
-
-</div>
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     C1–C200 : BASE DATE & TIME (PRE-BUILD – LOCK ONLY)
-     ========================================================= -->
 
 <style>
-#baseTimeBox{
-    background:#120606;
-    border:2px solid #a86b17;
-    padding:14px 18px;
-    margin:16px 0 14px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:18px;
-    align-items:center;
-    color:#f3e8d0;
-    font-weight:700;
-}
-#baseTimeBox input{
-    background:#070303;
-    color:#ff9f1c;
-    border:1px solid #a86b17;
-    padding:6px 10px;
-    font-weight:700;
-}
+#baseTimeBox{ background:var(--panel-bg); border:2px solid #a86b17; padding:14px 18px; margin:16px 0 14px; display:flex; flex-wrap:wrap; gap:25px; align-items:center; color:#f3e8d0; font-weight:700; }
+#baseTimeBox input{ background:#160d0a; color:#ff9f1c; border:1px solid #a86b17; padding:6px 10px; font-weight:700; }
+#baseTimeBox button { margin:0; }
 </style>
-
 <div id="baseTimeBox">
-    <div>
-        📅 Date of Birth<br>
-        <input type="date" id="baseDate">
-    </div>
-    <div>
-        ⏱ Time of Birth<br>
-        <input type="time" id="baseTimeLock" step="1">
+    <div>👤 Person Name :<br><input type="text" id="personName" placeholder="ENTER NAME" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z\s]/g,'')" style="width:200px;" /></div>
+    <div>📅 Date of Birth<br><input type="date" id="baseDate"></div>
+    <div>⏱ Time of Birth<br><input type="time" id="baseTimeLock" step="1"></div>
+    <div style="display:flex; align-items:flex-end; padding-bottom:1px;">
+        <button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
     </div>
 </div>
 
+
+
+
 <script>
-/* =========================================================
-   C210 : BASE DATE–TIME STORE
-   ========================================================= */
 let BASE_EPOCH = null;
-
-/* =========================================================
-   C220 : LOCK BASE DATE–TIME (CALLED BY BUILD)
-   ========================================================= */
-
 function lockBaseDateTime(){
-
-    /* do nothing if already locked */
     if(BASE_EPOCH) return true;
-
     let d = document.getElementById("baseDate").value;
     let t = document.getElementById("baseTimeLock").value;
-
-    /* OPTIONAL: only store if both exist */
     if(d && t){
         BASE_EPOCH = new Date(d + "T" + t);
-
-		        /* 🔥 SYNTHETIC BASE MUST START HERE */
         BASE_MASTER_DATETIME = new Date(d + "T" + t);
         SHIFT_SECONDS = 0;
-
-
-
-        /* lock only if filled */
         document.getElementById("baseDate").disabled = true;
         document.getElementById("baseTimeLock").disabled = true;
     }
-
-    /* ALWAYS allow build */
     return true;
 }
-
-
 </script>
 
-<!-- =========================================================
-     BUILD BUTTONS (UNCHANGED)
-     ========================================================= -->
-
-
-
-
-<!-- REQUIRED OUTPUT CONTAINER -->
-<div id="output"></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     KUNDALI
-     ========================================================= -->
-
-
-
-
-
-
-
-<!-- =========================================================
-     D1 RĀŚI KUNDALI – FINAL (CUSPS ADD-ON SAFE)
-     ========================================================= -->
-
 <style>
-#kundaliControls{
-    display:flex;
-    justify-content:center;
-    gap:22px;
-    margin:22px 0 30px;
-    flex-wrap:wrap;
-    font-weight:700;
-}
+#kundaliControls{ display:flex; justify-content:center; gap:22px; margin:22px 0 30px; flex-wrap:wrap; font-weight:700; }
 #kundaliZone{display:flex;justify-content:center}
 .kWrap{display:flex;flex-direction:column;align-items:center;gap:10px}
-.kTitle{
-    color:#ff9f1c;font-weight:900;letter-spacing:1.6px;
-    text-shadow:0 0 10px rgba(255,159,28,.55)
-}
-.kChart{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    grid-template-rows:repeat(4,1fr);
-    width:540px;aspect-ratio:1/1;
-    background:radial-gradient(circle at top,#1b0a0a,#070303 70%);
-    border:2px solid #a86b17;
-    box-shadow:0 0 30px rgba(255,159,28,.35)
-}
-.kCell{border:1px solid #3a1a12;padding:22px 10px;font-size:13px;position:relative}
+.kTitle{ color:#ff9f1c;font-weight:900;letter-spacing:1.6px; text-shadow:0 0 10px rgba(255,159,28,.55) }
+.kChart{ display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(4,1fr); width:540px;aspect-ratio:1/1; background:#1a080d; border:2px solid #a86b17; box-shadow:0 0 30px rgba(255,159,28,.35) }
+.kCell{border:1px solid var(--border-soft);padding:22px 10px;font-size:13px;position:relative}
 .kCell .hnum{position:absolute;top:4px;left:6px;font-size:14px;font-weight:900;color:#facc15}
 .kCell .plist{display:flex;flex-direction:column;gap:4px;margin-top:18px;margin-bottom:20px;white-space:nowrap}
 .kCell .sign{position:absolute;bottom:4px;right:6px;font-size:13px;font-weight:800;color:#ff9f1c}
-.kBlank{background:#0c0404;border:1px solid #2a0f0f}
+.kBlank{background:var(--panel-bg);border:1px solid var(--border-soft)}
 </style>
-
-
 <div id="kundaliSection"></div>
-
-<h2 id="southKundaliHeading" 
-    style="
-        text-align:center;
-        color:#ff9f1c;
-        letter-spacing:2px;
-        margin-top:30px;
-        cursor:pointer;
-    "
-    onclick="toggleSouthKundali()"
->
-SOUTH INDIAN KUNDALI ▶
-</h2>
-
-
-
-
-
-
-
-
-
-
+<h2 id="southKundaliHeading" style="text-align:center; color:#ff9f1c; letter-spacing:2px; margin-top:30px; cursor:pointer;" onclick="toggleSouthKundali()">SOUTH INDIAN KUNDALI ▶</h2>
 <div id="southKundaliWrapper" style="display:none;">
-
     <div id="kundaliControls">
         <label>Pivot :
             <select id="kPivot">
-                <option value="Lagna">Lagna</option>
-                <option value="Surya">Surya</option>
-                <option value="Chandra">Chandra</option>
-                <option value="Mangala">Mangala</option>
-                <option value="Rahu">Rahu</option>
-                <option value="Jupiter">Guru</option>
-                <option value="Saturn">Saturn</option>
-                <option value="Budha">Budha</option>
-                <option value="Ketu">Ketu</option>
-                <option value="Venus">Venus</option>
+                <option value="Lagna">Lagna</option><option value="Surya">Surya</option><option value="Chandra">Chandra</option><option value="Mangala">Mangala</option><option value="Rahu">Rahu</option><option value="Jupiter">Guru</option><option value="Saturn">Saturn</option><option value="Budha">Budha</option><option value="Ketu">Ketu</option><option value="Venus">Venus</option>
             </select>
         </label>
-
         <label><input type="checkbox" id="kpModeK"> KP (0°)</label>
         <label><input type="checkbox" id="vedicModeK"> Vedic (15°)</label>
         <label><input type="checkbox" id="retroModeK"> Retro</label>
-
-        <label>
-            <input type="checkbox" id="showCuspsD1">
-            Show Cusps (2–12)
-        </label>
+        <label><input type="checkbox" id="showCuspsD1"> Show Cusps (2–12)</label>
     </div>
-
     <div id="kundaliZone">
         <div class="kWrap">
             <div class="kTitle">D1 – RĀŚI</div>
             <div id="D1Chart" class="kChart"></div>
         </div>
     </div>
-
 </div>
+
+<div style="margin-top:40px; margin-bottom: 30px; text-align:center;">
+    <h2 id="pivotMode">Pivot & House Mode</h2>
+    <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top:15px; align-items:center;">
+        <select id="pivotSelect" style="padding:6px; background:#1f1410; color:#facc15; border:1px solid #a86b17; font-weight:bold;">
+            <option value="Lagna">Lagna</option><option value="Surya">Surya</option><option value="Chandra">Chandra</option><option value="Mangala">Mangala</option><option value="Rahu">Rahu</option><option value="Jupiter">Jupiter</option><option value="Saturn">Saturn</option><option value="Budha">Budha</option><option value="Ketu">Ketu</option><option value="Venus">Venus</option><option value="CSL2">2 CSL</option><option value="CSL3">3 CSL</option><option value="CSL4">4 CSL</option><option value="CSL5">5 CSL</option><option value="CSL6">6 CSL</option><option value="CSL7">7 CSL</option><option value="CSL8">8 CSL</option><option value="CSL9">9 CSL</option><option value="CSL10">10 CSL</option><option value="CSL11">11 CSL</option><option value="CSL12">12 CSL</option>
+        </select>
+        <label style="font-weight:800;color:#facc15;">Tara :
+            <select id="taraSelect" style="padding:6px; background:#1f1410; color:#facc15; border:1px solid #a86b17; font-weight:bold;">
+                <option value="PIVOT_SELF">Pivot Itself</option><option value="SSL_CHANDRA" selected>SSL of Chandra</option><option value="SL_CHANDRA">SL of Chandra</option><option value="NL_CHANDRA">NL of Chandra</option><option value="PIVOT_STAR">Pivots Starlord</option><option value="Surya">Surya</option><option value="Chandra">Chandra</option><option value="Mangala">Mangala</option><option value="Rahu">Rahu</option><option value="Jupiter">Jupiter</option><option value="Saturn">Saturn</option><option value="Budha">Budha</option><option value="Ketu">Ketu</option><option value="Venus">Venus</option><option value="CSL1">1 CSL Starlord</option><option value="CSL2">2 CSL Starlord</option><option value="CSL3">3 CSL Starlord</option><option value="CSL4">4 CSL Starlord</option><option value="CSL5">5 CSL Starlord</option><option value="CSL6">6 CSL Starlord</option><option value="CSL7">7 CSL Starlord</option><option value="CSL8">8 CSL Starlord</option><option value="CSL9">9 CSL Starlord</option><option value="CSL10">10 CSL Starlord</option><option value="CSL11">11 CSL Starlord</option><option value="CSL12">12 CSL Starlord</option>
+            </select>
+        </label>
+        <label style="font-weight:700;color:#facc15;"><input type="checkbox" id="vedicMode"> Vedic House (±15°)</label>
+        <label><input type="checkbox" id="retroMode"> Retro</label>
+        <label><input type="checkbox" id="trueNodeModeKP" > True Node</label>
+        <label style="font-weight:700;"><input type="checkbox" id="kpLevelTheme" checked> Level Theme</label>
+        <label style="font-weight:800;color:#ff9f1c;"><input type="checkbox" id="navToggleMode"> Nav Bar (1-9)</label>
+    </div>
+</div>
+
+<div id="table1"></div>
+<h2 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table1-body', this)" style="margin-top:10px; margin-bottom:10px; text-align:left; color:#ff9f1c; font-weight:700; letter-spacing:1px; font-size:18px;">
+    CUSP &amp; PLANET DATA INPUT
+</h2>
+<div id="table1-body" class="collapsible-body">
+    <div style="display:flex; justify-content:center; margin-bottom:8px; font-weight:700;">
+        <label><input type="checkbox" id="manualMode" checked> Manual Cusps (unchecked = Equal cusps from Lagna)</label>
+    </div>
+    <div style="display:flex; justify-content:center; margin-bottom:12px;">
+        <button onclick="autoFillSigns()">Auto Fill Signs (From Lagna)</button>
+        <button onclick="buildCuspalChart()">Build Cuspal Chart</button>
+        <button onclick="saveJSON()">Save</button>
+        <button onclick="loadJSON()">Load</button>
+        <button onclick="loadSwissJSON()">Load Swiss Ephemeris</button>
+        <button onclick="clearAll()">Clear All</button>
+    </div>
+    <table id="inputTable">
+        <tr>
+            <th>Bhava / Planet</th><th>Zodiac Sign</th><th>Degree</th><th>Minute</th><th>Second</th>
+        </tr>
+    </table>
+</div>
+
+<div id="output"></div>
+<div id="pivotCuspalTable"></div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1019,10 +775,6 @@ drawD1();
 
 
 
-<!-- =========================================================
-     PART X : RETRO COUNTER TABLE (FINAL – PIVOT LOCKED TO 1)
-     ========================================================= -->
-
 <style>
 #retroCounterWrap{
     display:flex;
@@ -1031,7 +783,7 @@ drawD1();
 }
 
 #retroCounter{
-    background:#120606;
+    background:var(--panel-bg);
     border:1px solid #a86b17;
     box-shadow:0 0 18px rgba(255,159,28,.35);
     padding:12px;
@@ -1074,25 +826,42 @@ drawD1();
 
 
 
-
-
 /* =========================================================
-   KP LEVEL COLOR THEME (TABLE 5 & 8)
+   KP LEVEL COLOR THEME (TABLE 5 & 8) - SOLID & CLEAR
    ========================================================= */
 
-body[data-kp-theme="on"] .lvl-planet {
-    background: rgba(220,38,38,0.18) !important; /* RED */
+/* 🔥 RICH DARK CRIMSON (Planet / Star) */
+body[data-kp-theme="on"] tr.lvl-planet td {
+    background: #2b040a !important; /* Solid deep red - no repeating gradients */
+    color: #ffffff !important;
+    border-bottom: 1px solid #000 !important;
+    border-color: #4a0812 !important; /* Subtle inner border */
+}
+body[data-kp-theme="on"] tr.lvl-planet td:first-child { 
+    border-left: 4px solid #ef4444 !important; 
 }
 
-body[data-kp-theme="on"] .lvl-sub {
-    background: rgba(37,99,235,0.18) !important; /* BLUE */
+/* 🌌 DEEP SAPPHIRE BLUE (Sub) */
+body[data-kp-theme="on"] tr.lvl-sub td {
+    background: #031226 !important; /* Solid deep blue */
+    color: #ffffff !important;
+    border-bottom: 1px solid #000 !important;
+    border-color: #082247 !important;
+}
+body[data-kp-theme="on"] tr.lvl-sub td:first-child { 
+    border-left: 4px solid #3b82f6 !important; 
 }
 
-body[data-kp-theme="on"] .lvl-subsub {
-    background: rgba(22,163,74,0.18) !important; /* GREEN */
+/* 🌿 CELESTIAL EMERALD (Sub-Sub) */
+body[data-kp-theme="on"] tr.lvl-subsub td {
+    background: #022016 !important; /* Solid deep green */
+    color: #ffffff !important;
+    border-bottom: 1px solid #000 !important;
+    border-color: #043b29 !important;
 }
-
-
+body[data-kp-theme="on"] tr.lvl-subsub td:first-child { 
+    border-left: 4px solid #22c55e !important; 
+}
 
 
 
@@ -1290,19 +1059,6 @@ setTimeout(buildRetroCounterTable,0);
 
 
 
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     TABLE 1
-     ========================================================= -->
 
 
 
@@ -2002,7 +1758,7 @@ function renderCuspalTable(){
     let html = `
     <h2 id="table2" class="collapsible-heading"
     onclick="toggleCollapsible('table2-body', this)">
-	Table-2 Cuspal Interlink Chart
+	Table-1 : Cuspal Interlink Chart
 	</h2>
 
 	<div id="table2-body" class="collapsible-body">
@@ -2058,10 +1814,6 @@ function renderCuspalTable(){
 
 
 
-<!-- =========================================================
-     PART 3 : PLANET HOUSE ENGINE + PIVOT SYSTEM (DBA + CSL)
-     (RETRO SUPPORT – PLACEMENT ONLY)
-     ========================================================= -->
 <script>
 
 
@@ -2085,99 +1837,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-document.body.insertAdjacentHTML("beforeend", `
 
-<h2 id="pivotMode">Pivot & House Mode</h2>
-
-<select id="pivotSelect">
-    <option value="Lagna">Lagna</option>
-    <option value="Surya">Surya</option>
-    <option value="Chandra">Chandra</option>
-    <option value="Mangala">Mangala</option>
-    <option value="Rahu">Rahu</option>
-    <option value="Jupiter">Jupiter</option>
-    <option value="Saturn">Saturn</option>
-    <option value="Budha">Budha</option>
-    <option value="Ketu">Ketu</option>
-    <option value="Venus">Venus</option>
-
-    <option value="CSL2">2 CSL</option>
-    <option value="CSL3">3 CSL</option>
-    <option value="CSL4">4 CSL</option>
-    <option value="CSL5">5 CSL</option>
-    <option value="CSL6">6 CSL</option>
-    <option value="CSL7">7 CSL</option>
-    <option value="CSL8">8 CSL</option>
-    <option value="CSL9">9 CSL</option>
-    <option value="CSL10">10 CSL</option>
-    <option value="CSL11">11 CSL</option>
-    <option value="CSL12">12 CSL</option>
-</select>
-
-
-<label style="margin-left:15px;font-weight:800;color:#facc15;">
-    Tara :
-    <select id="taraSelect">
-		<option value="PIVOT_SELF">Pivot Itself</option>
-		<option value="SSL_CHANDRA" selected>SSL of Chandra</option>
-		<option value="SL_CHANDRA">SL of Chandra</option>
-		<option value="NL_CHANDRA">NL of Chandra</option>
-
-		
-		<option value="PIVOT_STAR">Pivots Starlord</option>
-		
-        <option value="Surya">Surya</option>
-        <option value="Chandra">Chandra</option>
-        <option value="Mangala">Mangala</option>
-        <option value="Rahu">Rahu</option>
-        <option value="Jupiter">Jupiter</option>
-        <option value="Saturn">Saturn</option>
-        <option value="Budha">Budha</option>
-        <option value="Ketu">Ketu</option>
-        <option value="Venus">Venus</option>
-
-        <option value="CSL1">1 CSL Starlord</option>
-        <option value="CSL2">2 CSL Starlord</option>
-        <option value="CSL3">3 CSL Starlord</option>
-        <option value="CSL4">4 CSL Starlord</option>
-        <option value="CSL5">5 CSL Starlord</option>
-        <option value="CSL6">6 CSL Starlord</option>
-        <option value="CSL7">7 CSL Starlord</option>
-        <option value="CSL8">8 CSL Starlord</option>
-        <option value="CSL9">9 CSL Starlord</option>
-        <option value="CSL10">10 CSL Starlord</option>
-        <option value="CSL11">11 CSL Starlord</option>
-        <option value="CSL12">12 CSL Starlord</option>
-    </select>
-</label>
-
-
-<label style="margin-left:15px;font-weight:700;color:#facc15;">
-    <input type="checkbox" id="vedicMode">
-    Vedic House (±15°)
-</label>
-
-<label style="margin-left:15px;">
-    <input type="checkbox" id="retroMode">
-    Retro
-</label>
-
-<label style="margin-left:15px;">
-    <input type="checkbox" id="trueNodeModeKP" >
-    True Node
-</label>
-
-<label style="margin-left:15px;font-weight:700;">
-    <input type="checkbox" id="kpLevelTheme" checked>
-    Level Theme
-</label>
-
-<label style="margin-left:15px;font-weight:800;color:#ff9f1c;">
-    <input type="checkbox" id="navToggleMode">
-    Nav Bar (1-9)
-</label>
-
-`);
 
 
 /* =========================================================
@@ -2449,20 +2109,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 
 
-<!-- =========================================================
-     TABLE 4
-     ========================================================= -->
-
-
-
-
-
-
-
-<!-- =========================================================
-     PART 4 : KP PLANETARY TABLE-4 (PIVOT-ORDERED)
-     (RAHU / KETU SIGN-LORD DISPOSITOR PATCH – FINAL)
-     ========================================================= -->
 <script>
 function buildTable3(){
 
@@ -2488,7 +2134,7 @@ function buildTable3(){
 	<div id="anchor-table4"></div>
 
     <h2 class="collapsible-heading"
-    onclick="toggleCollapsible('table4-body', this)">
+    onclick="if(window.getSelection().toString()) return; toggleCollapsible('table4-body', this)">
 	Table-4 : Planetary House Significations (Pivot Based)
 	</h2>
 
@@ -2498,7 +2144,7 @@ function buildTable3(){
     margin:12px 0 18px;
     padding:10px;
     border:1px solid #a86b17;
-    background:#120606;
+    background:#1f1410;
     box-shadow:0 0 12px rgba(255,159,28,.35);
 ">
 
@@ -2715,17 +2361,6 @@ setTimeout(() => {
 
 
 
-<!-- =========================================================
-     TABLE 3
-     ========================================================= -->
-
-
-
-
-
-
-
-
 <script>
 /* =========================================================
    TABLE-3 : PIVOT BASED CUSPAL INTERLINK (DYNAMIC)
@@ -2754,8 +2389,8 @@ function buildPivotCuspalTable(){
    /* Inside buildPivotCuspalTable() */
     let html = `
     <h2 class="collapsible-heading open"
-    onclick="toggleCollapsible('table3-body', this)">
-	Table-3 : Cuspal Interlink Chart (Pivot Based)
+    onclick="if(window.getSelection().toString()) return; toggleCollapsible('table3-body', this)">
+	Table-2 : Cuspal Interlink Chart (Pivot Based)
 	</h2>
 
 	<div id="table3-body" class="collapsible-body">
@@ -2800,193 +2435,21 @@ function buildPivotCuspalTable(){
 
 
 
-<div id="pivotCuspalTable"></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     SYNTHETIC TIME SHIFT + DATE–TIME CONTROL (SINGLE BOX)
-     ========================================================= -->
-
-<style>
-.kpShiftBox{
-  margin:30px 0;
-  padding:18px;
-  border:2px solid #a86b17;
-  background:#120606;
-  box-shadow:0 0 18px rgba(255,159,28,.45);
-}
-.kpShiftTitle{
-  text-align:center;
-  color:#ff9f1c;
-  font-weight:900;
-  letter-spacing:1.6px;
-  margin-bottom:14px;
-}
-.kpShiftGrid{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:28px;
-  flex-wrap:wrap;
-}
-.kpLeft,.kpRight{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-}
-.kpShiftBox input,
-.kpShiftBox select{
-  background:#020617;
-  color:#f5e9c6;
-  border:1px solid #ca8a04;
-  padding:6px 8px;
-  border-radius:6px;
-  font-weight:700;
-}
-.kpShiftBox input[type="date"]::-webkit-calendar-picker-indicator,
-.kpShiftBox input[type="time"]::-webkit-calendar-picker-indicator{
-  filter:invert(1);
-}
-.kpShiftBox button{
-  background:linear-gradient(135deg,#ff9f1c,#b11226);
-  border:none;
-  color:#1a0606;
-  padding:7px 16px;
-  font-weight:800;
-  cursor:pointer;
-  box-shadow:0 0 12px rgba(255,159,28,.4);
-}
-.kpShiftBox button:hover{
-  background:linear-gradient(135deg,#ffb347,#d4142a);
-}
-#shiftCounter{
-  color:#facc15;
-  font-weight:900;
-  letter-spacing:.8px;
-  white-space:nowrap;
-}
-</style>
-
-<script>
-let SHIFT_SECONDS = 0;
-let BASE_MASTER_DATETIME = null;
-
-/* ============================
-   MEAN MOTION (deg/sec)
-   ============================ */
-const RATE_SEC = {
-  Lagna:15/3600, Surya:0.9856/86400, Chandra:13.176/86400,
-  Mangala:0.524/86400, Budha:1.2/86400, Venus:1.2/86400,
-  Jupiter:0.083/86400, Saturn:0.033/86400,
-  Rahu:-0.053/86400, Ketu:-0.053/86400
-};
-
-function absFromInput(s,d,m,ss){
-  let si=document.getElementById(s).selectedIndex;
-  if(si<=0)return null;
-  return (si-1)*30+
-    (+document.getElementById(d).value||0)+
-    (+document.getElementById(m).value||0)/60+
-    (+document.getElementById(ss).value||0)/3600;
-}
-
-function writeAbs(abs,s,d,m,ss){
-  abs=((abs%360)+360)%360;
-  let si=Math.floor(abs/30)+1;
-  let inside=abs%30;
-  let dd=Math.floor(inside);
-  let mf=(inside-dd)*60;
-  let mm=Math.floor(mf);
-  let sec=Math.round((mf-mm)*60);
-  if(sec===60){sec=0;mm++;}
-  if(mm===60){mm=0;dd++;}
-  if(dd===30){dd=0;si++;}
-  if(si>12)si=1;
-  document.getElementById(s).selectedIndex=si;
-  document.getElementById(d).value=dd;
-  document.getElementById(m).value=mm;
-  document.getElementById(ss).value=sec;
-}
 
-function shiftEntity(n,s,d,m,ss,dt){
-  let a=absFromInput(s,d,m,ss);
-  if(a===null)return;
-  writeAbs(a+RATE_SEC[n]*dt,s,d,m,ss);
-}
 
-function applyShift(dt){
-  SHIFT_SECONDS+=dt;
 
-  /* HARD LIMIT ±3000 MINUTES */
-  let LIM=3000*60;
-  if(SHIFT_SECONDS>LIM)SHIFT_SECONDS=LIM;
-  if(SHIFT_SECONDS<-LIM)SHIFT_SECONDS=-LIM;
 
-  for(let i=1;i<=12;i++){
-    shiftEntity("Lagna",
-      "c"+i+"_sign","c"+i+"_deg","c"+i+"_min","c"+i+"_sec",dt);
-  }
 
-  planets.forEach(p=>{
-    shiftEntity(p,p+"_sign",p+"_deg",p+"_min",p+"_sec",dt);
-  });
 
-  buildCuspalChart();
-  drawD1();
-  updateShiftDisplay();
-  syncDateTimeTool();
-}
 
-function shiftStep(dir){
-  let j=+jumpVal.value||0;
-  let dt=(jumpMode.value==="sec"?j:j*60)*dir;
-  if(dt)applyShift(dt);
-}
 
-function updateShiftDisplay(){
-  let a=Math.abs(SHIFT_SECONDS);
-  let m=Math.floor(a/60);
-  let s=a%60;
-  let sg=SHIFT_SECONDS>0?"+":SHIFT_SECONDS<0?"−":"";
-  shiftCounter.textContent=
-    `Current Shift : ${sg}${m} min ${s} sec`;
-}
 
-/* ============================
-   DATE–TIME TOOL (TIME PRIMARY)
-   ============================ */
-   
-   
-   
-function captureBaseDateTime(){
 
-	  if(BASE_MASTER_DATETIME) return;
 
 
-  if(!baseDate.value || !baseTimeLock.value) return;
 
-  BASE_MASTER_DATETIME =
-    new Date(baseDate.value + "T" + baseTimeLock.value);
 
-  /* RESET SHIFT */
-  SHIFT_SECONDS = 0;
-  updateShiftDisplay();
 
-  /* SYNC UI */
-  syncDateTimeTool();
-}
 
 
 
@@ -2994,25 +2457,11 @@ function captureBaseDateTime(){
 
 
 
-function applyDateTimeChange(){
 
-  if(!BASE_MASTER_DATETIME) return;
 
-  const n = new Date(
-    dateCtrl.value + "T" + timeCtrl.value
-  );
 
-  /* NEW absolute shift from base */
-  const newShift =
-    Math.round((n - BASE_MASTER_DATETIME) / 1000);
 
-  /* 🔥 APPLY ONLY THE DIFFERENCE */
-  const delta = newShift - SHIFT_SECONDS;
 
-  if(delta !== 0){
-    applyShift(delta);
-  }
-}
 
 
 
@@ -3021,113 +2470,6 @@ function applyDateTimeChange(){
 
 
 
-
-
-function syncDateTimeTool(){
-
-  if(!BASE_MASTER_DATETIME) return;
-
-  const d = new Date(
-    BASE_MASTER_DATETIME.getTime() +
-    SHIFT_SECONDS * 1000
-  );
-
-  dateCtrl.value = d.toISOString().slice(0,10);
-  timeCtrl.value = d.toTimeString().slice(0,8);
-
-  /* 🔥 NEW: SYNC WITH TOP-RIGHT MINI TIME TOOL */
-  const miniTime = document.getElementById("miniTimeInput");
-  if(miniTime) {
-      miniTime.value = timeCtrl.value;
-  }
-}
-
-
-</script>
-
-<div class="kpShiftBox">
-  <div class="kpShiftTitle">
-    Synthetic Time Shift &nbsp; | &nbsp; Date–Time Control
-  </div>
-
-  <div class="kpShiftGrid">
-
-    <!-- LEFT : SYNTHETIC SHIFT -->
-    <div class="kpLeft">
-      Jump :
-      <input id="jumpVal" type="number" value="30" style="width:70px">
-      <select id="jumpMode">
-        <option value="sec">Seconds</option>
-        <option value="min">Minutes</option>
-      </select>
-
-      <button onclick="shiftStep(-1)">◀</button>
-      <button onclick="shiftStep(1)">▶</button>
-
-      <div id="shiftCounter">
-        Current Shift : 0 min 0 sec
-      </div>
-    </div>
-
-    <!-- RIGHT : DATE–TIME TOOL -->
-    <div class="kpRight">
-      📅 <input type="date" id="dateCtrl" oninput="applyDateTimeChange()">
-	⏱ <input type="time" id="timeCtrl" step="1"
-				   oninput="applyDateTimeChange()">
-
-    </div>
-
-  </div>
-</div>
-
-<script>
-document.querySelector("button[onclick='buildCuspalChart()']")
- ?.addEventListener("click",()=>{
-    setTimeout(()=>{
-      captureBaseDateTime();
-      syncDateTimeTool();
-    },0);
- });
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     TABLE 5
-     ========================================================= -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     PART 5 : KP TABLE-5 (PIVOT ORDER + SORT FIX FINAL)
-     + TENANTED / UNTENANTED MARKING ($)
-     ========================================================= -->
 <script>
 /* =========================================================
    HELPER : SORT HOUSE LIST STRING
@@ -3411,7 +2753,7 @@ document.getElementById("pivotSelect")
 	  if(typeof buildTable6 === "function"){
           buildTable6();
       }
-  });
+  });                          
 
 
 
@@ -3512,7 +2854,7 @@ function buildTable4(){
     margin:10px 0 14px;
     padding:10px;
     border:1px solid #a86b17;
-    background:#120606;
+    background:#1f1410;
     box-shadow:0 0 12px rgba(255,159,28,.35);
 ">
 
@@ -3749,25 +3091,6 @@ function buildTable4(){
 
 
 
-<!-- =========================================================
-     TABLE 6
-     ========================================================= -->
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     PART 6 : EFFECTIVE LINKS TABLE 6 (UPDATED – ROW LEVEL CONTROL)
-     (HARD-ANCHORED — NEVER MOVES)
-     ========================================================= -->
 <script>
 /* =========================================================
    HELPERS
@@ -3818,18 +3141,15 @@ function initTable5Shell(){
 
     <div id="table5-shell" style="margin-top:40px;">
 
-        <!-- COLLAPSIBLE HEADING -->
         <h2 class="collapsible-heading"
-            onclick="toggleCollapsible('table6-body', this)">
+            onclick="if(window.getSelection().toString()) return; toggleCollapsible('table6-body', this)">
             Table-6 : Effective Links Table
         </h2>
 
-        <!-- COLLAPSIBLE BODY -->
         <div id="table6-body" class="collapsible-body">
 
             <div id="table6-content"></div>
 
-            <!-- ROW 1 -->
             <div style="margin-bottom:6px;">
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreSSL">
@@ -3842,7 +3162,6 @@ function initTable5Shell(){
                 </label>
             </div>
 
-            <!-- ROW 2 -->
             <div style="margin-bottom:6px;">
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreSubRow" checked>
@@ -3855,7 +3174,6 @@ function initTable5Shell(){
                 </label>
             </div>
 
-            <!-- ROW 3 -->
             <div style="margin-bottom:10px;">
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreSSLRow" checked>
@@ -4081,7 +3399,7 @@ function buildTable7(){
 	
 	
     <h2 class="collapsible-heading"
-    onclick="toggleCollapsible('table7-body', this)">
+    onclick="if(window.getSelection().toString()) return; toggleCollapsible('table7-body', this)">
 	Table-7 : Effective Links Table
 	</h2>
 
@@ -4198,47 +3516,6 @@ function buildTable7(){
 
 
 
-<!-- =========================================================
-     TABLE 7
-     ========================================================= -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     TABLE 8
-     ========================================================= -->
-
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     PART 7 : KP TABLE-8 (FINAL STABLE)
-     ========================================================= -->
 <script>
 /* =========================================================
    ASPECT RULES
@@ -4509,7 +3786,6 @@ document.getElementById("vedicMode")
 
 
 
-<!-- 🔒 FIXED BOTTOM MARKER (DO NOT REMOVE) -->
 <div id="kp-fixed-bottom"></div>
 
 
@@ -4534,10 +3810,149 @@ document.getElementById("vedicMode")
 
 
 
-<!-- =========================================================
-     TABLE 9 : HOUSE BREAKING THEORY (CORRECTED PRIORITY)
-     ========================================================= -->
 <script>
+// State for the Checkboxes in Table 9 & 10 Dividers
+let DIVIDER_INC_A = true;
+let DIVIDER_INC_B = true;
+let DIVIDER_INC_C = false;
+
+const PLANET_DIVIDER = {
+    outG: [2, 4, 6, 8, 10, 12],
+    outA: [3, 7, 11],
+    outB: [1, 5, 9],
+    inG:  [1, 3, 5, 7, 9, 11],
+    inA:  [2, 6, 10],
+    inB:  [4, 8, 12]
+};
+
+const CUSP_DIVIDER = {
+    1:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    2:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    3:  { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    4:  { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] },
+    5:  { outA:[3,7,11],   outB:[1,5,9], inA:[2,6,10], inB:[4,8,12] },
+    6:  { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    7:  { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    8:  { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] },
+    9:  { outA:[3,7,11],   outB:[1,5,9], inA:[2,6,10], inB:[4,8,12] },
+    10: { outA:[1,3,7,11], outB:[5,9],   inA:[2,6,10], inB:[4,8,12] },
+    11: { outA:[3,7,11],   outB:[1,5,9], inA:[4,8,12], inB:[2,6,10] },
+    12: { outA:[1,5,9],    outB:[3,7,11],inA:[2,6,10], inB:[4,8,12] }
+};
+
+const CUSP_OUT_G = [2, 4, 6, 8, 10, 12];
+const CUSP_IN_G = [1, 3, 5, 7, 9, 11];
+
+function extractDivNums(str) {
+    if (!str) return [];
+    return String(str).split(/[,>+ ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+}
+
+function intersectDiv(valStr, ruleArr) {
+    let nums = Array.isArray(valStr) ? valStr : extractDivNums(valStr);
+    let res = nums.filter(n => ruleArr.includes(n));
+    let finalStr = [...new Set(res)].sort((a, b) => a - b).join(",");
+    return finalStr === "" ? "&nbsp;" : finalStr;
+}
+
+function getIslandHeaders(isPlanet) {
+    let outG = "2,4,6,8,10,12";
+    let outA = isPlanet ? "3,7,11" : "Varies";
+    let outB = isPlanet ? "1,5,9" : "Varies";
+    
+    let inG = "1,3,5,7,9,11";
+    let inA = isPlanet ? "2,6,10" : "Varies";
+    let inB = isPlanet ? "4,8,12" : "Varies";
+
+    return `
+        <th style="border: 1px solid #a86b17; padding:10px; color:#facc15;">Entity</th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#facc15;">Links</th>
+        <th style="border:none; background:transparent; width:15px;"></th> <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = GOOD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outG}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = AVG<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outA}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#fdba74;">OUT = BAD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${outB}</span></th>
+        <th style="border:none; background:transparent; width:15px;"></th> <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = GOOD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inG}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = AVG<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inA}</span></th>
+        <th style="border: 1px solid #a86b17; padding:10px; color:#86efac;">IN = BAD<br><span style="font-size:12px; font-weight:normal; color:#e5e5e5;">${inB}</span></th>
+    `;
+}
+
+function getIslandRow(name, effStr, isPlanet, rules = null) {
+    let outG = isPlanet ? PLANET_DIVIDER.outG : CUSP_OUT_G;
+    let outA = isPlanet ? PLANET_DIVIDER.outA : rules.outA;
+    let outB = isPlanet ? PLANET_DIVIDER.outB : rules.outB;
+    
+    let inG = isPlanet ? PLANET_DIVIDER.inG : CUSP_IN_G;
+    let inA = isPlanet ? PLANET_DIVIDER.inA : rules.inA;
+    let inB = isPlanet ? PLANET_DIVIDER.inB : rules.inB;
+
+    return `
+    <tr style="background:#1f1410;">
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:900; color:#facc15;">${name}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:900; color:#d8b4fe;">${effStr || "&nbsp;"}</td>
+        <td style="border:none; background:transparent;"></td> <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outG)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outA)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#fdba74;">${intersectDiv(effStr, outB)}</td>
+        <td style="border:none; background:transparent;"></td> <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inG)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inA)}</td>
+        <td style="border: 1px solid #a86b17; padding:8px; font-weight:bold; color:#6ee7b7;">${intersectDiv(effStr, inB)}</td>
+    </tr>`;
+}
+
+function generatePlanetDividerRows(tableNum) {
+    let order = getPivotSortedPlanets();
+    let html = "";
+    order.forEach(p => {
+        let name = markPlanet(p).split(' ')[0];
+        let effStr = "";
+        if (tableNum === 10) {
+            effStr = computeTable10Row(p);
+        } else {
+            let rawEffs = computeEffectiveLinksRow(p); 
+            let combinedArr = [];
+            if (DIVIDER_INC_A) combinedArr.push(...extractDivNums(rawEffs.A));
+            if (DIVIDER_INC_B) combinedArr.push(...extractDivNums(rawEffs.B));
+            if (DIVIDER_INC_C) combinedArr.push(...extractDivNums(rawEffs.C));
+            effStr = [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
+        }
+        html += getIslandRow(name, effStr, true);
+    });
+    return html;
+}
+
+function generateCuspDividerRows(tableNum) {
+    if (!cuspsData || cuspsData.length === 0) return "";
+    let pivotHouse = getPivotHouse();
+    let baseCusps = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+    let rotated = [];
+    let startIdx = baseCusps.findIndex(c => c.bhava === pivotHouse);
+    if(startIdx < 0) startIdx = 0;
+    for(let i=0; i<12; i++){
+        rotated.push(baseCusps[(startIdx + i) % 12]);
+    }
+
+    let html = "";
+    rotated.forEach((c, i) => {
+        let bhava = i + 1;
+        let csl = c.subLord;
+        let name = markPlanet(csl).split(' ')[0];
+        let label = `${bhava} - ${name}`;
+        let rules = CUSP_DIVIDER[bhava];
+        let effStr = "";
+
+        if (tableNum === 10) {
+            effStr = computeTable10Row(csl);
+        } else {
+            let rawEffs = computeEffectiveLinksRow(csl);
+            let combinedArr = [];
+            if (DIVIDER_INC_A) combinedArr.push(...extractDivNums(rawEffs.A));
+            if (DIVIDER_INC_B) combinedArr.push(...extractDivNums(rawEffs.B));
+            if (DIVIDER_INC_C) combinedArr.push(...extractDivNums(rawEffs.C));
+            effStr = [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
+        }
+        html += getIslandRow(label, effStr, false, rules);
+    });
+    return html;
+}
 
 /* =========================================================
    HOUSE BREAKING GROUPS
@@ -5041,7 +4456,7 @@ function computeTable10DominanceWithSSL(top3Values, sslValues, pVals = [], sVals
     let bestSSL = (maxLen === 0) ? [] : sslU.filter(matchingRule);
 
     return uniqueSorted([...bestTop3, ...bestSSL]);
-}
+}                     
 
 
 
@@ -5276,6 +4691,9 @@ function computeTable10Row(p) {
 let HB_UNTENANTED_RULE = true; // Turned ON
 
 function buildTable9(){
+    // 1. CAPTURE STATES BEFORE DESTROYING
+    let t9Open = document.getElementById("table9-body")?.style.display === "block";
+    let t10Open = document.getElementById("table10-body")?.style.display === "block";
 
     document.getElementById("table9-content")?.remove();
     document.getElementById("table10-content")?.remove(); // Added to clear previous Table 10
@@ -5285,7 +4703,11 @@ function buildTable9(){
 
     let html = `
     <div id="table9-content" style="margin-top:40px;">
-        <h2>Table 9 : Effective Links as Per House Breaking Theory</h2>
+        <h2 class="collapsible-heading ${t9Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table9-body', this)" style="user-select: auto;">
+			Table 9 : Effective Links as Per House Breaking Theory
+		</h2>
+		<div id="table9-body" class="collapsible-body" style="display: ${t9Open ? 'block' : 'none'};">
+		
         
         <div style="margin:10px 0 14px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap;">
             <label style="margin-right:20px;">
@@ -5460,7 +4882,7 @@ function buildTable9(){
     /* 🔥 ADD LEGENDS UNDER TABLE 9 */
     if (HB_SHOW_LEGENDS) {
         html += `
-        <div style="margin-top: 15px; margin-bottom: 20px; padding: 12px 20px; background: #120606; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
+        <div style="margin-top: 15px; margin-bottom: 20px; padding: 12px 20px; background: #1f1410; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
             <span style="color: #ff9f1c; margin-right: 15px; letter-spacing: 1px;">LEGENDS:</span>
             <span style="margin-right: 15px;"><b>X</b> - Sublord</span>
             <span style="margin-right: 15px;"><b>H</b> - Sub-Sub</span>
@@ -5470,15 +4892,56 @@ function buildTable9(){
         `;
     }
 
-    html += `</div>`;
+    /* 🔥 ADD TABLE 9 DIVIDERS HERE */
+    html += `
+        <div style="margin-top: 40px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
+            <div style="color: #facc15; font-size: 16px; font-weight: bold; margin-bottom:12px;">Toggle Table 9 Source Data Below:</div>
+            <div style="display:flex; justify-content:center; gap:30px;">
+                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                    <input type="checkbox" ${DIVIDER_INC_A ? "checked" : ""} onchange="DIVIDER_INC_A=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF A
+                </label>
+                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                    <input type="checkbox" ${DIVIDER_INC_B ? "checked" : ""} onchange="DIVIDER_INC_B=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF B
+                </label>
+                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                    <input type="checkbox" ${DIVIDER_INC_C ? "checked" : ""} onchange="DIVIDER_INC_C=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF C
+                </label>
+            </div>
+        </div>
+
+        <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px;">3. Planets Divider (Table 9 Based)</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                ${getIslandHeaders(true)}
+            </tr>
+            <tbody>
+                ${generatePlanetDividerRows(9)}
+            </tbody>
+        </table>
+
+        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">4. 12 Cuspal Sublords Divider (Table 9 Based)</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                ${getIslandHeaders(false)}
+            </tr>
+            <tbody>
+                ${generateCuspDividerRows(9)}
+            </tbody>
+        </table>
+
+        </div> </div> `;
 
 
     /* =========================================================
        🔥🔥🔥 START OF NEW TABLE 10 🔥🔥🔥
        ========================================================= */
     html += `
-    <div id="table10-content" style="margin-top:40px;">
-        <h2>Table 10 : Shortened Effective Links</h2>
+	<div id="table10-content" style="margin-top:40px;">
+        <h2 class="collapsible-heading ${t10Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table10-body', this)" style="user-select: auto;">
+			Table 10 : Shortened Effective Links
+		</h2>
+		<div id="table10-body" class="collapsible-body" style="display: ${t10Open ? 'block' : 'none'};">
+
         <table class="table9-equal">
             <tr>
                 <th>Planet</th>
@@ -5515,8 +4978,9 @@ function buildTable9(){
         <div style="margin-top: 15px; margin-bottom: 20px;">
             <label style="font-weight: 800; color: #f472b6; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
                 <input type="checkbox" id="t10_ignore_ssl" ${T10_IGNORE_SSL ? "checked" : ""} 
-                       onchange="T10_IGNORE_SSL = this.checked; let scrollPos = window.scrollY; buildTable9(); window.scrollTo(0, scrollPos);" 
-                       style="transform: scale(1.2); margin-right: 8px; accent-color: #f472b6;">
+				   onchange="T10_IGNORE_SSL = this.checked; buildTable9();" 
+				   style="transform: scale(1.2); margin-right: 8px; accent-color: #f472b6;">
+	   
                 Ignore Sub-Sub Lord
             </label>
         </div>
@@ -5525,7 +4989,7 @@ function buildTable9(){
    /* 🔥 ADD LEGENDS UNDER TABLE 10 (RESPECTS TOGGLE) */
     if (HB_SHOW_LEGENDS) {
         html += `
-            <div style="margin-top: 15px; padding: 12px 20px; background: #120606; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
+            <div style="margin-top: 15px; padding: 12px 20px; background: #1f1410; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
                 <span style="color: #ff9f1c; margin-right: 15px; letter-spacing: 1px;">LEGENDS:</span>
                 <span style="margin-right: 15px;"><b>X</b> - Sublord</span>
                 <span style="margin-right: 15px;"><b>H</b> - Sub-Sub</span>
@@ -5535,7 +4999,29 @@ function buildTable9(){
         `;
     }
     
-    html += `</div>`;
+    /* 🔥 ADD TABLE 10 DIVIDERS HERE */
+    html += `
+        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">1. Planets Divider (Table 10 Based)</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                ${getIslandHeaders(true)}
+            </tr>
+            <tbody>
+                ${generatePlanetDividerRows(10)}
+            </tbody>
+        </table>
+
+        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">2. 12 Cuspal Sublords Divider (Table 10 Based)</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center;">
+            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                ${getIslandHeaders(false)}
+            </tr>
+            <tbody>
+                ${generateCuspDividerRows(10)}
+            </tbody>
+        </table>
+
+        </div> </div> `;
     /* ==================== END OF TABLE 10 ==================== */
 
 
@@ -6272,7 +5758,250 @@ function splitBySourceLevel(planets, effValues){
 
 
 
-<!-- VIMSHOTTARI START -->
+
+
+
+
+
+
+<style>
+.kpShiftBox{
+  margin:30px 0;
+  padding:18px;
+  border:2px solid #a86b17;
+  background:var(--panel-bg);
+  box-shadow:0 0 18px rgba(255,159,28,.45);
+}
+.kpShiftTitle{
+  text-align:center;
+  color:#ff9f1c;
+  font-weight:900;
+  letter-spacing:1.6px;
+  margin-bottom:14px;
+}
+.kpShiftGrid{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:28px;
+  flex-wrap:wrap;
+}
+.kpLeft,.kpRight{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.kpShiftBox input,
+.kpShiftBox select{
+  background:#1f1410;
+  color:#f5e9c6;
+  border:1px solid #ca8a04;
+  padding:6px 8px;
+  border-radius:6px;
+  font-weight:700;
+}
+.kpShiftBox input[type="date"]::-webkit-calendar-picker-indicator,
+.kpShiftBox input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+}
+.kpShiftBox button{
+  background:linear-gradient(135deg,#ff9f1c,#b11226);
+  border:none;
+  color:#1a0606;
+  padding:7px 16px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 0 12px rgba(255,159,28,.4);
+}
+.kpShiftBox button:hover{
+  background:linear-gradient(135deg,#ffb347,#d4142a);
+}
+#shiftCounter{
+  color:#facc15;
+  font-weight:900;
+  letter-spacing:.8px;
+  white-space:nowrap;
+}
+</style>
+
+<script>
+let SHIFT_SECONDS = 0;
+let BASE_MASTER_DATETIME = null;
+
+/* ============================
+   MEAN MOTION (deg/sec)
+   ============================ */
+const RATE_SEC = {
+  Lagna:15/3600, Surya:0.9856/86400, Chandra:13.176/86400,
+  Mangala:0.524/86400, Budha:1.2/86400, Venus:1.2/86400,
+  Jupiter:0.083/86400, Saturn:0.033/86400,
+  Rahu:-0.053/86400, Ketu:-0.053/86400
+};
+
+function absFromInput(s,d,m,ss){
+  let si=document.getElementById(s).selectedIndex;
+  if(si<=0)return null;
+  return (si-1)*30+
+    (+document.getElementById(d).value||0)+
+    (+document.getElementById(m).value||0)/60+
+    (+document.getElementById(ss).value||0)/3600;
+}
+
+function writeAbs(abs,s,d,m,ss){
+  abs=((abs%360)+360)%360;
+  let si=Math.floor(abs/30)+1;
+  let inside=abs%30;
+  let dd=Math.floor(inside);
+  let mf=(inside-dd)*60;
+  let mm=Math.floor(mf);
+  let sec=Math.round((mf-mm)*60);
+  if(sec===60){sec=0;mm++;}
+  if(mm===60){mm=0;dd++;}
+  if(dd===30){dd=0;si++;}
+  if(si>12)si=1;
+  document.getElementById(s).selectedIndex=si;
+  document.getElementById(d).value=dd;
+  document.getElementById(m).value=mm;
+  document.getElementById(ss).value=sec;
+}
+
+function shiftEntity(n,s,d,m,ss,dt){
+  let a=absFromInput(s,d,m,ss);
+  if(a===null)return;
+  writeAbs(a+RATE_SEC[n]*dt,s,d,m,ss);
+}
+
+function applyShift(dt){
+  SHIFT_SECONDS+=dt;
+
+  /* HARD LIMIT ±3000 MINUTES */
+  let LIM=3000*60;
+  if(SHIFT_SECONDS>LIM)SHIFT_SECONDS=LIM;
+  if(SHIFT_SECONDS<-LIM)SHIFT_SECONDS=-LIM;
+
+  for(let i=1;i<=12;i++){
+    shiftEntity("Lagna",
+      "c"+i+"_sign","c"+i+"_deg","c"+i+"_min","c"+i+"_sec",dt);
+  }
+
+  planets.forEach(p=>{
+    shiftEntity(p,p+"_sign",p+"_deg",p+"_min",p+"_sec",dt);
+  });
+
+  buildCuspalChart();
+  drawD1();
+  updateShiftDisplay();
+  syncDateTimeTool();
+}
+
+function shiftStep(dir){
+  let j=+jumpVal.value||0;
+  let dt=(jumpMode.value==="sec"?j:j*60)*dir;
+  if(dt)applyShift(dt);
+}
+
+function updateShiftDisplay(){
+  let a=Math.abs(SHIFT_SECONDS);
+  let m=Math.floor(a/60);
+  let s=a%60;
+  let sg=SHIFT_SECONDS>0?"+":SHIFT_SECONDS<0?"−":"";
+  shiftCounter.textContent=
+    `Current Shift : ${sg}${m} min ${s} sec`;
+}
+
+/* ============================
+   DATE–TIME TOOL (TIME PRIMARY)
+   ============================ */
+   
+function captureBaseDateTime(){
+  if(BASE_MASTER_DATETIME) return;
+  if(!baseDate.value || !baseTimeLock.value) return;
+
+  BASE_MASTER_DATETIME =
+    new Date(baseDate.value + "T" + baseTimeLock.value);
+
+  /* RESET SHIFT */
+  SHIFT_SECONDS = 0;
+  updateShiftDisplay();
+  syncDateTimeTool();
+}
+
+function applyDateTimeChange(){
+  if(!BASE_MASTER_DATETIME) return;
+
+  const n = new Date(
+    dateCtrl.value + "T" + timeCtrl.value
+  );
+
+  const newShift =
+    Math.round((n - BASE_MASTER_DATETIME) / 1000);
+
+  const delta = newShift - SHIFT_SECONDS;
+  if(delta !== 0){
+    applyShift(delta);
+  }
+}
+
+function syncDateTimeTool(){
+  if(!BASE_MASTER_DATETIME) return;
+
+  const d = new Date(
+    BASE_MASTER_DATETIME.getTime() +
+    SHIFT_SECONDS * 1000
+  );
+
+  dateCtrl.value = d.toISOString().slice(0,10);
+  timeCtrl.value = d.toTimeString().slice(0,8);
+
+  const miniTime = document.getElementById("miniTimeInput");
+  if(miniTime) {
+      miniTime.value = timeCtrl.value;
+  }
+}
+</script>
+
+<div class="kpShiftBox">
+  <div class="kpShiftTitle">
+    Synthetic Time Shift &nbsp; | &nbsp; Date–Time Control
+  </div>
+
+  <div class="kpShiftGrid">
+
+    <div class="kpLeft">
+      Jump :
+      <input id="jumpVal" type="number" value="30" style="width:70px">
+      <select id="jumpMode">
+        <option value="sec">Seconds</option>
+        <option value="min">Minutes</option>
+      </select>
+
+      <button onclick="shiftStep(-1)">◀</button>
+      <button onclick="shiftStep(1)">▶</button>
+
+      <div id="shiftCounter">
+        Current Shift : 0 min 0 sec
+      </div>
+    </div>
+
+    <div class="kpRight">
+      📅 <input type="date" id="dateCtrl" oninput="applyDateTimeChange()">
+	⏱ <input type="time" id="timeCtrl" step="1" oninput="applyDateTimeChange()">
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.querySelector("button[onclick='buildCuspalChart()']")
+ ?.addEventListener("click",()=>{
+    setTimeout(()=>{
+      captureBaseDateTime();
+      syncDateTimeTool();
+    },0);
+ });
+</script>
+
 <div id="vimshottari-wrapper">
 
 <h2 id="vimMainHeading"
@@ -6388,7 +6117,7 @@ Vimshottari Dasha ▼
  max-width:1200px;
  margin:60px auto;
  padding:22px;
- background:#0b0505;
+ background:var(--panel-bg);
  border:1px solid #a86b17;
  border-radius:12px;
  box-shadow:0 0 25px rgba(255,159,28,.25);
@@ -6889,7 +6618,7 @@ grid-template-columns:
    =============================== */
 
 #vimSearchDate{
- background:#020617;
+ background:#1f1410;
  color:#facc15;
  border:1px solid #a86b17;
  padding:6px 8px;
@@ -7656,26 +7385,6 @@ document.addEventListener("change", e=>{
 
 </script>
 </div>
-<!-- VIMSHOTTARI END -->
-
-
-
-
-
-
-
-
-
-
-<!-- =========================================================
-     SWISS EPHEMERIS
-     ========================================================= -->
-
-
-
-
-
-
 <script>
 /* =========================================================
    SWISS EPHEMERIS JSON LOADER (UNIVERSAL FORMAT)
@@ -7961,15 +7670,19 @@ document.getElementById("trueNodeModeKP")
 
 
 <script>
+
+
 /* =========================================================
    COLLAPSIBLE SECTION TOGGLE
    ========================================================= */
 function toggleSection(id, el){
+    // Add this line to ignore clicks if text is being highlighted
+    if(window.getSelection().toString().length > 0) return; 
+
     const box = document.getElementById(id);
     if(!box) return;
 
     const isOpen = box.style.display === "block";
-
     box.style.display = isOpen ? "none" : "block";
 
     if(isOpen){
@@ -7978,28 +7691,18 @@ function toggleSection(id, el){
         el.classList.remove("collapsed");
     }
 }
-</script>
 
-
-
-
-
-
-
-
-
-
-<script>
 /* =========================================================
    GLOBAL COLLAPSIBLE TOGGLE
    ========================================================= */
 function toggleCollapsible(id, el){
+    // Add this line to ignore clicks if text is being highlighted
+    if(window.getSelection().toString().length > 0) return;
 
     const box = document.getElementById(id);
     if(!box) return;
 
     const isOpen = box.style.display === "block";
-
     box.style.display = isOpen ? "none" : "block";
 
     if(isOpen){
@@ -8448,7 +8151,7 @@ function getFinalInnerScore(p) {
    ========================================================= */
 function renderOverrideTable(planetsOrder) {
     let html = `
-    <div style="background:#120606; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+    <div style="background:#1f1410; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #a86b17; padding-bottom:12px;">
             <h3 style="color:#facc15; margin:0; font-size:24px; font-weight:900; text-shadow:0 0 8px rgba(250,204,21,0.4);">Manual Score Overrides</h3>
             <button onclick="clearAllOverrides()" style="background:linear-gradient(135deg, #b11226, #7f1d1d); color:#fff; border:1px solid #ef4444; padding:8px 16px; border-radius:6px; font-weight:900; cursor:pointer; box-shadow:0 0 10px rgba(239,68,68,0.4);">Reset All to Auto</button>
@@ -8518,7 +8221,7 @@ function renderVerticalChart(planetsOrder, type) {
     let borderColor = isOuter ? '#b11226' : '#a21caf'; 
 
     let html = `
-    <div style="background:#0c0505; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+    <div style="background:#1f1410; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
         
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid ${borderColor}; padding-bottom:12px; margin-bottom:15px;">
             <h2 style="margin:0; color:${primaryColor}; font-size:26px; font-weight:900; text-shadow: 0 0 8px ${glowColor};">${titleLeft}</h2>
@@ -8609,7 +8312,7 @@ function renderComparisonTable(planetsOrder) {
         let fullName = markPlanet(p).split(' ')[0]; 
         
         rowsHtml += `
-        <tr style="border-bottom: 1px solid #3a1a12; background: #0c0505;">
+        <tr style="border-bottom: 1px solid #3a1a12; background: #1a0f0c;">
             <td style="padding: 12px; font-weight: 900; font-size: 18px; color: #facc15; text-align: center; border-right: 1px solid #3a1a12; text-transform: capitalize;">${fullName}</td>
             <td style="padding: 12px; border-right: 1px solid #3a1a12;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
@@ -8635,7 +8338,7 @@ function renderComparisonTable(planetsOrder) {
     let avgInner = Math.round(totalInner / planetsOrder.length);
     
     let html = `
-    <div style="background:#0c0505; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8); display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="background:#1f1410; border:1px solid #a86b17; border-radius:8px; padding:25px; margin-bottom:30px; box-shadow: 0 0 20px rgba(0,0,0,0.8); display: flex; flex-wrap: wrap; gap: 20px;">
         
         <div style="flex: 1 1 600px;">
             <table style="width: 100%; border-collapse: collapse; background: #120606; border: 2px solid #a86b17;">
@@ -8902,7 +8605,7 @@ function buildBarCharts() {
             box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); 
             text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
         ">
-        Table 12 - PLANETARY STRENGTH BAR CHART
+        Table 13 - PLANETARY STRENGTH BAR CHART
     </h2>
     <div id="charts-body" class="collapsible-content" style="display:${displayState};">
     `;
@@ -9140,7 +8843,7 @@ function buildTable3_5() {
     // CHANGED: Removed 'open' class from h2 and set display to 'none' on the body div
     let html = `
     <h2 class="collapsible-heading" onclick="toggleCollapsible('table3_5-body', this)">
-    Table 3.5 - 12 Bhava Cuspal Inter Links
+    Table 3 - 12 Bhava Cuspal Inter Links
     </h2>
     <div id="table3_5-body" class="collapsible-body" style="display: none;">
         
@@ -9335,7 +9038,10 @@ function getIslandRow(name, effStr, isPlanet, rules = null) {
 /* =========================================================
    MAIN DIVIDER BUILDER
    ========================================================= */
+   
+   
 function buildInnerOuterDivider() {
+    let t12Open = document.getElementById("function-divider-body")?.style.display === "block";
     let oldWrapper = document.getElementById("function-divider-wrapper");
     if (oldWrapper) oldWrapper.remove();
 
@@ -9344,12 +9050,12 @@ function buildInnerOuterDivider() {
 
     let html = `
     <div id="function-divider-wrapper" style="margin-top: 50px;">
-        <h2 class="collapsible-heading" onclick="toggleCollapsible('function-divider-body', this)" 
+        <h2 class="collapsible-heading ${t12Open ? 'open' : 'collapsed'}" onclick="toggleCollapsible('function-divider-body', this)" 
             style="text-align: center; color: #facc15; font-weight: 900; letter-spacing: 3px; margin-bottom: 25px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); text-shadow: 2px 2px 5px rgba(0,0,0,0.9);">
-            Table 11 - Function Inner Outer Divider
+            Table 12 - Function Inner Outer Divider
         </h2>
         
-        <div id="function-divider-body" class="collapsible-body" style="display: none;">
+        <div id="function-divider-body" class="collapsible-body" style="display: ${t12Open ? 'block' : 'none'};">
             
             <h3 style="color: #38bdf8; margin-top: 30px; font-size: 22px;">1. Planets Divider (Table 10 Based)</h3>
             <table style="width: 100%; border-collapse: collapse; text-align: center;">
@@ -9367,7 +9073,7 @@ function buildInnerOuterDivider() {
                 <tbody id="div-tb2-body"></tbody>
             </table>
 
-            <div style="margin-top: 40px; margin-bottom:15px; background:#120606; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
+            <div style="margin-top: 40px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
                 <div style="color: #facc15; font-size: 16px; font-weight: bold; margin-bottom:12px;">Toggle Table 9 Source Data Below:</div>
                 <div style="display:flex; justify-content:center; gap:30px;">
                     <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
@@ -9538,18 +9244,376 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// =========================================================
+// 1. FORCED DEFAULTS FOR TABLE 11 (No Memory Caching)
+// =========================================================
+window.T11_INC_PL_STAR = true;
+window.T11_INC_SUB_SOS = true;
+window.T11_INC_SSL_SOSS = false;
+
+window.T11_COL_SUB = true;
+window.T11_COL_SSL = false;   
+window.T11_COL_STAR = true;
+
+// =========================================================
+// 2. DATA EXTRACTOR & MATRIX ENGINE
+// =========================================================
+function computeTable11Row(p) {
+    let combinedArr = [];
+    let T3 = window.__T3_CACHE__;
+    
+    if (!T3) return "";
+
+    let kp = getPlanetKPLords(p);
+    if (!kp) return "";
+    
+    let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
+    let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
+
+    let entitiesToScan = [];
+
+    if (window.T11_INC_PL_STAR) {
+        if (p) entitiesToScan.push(p);
+        if (kp.star) entitiesToScan.push(kp.star);
+    }
+    if (window.T11_INC_SUB_SOS) {
+        if (kp.sub) entitiesToScan.push(kp.sub);
+        if (starOfSub) entitiesToScan.push(starOfSub);
+    }
+    if (window.T11_INC_SSL_SOSS) {
+        if (kp.ssl) entitiesToScan.push(kp.ssl);
+        if (starOfSSL) entitiesToScan.push(starOfSSL);
+    }
+
+    let extract = str => String(str || "").split(/[,>+ ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+
+    entitiesToScan.forEach(entity => {
+        let d = T3[entity];
+        if (!d) return;
+
+        if (window.T11_COL_SUB)  combinedArr.push(...extract(d.sub));
+        if (window.T11_COL_SSL)  combinedArr.push(...extract(d.ssl));
+        if (window.T11_COL_STAR) combinedArr.push(...extract(d.star));
+    });
+
+    return [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
+}
+
+// =========================================================
+// 3. HTML BUILDER
+// =========================================================
+function buildTable11Divider() {
+    let t11Open = document.getElementById("table11-divider-body")?.style.display === "block";
+    let oldWrapper = document.getElementById("table11-divider-wrapper");
+    if (oldWrapper) oldWrapper.remove();
+
+    // Look for Table 12 first, if it exists, inject right before it.
+    let t12 = document.getElementById("function-divider-wrapper");
+    let t10 = document.getElementById("table10-content");
+    let targetAnchor = t12 || t10;
+    let insertPos = t12 ? "beforebegin" : "afterend";
+
+    if (!targetAnchor) return;
+
+    let html = `
+    <div id="table11-divider-wrapper" style="margin-top: 50px;">
+        <h2 class="collapsible-heading ${t11Open ? 'open' : 'collapsed'}" onclick="toggleCollapsible('table11-divider-body', this)" 
+            style="text-align: center; color: #facc15; font-weight: 900; letter-spacing: 3px; margin-bottom: 25px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); text-shadow: 2px 2px 5px rgba(0,0,0,0.9);">
+            Table 11 - Planets & 12 Cuspal All Level Inner & Outer Divider
+        </h2>
+        
+        <div id="table11-divider-body" class="collapsible-body" style="display: ${t11Open ? 'block' : 'none'};">
+		
+		
+            
+            <div style="margin-top: 20px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
+                
+                <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #4a2a1a;">
+                    <div style="color: #38bdf8; font-size: 16px; font-weight: bold; margin-bottom:12px; letter-spacing: 1px;">1. Select Table 5 Levels (Source Entities):</div>
+                    <div style="display:flex; justify-content:center; gap:25px; flex-wrap:wrap;">
+                        <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_INC_PL_STAR ? "checked" : ""} onchange="window.T11_INC_PL_STAR=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Planet + Star
+                        </label>
+                        <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_INC_SUB_SOS ? "checked" : ""} onchange="window.T11_INC_SUB_SOS=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Sublord + Star of Sub
+                        </label>
+                        <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_INC_SSL_SOSS ? "checked" : ""} onchange="window.T11_INC_SSL_SOSS=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Sub-Sub Lord + Star of Sub-Sub
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="color: #38bdf8; font-size: 16px; font-weight: bold; margin-bottom:12px; letter-spacing: 1px;">2. Select Table 5 Columns (Numbers to Extract):</div>
+                    <div style="display:flex; justify-content:center; gap:30px; flex-wrap:wrap;">
+                        <label style="color:#facc15; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_COL_SUB ? "checked" : ""} onchange="window.T11_COL_SUB=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Sublord Column
+                        </label>
+                        <label style="color:#facc15; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_COL_SSL ? "checked" : ""} onchange="window.T11_COL_SSL=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Sub-Sub Column
+                        </label>
+                        <label style="color:#facc15; font-weight:bold; cursor:pointer;">
+                            <input type="checkbox" ${window.T11_COL_STAR ? "checked" : ""} onchange="window.T11_COL_STAR=this.checked; renderTable11Inner();" style="transform:scale(1.2); margin-right:8px;"> Starlord Column
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px;">1. Planets Divider (Table 5 Matrix)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(true)}
+                </tr>
+                <tbody id="t11-div-tb1-body"></tbody>
+            </table>
+
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">2. 12 Cuspal Sublords Divider (Table 5 Matrix)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(false)}
+                </tr>
+                <tbody id="t11-div-tb2-body"></tbody>
+            </table>
+
+        </div>
+    </div>`;
+
+    targetAnchor.insertAdjacentHTML(insertPos, html);
+    renderTable11Inner();
+}
+
+function renderTable11Inner() {
+    let order = getPivotSortedPlanets();
+    let tb1Html = "";
+    order.forEach(p => {
+        let effStr = computeTable11Row(p);
+        let name = markPlanet(p).split(' ')[0];
+        tb1Html += getIslandRow(name, effStr, true);
+    });
+    
+    let tb1Body = document.getElementById("t11-div-tb1-body");
+    if(tb1Body) tb1Body.innerHTML = tb1Html;
+
+    let tb2Html = "";
+    if (cuspsData && cuspsData.length > 0) {
+        let pivotHouse = getPivotHouse();
+        let baseCusps = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+        let rotated = [];
+        let startIdx = baseCusps.findIndex(c => c.bhava === pivotHouse);
+        if(startIdx < 0) startIdx = 0;
+        for(let i=0; i<12; i++){
+            rotated.push(baseCusps[(startIdx + i) % 12]);
+        }
+
+        rotated.forEach((c, i) => {
+            let bhava = i + 1;
+            let csl = c.subLord;
+            let name = markPlanet(csl).split(' ')[0];
+            let label = `${bhava} - ${name}`;
+            let rules = CUSP_DIVIDER[bhava];
+
+            let effStr = computeTable11Row(csl);
+            tb2Html += getIslandRow(label, effStr, false, rules);
+        });
+    }
+    
+    let tb2Body = document.getElementById("t11-div-tb2-body");
+    if(tb2Body) tb2Body.innerHTML = tb2Html;
+}
+
+// =========================================================
+// 4. INSTANT TABLE 9 & 10 COLLAPSE SNAPPER
+// =========================================================
+function forceCollapse9and10() {
+    // Specifically target the exact headers and bodies
+    let t9Heading = document.querySelector("#table9-content .collapsible-heading");
+    let t9Body = document.getElementById("table9-body");
+    if (t9Heading && t9Body) {
+        t9Heading.classList.remove("open");
+        t9Body.style.display = "none";
+    }
+
+    let t10Heading = document.querySelector("#table10-content .collapsible-heading");
+    let t10Body = document.getElementById("table10-body");
+    if (t10Heading && t10Body) {
+        t10Heading.classList.remove("open");
+        t10Body.style.display = "none";
+    }
+}
+
+
+
+
+
+
+
+// =========================================================
+// 5. MASTER INTEGRATION ENGINE (Instant Synchronous)
+// =========================================================
+(function(){
+    if (typeof buildTable9 === "function") {
+        const _origB9 = buildTable9;
+        buildTable9 = function() {
+            if (_origB9) _origB9();
+            // Build Table 11 instantly without any delayed timers
+            if (typeof buildTable11Divider === "function") {
+                buildTable11Divider();
+            }
+        };
+    }
+})();
+
+
+
+</script>
+
+
+
+
+
+
+
+
+<script>
+// =========================================================
+// ANTI SCROLL JUMP & STATE PRESERVATION ENGINE (FIXED)
+// =========================================================
+
+window.TABLE_TOGGLE_STATES = window.TABLE_TOGGLE_STATES || {};
+window._scrollFixDepth = window._scrollFixDepth || 0;
+window._oldMinHeight = window._oldMinHeight || "";
+
+// 1. Hook into user clicks to save exact table states
+const _origToggleCollapsible = toggleCollapsible;
+toggleCollapsible = function(id, el) {
+    _origToggleCollapsible(id, el);
+    const box = document.getElementById(id);
+    if(box) window.TABLE_TOGGLE_STATES[id] = box.style.display;
+};
+
+const _origToggleSection = toggleSection;
+toggleSection = function(id, el) {
+    _origToggleSection(id, el);
+    const box = document.getElementById(id);
+    if(box) window.TABLE_TOGGLE_STATES[id] = box.style.display;
+};
+
+// 2. Disable the hardcoded timeout that was forcing tables closed
+window.forceCollapse9and10 = function() { 
+    // Disabled: State engine handles this gracefully now
+};
+
+// 3. The Wrapper to freeze screen height and restore states seamlessly
+function withScrollFix(fn) {
+    return function(...args) {
+        // Save states for all tables just in case they haven't been clicked yet
+        document.querySelectorAll('.collapsible-body, .collapsible-content').forEach(el => {
+            if (el.id && window.TABLE_TOGGLE_STATES[el.id] === undefined) {
+                window.TABLE_TOGGLE_STATES[el.id] = el.style.display || "none";
+            }
+        });
+
+        // Freeze screen height to prevent jumping up during DOM removal
+        // 🔥 FIXED: Added depth tracking so rapid clicking doesn't bloat the page height
+        if (window._scrollFixDepth === 0) {
+            window._oldMinHeight = document.body.style.minHeight || "";
+            document.body.style.minHeight = Math.max(document.body.scrollHeight, window.innerHeight) + "px";
+        }
+        window._scrollFixDepth++;
+
+        // Run the original function (destroys and recreates tables)
+        let ret = fn.apply(this, args);
+
+        // Wait for all chained table renders to finish
+        setTimeout(() => {
+            document.querySelectorAll('.collapsible-body, .collapsible-content').forEach(el => {
+                if (el.id && window.TABLE_TOGGLE_STATES[el.id] !== undefined) {
+                    let wasOpen = window.TABLE_TOGGLE_STATES[el.id] === 'block';
+                    el.style.display = window.TABLE_TOGGLE_STATES[el.id];
+                    
+                    // Fix the arrow indicators
+                    let heading = el.previousElementSibling;
+                    if (heading && heading.classList.contains('collapsible-heading')) {
+                        if (wasOpen) {
+                            heading.classList.add('open');
+                            heading.classList.remove('collapsed');
+                        } else {
+                            heading.classList.remove('open');
+                            heading.classList.add('collapsed');
+                        }
+                    }
+                }
+            });
+
+            window._scrollFixDepth--;
+            
+            // Restore screen height once all nested rebuilds are fully complete
+            if (window._scrollFixDepth === 0) {
+                document.body.style.minHeight = window._oldMinHeight;
+            }
+            
+            // 🔥 THE CULPRIT REMOVED: window.scrollTo(0, currentScroll);
+            // We now let the browser naturally preserve the scroll position 
+            // over the stabilized minHeight without hijacking the user's view.
+
+        }, 180); 
+
+        return ret;
+    };
+}
+
+// 4. Wrap the core functions that cause the entire page to rebuild
+if (typeof buildTable9 === "function" && !buildTable9._wrapped) {
+    buildTable9 = withScrollFix(buildTable9);
+    buildTable9._wrapped = true;
+}
+if (typeof buildCuspalChart === "function" && !buildCuspalChart._wrapped) {
+    buildCuspalChart = withScrollFix(buildCuspalChart);
+    buildCuspalChart._wrapped = true;
+}
+if (typeof renderTable11Inner === "function" && !renderTable11Inner._wrapped) {
+    renderTable11Inner = withScrollFix(renderTable11Inner);
+    renderTable11Inner._wrapped = true;
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
 
 
