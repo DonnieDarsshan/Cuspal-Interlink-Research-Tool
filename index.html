@@ -535,9 +535,19 @@ function lockBaseDateTime(){
     </div>
 </div>
 
-<div style="margin-top:40px; margin-bottom: 30px; text-align:center;">
-    <h2 id="pivotMode">Pivot & House Mode</h2>
-    <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top:15px; align-items:center;">
+
+
+
+
+
+
+
+
+
+<div style="margin-top:40px; margin-bottom: 30px;">
+    <h3 id="pivotMode" style="text-align:left; font-size:20px; color:#ff9f1c; margin-bottom: 15px; padding-left: 10px;">Pivot & House Mode</h3>
+    
+    <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap; align-items:center; margin-bottom: 25px;">
         <select id="pivotSelect" style="padding:6px; background:#1f1410; color:#facc15; border:1px solid #a86b17; font-weight:bold;">
             <option value="Lagna">Lagna</option><option value="Surya">Surya</option><option value="Chandra">Chandra</option><option value="Mangala">Mangala</option><option value="Rahu">Rahu</option><option value="Jupiter">Jupiter</option><option value="Saturn">Saturn</option><option value="Budha">Budha</option><option value="Ketu">Ketu</option><option value="Venus">Venus</option><option value="CSL2">2 CSL</option><option value="CSL3">3 CSL</option><option value="CSL4">4 CSL</option><option value="CSL5">5 CSL</option><option value="CSL6">6 CSL</option><option value="CSL7">7 CSL</option><option value="CSL8">8 CSL</option><option value="CSL9">9 CSL</option><option value="CSL10">10 CSL</option><option value="CSL11">11 CSL</option><option value="CSL12">12 CSL</option>
         </select>
@@ -552,7 +562,49 @@ function lockBaseDateTime(){
         <label style="font-weight:700;"><input type="checkbox" id="kpLevelTheme" checked> Level Theme</label>
         <label style="font-weight:800;color:#ff9f1c;"><input type="checkbox" id="navToggleMode"> Nav Bar (1-9)</label>
     </div>
+
+    <div class="kpShiftBox" style="margin-top: 20px; margin-bottom: 0;">
+        <div class="kpShiftTitle">
+            Synthetic Time Shift &nbsp; | &nbsp; Date–Time Control
+        </div>
+        <div class="kpShiftGrid">
+            <div class="kpLeft">
+                Jump :
+                <input id="jumpVal" type="number" value="30" style="width:70px">
+                <select id="jumpMode">
+                    <option value="sec">Seconds</option>
+                    <option value="min">Minutes</option>
+                </select>
+
+                <button onclick="shiftStep(-1)">◀</button>
+                <button onclick="shiftStep(1)">▶</button>
+
+                <div id="shiftCounter">
+                    Current Shift : 0 min 0 sec
+                </div>
+            </div>
+
+            <div class="kpRight">
+                📅 <input type="date" id="dateCtrl" oninput="applyDateTimeChange()">
+                ⏱ <input type="time" id="timeCtrl" step="1" oninput="applyDateTimeChange()">
+            </div>
+        </div>
+    </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <div id="table1"></div>
 <h2 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table1-body', this)" style="margin-top:10px; margin-bottom:10px; text-align:left; color:#ff9f1c; font-weight:700; letter-spacing:1px; font-size:18px;">
@@ -863,6 +915,31 @@ body[data-kp-theme="on"] tr.lvl-subsub td:first-child {
     border-left: 4px solid #22c55e !important; 
 }
 
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   TABLE 6 & 7 STABILITY LOCK (COMPACT & STABLE)
+   ========================================================= */
+#table6-body table td,
+#table7-body table td {
+    padding: 10px 8px; /* Adds just a tiny bit of breathing room, not too huge */
+}
+
+#table6-body table sup,
+#table7-body table sup {
+    font-size: 11px;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+    top: -0.4em; /* Pushes the power up without stretching the row */
+}
 
 
 
@@ -3143,14 +3220,22 @@ function initTable5Shell(){
 
         <h2 class="collapsible-heading"
             onclick="if(window.getSelection().toString()) return; toggleCollapsible('table6-body', this)">
-            Table-6 : Effective Links Table
+            Table-6 : Effective Links Table ------ [ 1,4,7,10 ]----[ 2,5,8,11 ]----[ 3,6,9,12 ]
         </h2>
 
         <div id="table6-body" class="collapsible-body">
 
+
+
+
             <div id="table6-content"></div>
 
             <div style="margin-bottom:6px;">
+                <label style="margin-right:20px; font-weight:700; color:#38bdf8;">
+                    <input type="checkbox" id="countRepetition">
+                    Count Repetition
+                </label>
+
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreSSL">
                     Ignore Sub-Sub Lord Column
@@ -3161,16 +3246,20 @@ function initTable5Shell(){
                     Ignore Star Lord Column
                 </label>
             </div>
+			
+			
+			
+			
 
             <div style="margin-bottom:6px;">
                 <label style="margin-right:20px;">
-                    <input type="checkbox" id="ignoreSubRow" checked>
+                    <input type="checkbox" id="ignoreSubRow">
                     Ignore Sub Lord Row
                 </label>
 
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreStarOfSub">
-                    Ignore Star of Sub
+                    Ignore Star of Sub Row
                 </label>
             </div>
 
@@ -3182,7 +3271,7 @@ function initTable5Shell(){
 
                 <label style="margin-right:20px;">
                     <input type="checkbox" id="ignoreStarOfSSL" checked>
-                    Ignore Star of Sub-Sub
+                    Ignore Star of Sub-Sub Lord Row 
                 </label>
             </div>
 
@@ -3192,16 +3281,17 @@ function initTable5Shell(){
     </div>
     `;
 
-    [
-        "ignoreStar",
-        "ignoreSSL",
-        "ignoreSubRow",
-        "ignoreSSLRow",
-        "ignoreStarOfSub",
-        "ignoreStarOfSSL"
-    ].forEach(id=>{
-        document.getElementById(id).onchange = buildTable5;
-    });
+   [
+				"countRepetition",
+				"ignoreStar",
+				"ignoreSSL",
+				"ignoreSubRow",
+				"ignoreSSLRow",
+				"ignoreStarOfSub",
+				"ignoreStarOfSSL"
+			].forEach(id=>{
+				document.getElementById(id).onchange = buildTable5;
+			});
 }
 
 
@@ -3247,6 +3337,29 @@ function getPivotSortedPlanets(){
     return list.slice(idx).concat(list.slice(0, idx));
 }
 
+
+
+
+/* =========================================================
+   HELPER : FORMAT REPEATED NUMBERS AS POWERS (e.g., 2³)
+   ========================================================= */
+function formatWithPowers(arr) {
+    if (!arr || arr.length === 0) return "";
+    let counts = {};
+    arr.forEach(n => {
+        counts[n] = (counts[n] || 0) + 1;
+    });
+    return Object.keys(counts)
+        .map(Number)
+        .sort((a,b) => a-b)
+        .map(n => counts[n] > 1 ? `${n}<sup>${counts[n]}</sup>` : `${n}`)
+        .join(" , "); // <-- Added spaces around the comma here
+}
+
+
+
+
+
 /* =========================================================
    BUILD TABLE-6 (ROW CORRECT LOGIC + STAR OF SUB ADDED)
    ========================================================= */
@@ -3257,6 +3370,7 @@ function buildTable5(){
     let T3 = window.__T3_CACHE__;
     if(!T3) return;
 
+    let countRep         = document.getElementById("countRepetition")?.checked;
     let useStar          = !document.getElementById("ignoreStar").checked;
     let useSSL           = !document.getElementById("ignoreSSL").checked;
     let ignoreSubRow     = document.getElementById("ignoreSubRow").checked;
@@ -3271,14 +3385,14 @@ function buildTable5(){
    let order = getPivotSortedPlanets();
 
     let html = `
-    <table>
+    <table style="table-layout: fixed; width: 100%; word-wrap: break-word;">
         <tr>
-            <th>Planet</th>
-            <th>Even</th>
-            <th>Odd</th>
-            <th>1,4,7,10</th>
-            <th>2,5,8,11</th>
-            <th>3,6,9,12</th>
+            <th style="width: 16%;">Planet</th>
+            <th style="width: 16.8%;">Even</th>
+            <th style="width: 16.8%;">Odd</th>
+            <th style="width: 16.8%;">1,4,7,10</th>
+            <th style="width: 16.8%;">2,5,8,11</th>
+            <th style="width: 16.8%;">3,6,9,12</th>
         </tr>
     `;
 
@@ -3320,7 +3434,11 @@ function buildTable5(){
             }
         }
 
-        all = uniqueSorted(all);
+        if (countRep) {
+            all = all.sort((x, y) => x - y);
+        } else {
+            all = uniqueSorted(all);
+        }
 
         let e=[], o=[], a=[], b=[], c=[];
         all.forEach(n=>{
@@ -3335,11 +3453,11 @@ function buildTable5(){
         <tr>
             <td><b>${markPlanet(p)}</b></td>
 
-            <td>${e.join(",")}</td>
-            <td>${o.join(",")}</td>
-            <td>${a.join(",")}</td>
-            <td>${b.join(",")}</td>
-            <td>${c.join(",")}</td>
+            <td>${formatWithPowers(e)}</td>
+            <td>${formatWithPowers(o)}</td>
+            <td>${formatWithPowers(a)}</td>
+            <td>${formatWithPowers(b)}</td>
+            <td>${formatWithPowers(c)}</td>
         </tr>`;
     });
 
@@ -3385,6 +3503,7 @@ function buildTable7(){
     let T3 = window.__T3_CACHE__;
     if(!T3) return;
 
+    let countRep         = document.getElementById("countRepetition")?.checked;
     let useStar          = !document.getElementById("ignoreStar")?.checked;
     let useSSL           = !document.getElementById("ignoreSSL")?.checked;
     let ignoreSubRow     = document.getElementById("ignoreSubRow")?.checked;
@@ -3400,20 +3519,20 @@ function buildTable7(){
 	
     <h2 class="collapsible-heading"
     onclick="if(window.getSelection().toString()) return; toggleCollapsible('table7-body', this)">
-	Table-7 : Effective Links Table
+	Table-7 : Effective Links Table ----- [ 1,5,9 ]----[ 2,6,10 ]----[ 3,7,11 ]----[ 4,8,12 ]
 	</h2>
 
 	<div id="table7-body" class="collapsible-body">
 
-    <table>
+    <table style="table-layout: fixed; width: 100%; word-wrap: break-word;">
         <tr>
-            <th>Planet</th>
-            <th>Even</th>
-            <th>Odd</th>
-            <th>1,5,9</th>
-            <th>2,6,10</th>
-            <th>3,7,11</th>
-            <th>4,8,12</th>
+            <th style="width: 16%;">Planet</th>
+            <th style="width: 14%;">Even</th>
+            <th style="width: 14%;">Odd</th>
+            <th style="width: 14%;">1,5,9</th>
+            <th style="width: 14%;">2,6,10</th>
+            <th style="width: 14%;">3,7,11</th>
+            <th style="width: 14%;">4,8,12</th>
         </tr>
     `;
 
@@ -3456,7 +3575,11 @@ function buildTable7(){
             }
         }
 
-        all = uniqueSorted(all);
+        if (countRep) {
+            all = all.sort((x, y) => x - y);
+        } else {
+            all = uniqueSorted(all);
+        }
 
         let even=[], odd=[], a=[], b=[], c=[], d=[];
         all.forEach(n=>{
@@ -3471,12 +3594,12 @@ function buildTable7(){
         html += `
         <tr>
             <td><b>${markPlanet(p)}</b></td>
-            <td>${even.join(",")}</td>
-            <td>${odd.join(",")}</td>
-            <td>${a.join(",")}</td>
-            <td>${b.join(",")}</td>
-            <td>${c.join(",")}</td>
-            <td>${d.join(",")}</td>
+            <td>${formatWithPowers(even)}</td>
+            <td>${formatWithPowers(odd)}</td>
+            <td>${formatWithPowers(a)}</td>
+            <td>${formatWithPowers(b)}</td>
+            <td>${formatWithPowers(c)}</td>
+            <td>${formatWithPowers(d)}</td>
         </tr>
         `;
     });
@@ -3975,7 +4098,10 @@ let HB_SHOW_LEGENDS = false;
 
 let HB_IGNORE_STAR = true; 
 let HB_IGNORE_SSL  = false; 
-let T10_IGNORE_SSL = false; // 🔥 NEW: Global state for Table 10 Ignore SSL
+let T10_IGNORE_SSL = false; 
+let T10_ADD_STARLORD = false; 
+let T10_ADD_SUBLORD = false; // 🔥 CHANGED: Add Sublord is now OFF by default
+let T10_ADD_SUBSUB = true;   // 🔥 CHANGED: Add Sub-Sublord is now ON by default
 let HB_EXCEPTION_RULE = false;
 let HB_SUPERIOR_RULE = false;
 
@@ -4478,7 +4604,7 @@ function computeTable10DominanceWithSSL(top3Values, sslValues, pVals = [], sVals
 
 
 
-function computeTable10Row(p) {
+function computeTable10Row(p, excludeSublordForGraphs = false) {
     let kp = getPlanetKPLords(p);
     if (!kp) return "";
 
@@ -4555,6 +4681,10 @@ function computeTable10Row(p) {
     else if (pS==="3,6,12" && stS==="1,7" && subS==="12") finalArrBase = [1,3,7];
     else if (pS==="2,6,8,12" && stS==="8" && subS==="1") finalArrBase = [2,6,8,12];
     else if (pS==="5" && stS==="2,4,8,10" && subS==="" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
+    
+    // 🔥 FIXED CASES: Prevents [4,7,10] Kendra Override from hijacking massive Even-Volume
+    else if (pS==="2,4,8,10" && stS==="2,8,9" && subS==="7" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
+    else if (pS==="4,8,12" && stS==="" && subS==="2,4,8,10" && sslS==="7") finalArrBase = [2,4,8,10,12];
 
 
 
@@ -4578,25 +4708,67 @@ function computeTable10Row(p) {
 
         const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
 
-        // CONTEXT 2: OVERWHELMING VOLUME (Mob Rule: Heavy parity crushes hierarchies)
-        // If Evens outnumber Odds by 2 or more (or vice versa), the sheer volume dictates the outcome.
-        if (evens.length >= odds.length + 2) {
+        let patterns = [
+            { group: [1,4,7,10], matches: all.filter(n => [1,4,7,10].includes(n)) },
+            { group: [2,5,8,11], matches: all.filter(n => [2,5,8,11].includes(n)) },
+            { group: [3,6,9,12], matches: all.filter(n => [3,6,9,12].includes(n)) }
+        ];
+
+        patterns.sort((a, b) => {
+            if (b.matches.length !== a.matches.length) return b.matches.length - a.matches.length;
+            let aSub = a.matches.filter(n => subVals.includes(n)).length;
+            let bSub = b.matches.filter(n => subVals.includes(n)).length;
+            return bSub - aSub;
+        });
+
+        let bestPattern = patterns[0];
+
+        // =========================================================
+        // 🔥 THE "ROLES" ENGINE (Context-Aware Dynamic Rules)
+        // =========================================================
+
+        // CONTEXT 1: THE "PERFECT FAMILY" (Perfect Pattern Synergy)
+        // If all 4 members of a structural group (e.g., 1,4,7,10) are present, 
+        // this perfect synergy overrides mere numerical volume. (Fixes your Venus 1,5 case)
+        if (bestPattern.matches.length === 4 && hasAny(subVals, bestPattern.group)) {
+            finalArrBase = bestPattern.matches;
+        }
+
+        // CONTEXT 2: THE "MOB RULE" (Absolute Overwhelming Volume)
+        // If one parity dominates by a massive margin (difference of 3 or more),
+        // it crushes incomplete patterns. (Fixes your Mangala/Ketu 4,8,12 case)
+        else if (evens.length >= odds.length + 3) {
+            finalArrBase = allEvens;
+        }
+        else if (odds.length >= evens.length + 3) {
+            finalArrBase = allOdds;
+        }
+
+        // CONTEXT 3: THE "STRONG FACTION" (Incomplete Pattern vs Standard Volume)
+        // If a pattern has 3 members, it fights against standard volume.
+        else if (bestPattern.matches.length === 3 && hasAny(subVals, bestPattern.group)) {
+            // If the opposing volume is strong enough (+2 advantage), volume wins. 
+            // (Fixes your Rahu/Jupiter 2,4,8,10 case)
+            if (evens.length >= odds.length + 2) {
+                finalArrBase = allEvens;
+            } else if (odds.length >= evens.length + 2) {
+                finalArrBase = allOdds;
+            } else {
+                // Volume is balanced, so the structural pattern survives
+                finalArrBase = bestPattern.matches;
+            }
+        }
+
+        // CONTEXT 4: STANDARD VOLUME
+        else if (evens.length >= odds.length + 2) {
             finalArrBase = allEvens;
         }
         else if (odds.length >= evens.length + 2) {
             finalArrBase = allOdds;
         }
 
-        // CONTEXT 3: STRUCTURAL PATTERN (Specific roles like 1,4,7,10 form up)
-        else if ( core.filter(n => [1,4,7,10].includes(n)).length >= 2 && (hasAny(subVals, [2,4,10]) || hasAny(pVals, [2,4,10])) && (hasAny(sVals, [1,7]) || hasAny(pVals, [1,7])) ) {
-            finalArrBase = all.filter(n => [1,4,7,10].includes(n));
-        }
-        else if ( core.filter(n => [2,5,8,11].includes(n)).length >= 2 && (hasAny(subVals, [2,4,8,10]) || hasAny(sVals, [5,8,11])) && (hasAny(sVals, [5,11]) || hasAny(sslVals, [2,5])) ) {
-            finalArrBase = all.filter(n => [2,5,8,11].includes(n));
-        }
-
-        // CONTEXT 4: SUBLORD DOMINANCE (Lion Kills Sheep)
-        // When there is no overwhelming volume and no strong pattern, the Sublord asserts authority.
+        // CONTEXT 5: SUBLORD DOMINANCE (Lion Kills Sheep)
+        // When there is no clear pattern or volume, the Sublord decides the fate.
         else if (subVals.length > 0) {
             let subEvens = subVals.filter(n => n % 2 === 0).length;
             let subOdds  = subVals.filter(n => n % 2 !== 0).length;
@@ -4606,18 +4778,17 @@ function computeTable10Row(p) {
             } else if (subOdds > subEvens) {
                 finalArrBase = allOdds;
             } else {
-                // TIE BREAKER: If Sublord is tied (e.g., 6, 11), let overall core weight decide
+                // TIE BREAKER
                 if (odds.length > evens.length) finalArrBase = allOdds;
                 else if (evens.length > odds.length) finalArrBase = allEvens;
                 else {
-                    // Dead tie exception
                     if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
                     else finalArrBase = allEvens;
                 }
             }
         }
 
-        // CONTEXT 5: STARLORD DOMINANCE (If Sublord is missing)
+        // CONTEXT 6: STARLORD DOMINANCE 
         else if (sVals.length > 0) {
             let sEvens = sVals.filter(n => n % 2 === 0).length;
             let sOdds  = sVals.filter(n => n % 2 !== 0).length;
@@ -4634,7 +4805,7 @@ function computeTable10Row(p) {
             }
         }
 
-        // CONTEXT 6: DEFAULT FALLBACK
+        // CONTEXT 7: DEFAULT FALLBACK
         else {
             if (evens.length === 1 && odds.length === 1 && evens.includes(2) && odds.includes(1)) {
                 finalArrBase = [1, ...sslVals.filter(n => n % 2 !== 0)];
@@ -4660,8 +4831,76 @@ function computeTable10Row(p) {
     const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
     let finalArrPivot = uniqueSort(rotate(finalArrBase));
     
-    // 🔥 RETURN AS A SINGLE UNITED STRING (e.g., "5,8,11") SO THE GRAPH SCORES IT PROPERLY
-    return finalArrPivot.join(",");
+    let baseResult = finalArrPivot.join(",");
+
+
+
+
+
+
+
+
+
+// 🔥 NEW: Append bypassed Star Lord, Sub Lord, OR Sub-Sub Lord values conditionally
+    if (T10_ADD_STARLORD || T10_ADD_SUBSUB || T10_ADD_SUBLORD) {
+        let additions = [];
+        let T3 = window.__T3_CACHE__;
+        
+        // STRICTLY ONLY Planet, Star Lord, and Sub Lord (No Star of Sub or Star of SSL)
+        let chain = [p];
+        if (kp.star) chain.push(kp.star);
+        if (kp.sub)  chain.push(kp.sub);
+        
+        if (T3) {
+            chain.forEach(ent => {
+                if (T3[ent]) {
+                    let subVals = String(T3[ent].sub || "").split(",").filter(n=>n).map(Number);
+                    let sslVals = String(T3[ent].ssl || "").split(",").filter(n=>n).map(Number);
+                    let starVals = String(T3[ent].star || "").split(",").filter(n=>n).map(Number);
+
+                    // 1. Independent Sublord Evaluation (ONLY left out/untouched numbers)
+                    if (T10_ADD_SUBLORD && !excludeSublordForGraphs) {
+                        if (subVals.length > 0) {
+                            // strictly filter out numbers that are already in the final Effective Links
+                            let leftOut = subVals.filter(n => !finalArrPivot.includes(n));
+                            if (leftOut.length > 0) {
+                                let sortedSub = [...new Set(leftOut)].sort((a,b)=>a-b).join(",");
+                                if (sortedSub && !additions.includes(sortedSub)) {
+                                    additions.push(sortedSub);
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Mutually Exclusive Starlord / Sub-Sub Check
+                    if (T10_ADD_STARLORD) {
+                        // If upper value (Sub or SSL) exists, Star Lord was bypassed
+                        if ((subVals.length > 0 || sslVals.length > 0) && starVals.length > 0) {
+                            let sortedStar = [...new Set(starVals)].sort((a,b)=>a-b).join(",");
+                            if (sortedStar && !additions.includes(sortedStar) && sortedStar !== baseResult) {
+                                additions.push(sortedStar);
+                            }
+                        }
+                    } else if (T10_ADD_SUBSUB) {
+                        // If Sublord exists, Sub-Sublord was bypassed (so we append it).
+                        if (subVals.length > 0 && sslVals.length > 0) {
+                            let sortedSSL = [...new Set(sslVals)].sort((a,b)=>a-b).join(",");
+                            if (sortedSSL && !additions.includes(sortedSSL) && sortedSSL !== baseResult) {
+                                additions.push(sortedSSL);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (additions.length > 0) {
+            return baseResult + " + " + additions.join(" + ");
+        }
+    }
+    
+    // 🔥 RETURN AS A SINGLE UNITED STRING SO THE GRAPH SCORES IT PROPERLY
+    return baseResult;
 }
 
 
@@ -4687,26 +4926,43 @@ function computeTable10Row(p) {
    BUILD TABLE 9 & TABLE 10
    ========================================================= */
 
-/* HB UNTENANTED RULE (default ON) */
-let HB_UNTENANTED_RULE = true; // Turned ON
+/* HB UNTENANTED RULE (default OFF) */
+let HB_UNTENANTED_RULE = false; // <-- Turned OFF
+
+
 
 function buildTable9(){
     // 1. CAPTURE STATES BEFORE DESTROYING
-    let t9Open = document.getElementById("table9-body")?.style.display === "block";
-    let t10Open = document.getElementById("table10-body")?.style.display === "block";
+    let t9Element = document.getElementById("table9-body");
+    let t9Open = t9Element ? t9Element.style.display === "block" : false; // <-- Table 30 Default Collapsed
 
+    // Capture Table 33 state (formerly Inner/Outer Divider)
+    let t33Element = document.getElementById("table10-inner-outer-9");
+    let t33Open = t33Element ? t33Element.style.display === "block" : false;
+
+    let t10Element = document.getElementById("table10-body");
+    let t10Open = t10Element ? t10Element.style.display === "block" : true; // <-- Table 34 Default Expanded
+	
+    let t36Element = document.getElementById("table36-body");
+    let t36Open = t36Element ? t36Element.style.display === "block" : false;
+
+    // Remove old content
     document.getElementById("table9-content")?.remove();
-    document.getElementById("table10-content")?.remove(); // Added to clear previous Table 10
+    document.getElementById("table33-content")?.remove(); 
+    document.getElementById("table10-content")?.remove(); 
+    document.getElementById("table36-content")?.remove(); 
 
     let anchor = document.getElementById("vimshottari-wrapper");
     if(!anchor) return;
-
+	
     let html = `
     <div id="table9-content" style="margin-top:40px;">
         <h2 class="collapsible-heading ${t9Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table9-body', this)" style="user-select: auto;">
-			Table 9 : Effective Links as Per House Breaking Theory
+			Table 30 : Effective Links as Per House Breaking Theory
 		</h2>
 		<div id="table9-body" class="collapsible-body" style="display: ${t9Open ? 'block' : 'none'};">
+		
+		
 		
         
         <div style="margin:10px 0 14px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap;">
@@ -4879,7 +5135,16 @@ function buildTable9(){
 
     html += `</table>`;
 
-    /* 🔥 ADD LEGENDS UNDER TABLE 9 */
+
+
+
+
+
+
+
+
+
+/* 🔥 ADD LEGENDS UNDER TABLE 30 */
     if (HB_SHOW_LEGENDS) {
         html += `
         <div style="margin-top: 15px; margin-bottom: 20px; padding: 12px 20px; background: #1f1410; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
@@ -4892,53 +5157,85 @@ function buildTable9(){
         `;
     }
 
-    /* 🔥 ADD TABLE 9 DIVIDERS HERE */
-    html += `
-        <div style="margin-top: 40px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
-            <div style="color: #facc15; font-size: 16px; font-weight: bold; margin-bottom:12px;">Toggle Table 9 Source Data Below:</div>
-            <div style="display:flex; justify-content:center; gap:30px;">
-                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
-                    <input type="checkbox" ${DIVIDER_INC_A ? "checked" : ""} onchange="DIVIDER_INC_A=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF A
-                </label>
-                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
-                    <input type="checkbox" ${DIVIDER_INC_B ? "checked" : ""} onchange="DIVIDER_INC_B=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF B
-                </label>
-                <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
-                    <input type="checkbox" ${DIVIDER_INC_C ? "checked" : ""} onchange="DIVIDER_INC_C=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF C
-                </label>
-            </div>
-        </div>
-
-        <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px;">3. Planets Divider (Table 9 Based)</h3>
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
-            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
-                ${getIslandHeaders(true)}
-            </tr>
-            <tbody>
-                ${generatePlanetDividerRows(9)}
-            </tbody>
-        </table>
-
-        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">4. 12 Cuspal Sublords Divider (Table 9 Based)</h3>
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
-            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
-                ${getIslandHeaders(false)}
-            </tr>
-            <tbody>
-                ${generateCuspDividerRows(9)}
-            </tbody>
-        </table>
-
-        </div> </div> `;
-
+    // ⚠️ DO NOT CLOSE TABLE 30 YET! LET TABLE 33 NEST INSIDE IT.
 
     /* =========================================================
-       🔥🔥🔥 START OF NEW TABLE 10 🔥🔥🔥
+       🔥🔥🔥 START OF TABLE 33 (NESTED INSIDE TABLE 30) 🔥🔥🔥
+       ========================================================= */
+    html += `
+    <div id="table33-content" style="margin-top:40px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+        <h2 class="collapsible-heading ${t33Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table10-inner-outer-9', this)" style="user-select: auto; font-size: 24px;">
+            Table 33 : Inner & Outer Divider
+        </h2>
+        <div id="table10-inner-outer-9" class="collapsible-body" style="display: ${t33Open ? 'block' : 'none'};">
+
+            <div style="margin-top: 20px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
+                <div style="color: #facc15; font-size: 16px; font-weight: bold; margin-bottom:12px;">Toggle Table 30 Source Data Below:</div>
+                <div style="display:flex; justify-content:center; gap:30px;">
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_A ? "checked" : ""} onchange="DIVIDER_INC_A=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF A
+                    </label>
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_B ? "checked" : ""} onchange="DIVIDER_INC_B=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF B
+                    </label>
+                    <label style="color:#ff9f1c; font-weight:bold; cursor:pointer;">
+                        <input type="checkbox" ${DIVIDER_INC_C ? "checked" : ""} onchange="DIVIDER_INC_C=this.checked; buildTable9();" style="transform:scale(1.2); margin-right:8px;"> Include EFF C
+                    </label>
+                </div>
+            </div>
+
+            <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px;">3. Planets Divider (Table 30 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(true)}
+                </tr>
+                <tbody>
+                    ${generatePlanetDividerRows(9)}
+                </tbody>
+            </table>
+
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">4. 12 Cuspal Sublords Divider (Table 30 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(false)}
+                </tr>
+                <tbody>
+                    ${generateCuspDividerRows(9)}
+                </tbody>
+            </table>
+            
+        </div>
+    </div>
+    `;
+
+    // NOW CLOSE TABLE 30 COMPLETELY SO IT CONTAINS TABLE 33
+    html += `</div> </div>`;
+		
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+       🔥🔥🔥 START OF TABLE 34 (Formerly Table 10) 🔥🔥🔥
        ========================================================= */
     html += `
 	<div id="table10-content" style="margin-top:40px;">
         <h2 class="collapsible-heading ${t10Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table10-body', this)" style="user-select: auto;">
-			Table 10 : Shortened Effective Links
+			Table 35 : Shortened Effective Links
 		</h2>
 		<div id="table10-body" class="collapsible-body" style="display: ${t10Open ? 'block' : 'none'};">
 
@@ -4958,7 +5255,6 @@ function buildTable9(){
 
         let effLinks = computeTable10Row(p);
 
-        // 🔥 USING THE NEW TAGGED FORMATTING FUNCTION
         html += `
             <tr>
                 <td class="table9-teal"><b>${formatHBPlanetWithSource(p)}</b></td>
@@ -4966,27 +5262,68 @@ function buildTable9(){
                 <td class="table9-red">${kp.sub ? formatHBPlanetWithSource(kp.sub) : ""}</td>
                 <td class="table9-brown">${kp.ssl ? formatHBPlanetWithSource(kp.ssl) : ""}</td>
                 
-                <td class="table9-purple" style="font-weight:900; font-size:16px;">${effLinks}</td>
+                <td class="table9-purple" id="t34_eff_${p}" style="font-weight:900; font-size:16px;">${effLinks}</td>
             </tr>
         `;
     });
 
     html += `</table>`;
 
-    /* 🔥 NEW: ADD IGNORE SUB-SUB CHECKBOX UNDER TABLE 10 */
+
+
+
+
+
+
+
+/* 🔥 IGNORE SUB-SUB & ADD SUBLORD / STARLORD / SUB-SUB CHECKBOXES */
     html += `
         <div style="margin-top: 15px; margin-bottom: 20px;">
+            <label style="font-weight: 800; color: #fbbf24; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-right: 15px; box-shadow: 0 0 10px rgba(251,191,36,0.2);">
+                <input type="checkbox" id="t10_add_sublord" ${T10_ADD_SUBLORD ? "checked" : ""} 
+				   onchange="T10_ADD_SUBLORD = this.checked; buildTable9();" 
+				   style="transform: scale(1.2); margin-right: 8px; accent-color: #fbbf24;">
+                ADD SUBLORD
+            </label>
+            
             <label style="font-weight: 800; color: #f472b6; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
                 <input type="checkbox" id="t10_ignore_ssl" ${T10_IGNORE_SSL ? "checked" : ""} 
 				   onchange="T10_IGNORE_SSL = this.checked; buildTable9();" 
 				   style="transform: scale(1.2); margin-right: 8px; accent-color: #f472b6;">
-	   
                 Ignore Sub-Sub Lord
+            </label>
+            
+            <label style="font-weight: 800; color: #38bdf8; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-left: 15px; box-shadow: 0 0 10px rgba(2,132,199,0.2);">
+                <input type="checkbox" id="t10_add_starlord" ${T10_ADD_STARLORD ? "checked" : ""} 
+				   onchange="
+                       T10_ADD_STARLORD = this.checked; 
+                       if(this.checked) T10_ADD_SUBSUB = false; 
+                       buildTable9();
+                   " 
+				   style="transform: scale(1.2); margin-right: 8px; accent-color: #38bdf8;">
+                ADD STARLORD
+            </label>
+
+            <label style="font-weight: 800; color: #a855f7; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-left: 15px; box-shadow: 0 0 10px rgba(168,85,247,0.2);">
+                <input type="checkbox" id="t10_add_subsub" ${T10_ADD_SUBSUB ? "checked" : ""} 
+				   onchange="
+                       T10_ADD_SUBSUB = this.checked; 
+                       if(this.checked) T10_ADD_STARLORD = false; 
+                       buildTable9();
+                   " 
+				   style="transform: scale(1.2); margin-right: 8px; accent-color: #a855f7;">
+                ADD SUB-SUBLORD
             </label>
         </div>
     `;
+	
+	
+	
+	
+	
+	
 
-   /* 🔥 ADD LEGENDS UNDER TABLE 10 (RESPECTS TOGGLE) */
+   /* 🔥 ADD LEGENDS */
     if (HB_SHOW_LEGENDS) {
         html += `
             <div style="margin-top: 15px; padding: 12px 20px; background: #1f1410; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; color: #facc15; font-weight: 800; font-size: 15px; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
@@ -4999,46 +5336,55 @@ function buildTable9(){
         `;
     }
     
-    /* 🔥 ADD TABLE 10 DIVIDERS HERE */
+    // ⚠️ DO NOT CLOSE TABLE 34 YET! 
+
+    /* =========================================================
+       🔥🔥🔥 START OF TABLE 36 (NESTED INSIDE TABLE 34) 🔥🔥🔥
+       ========================================================= */
     html += `
-        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">1. Planets Divider (Table 10 Based)</h3>
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
-            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
-                ${getIslandHeaders(true)}
-            </tr>
-            <tbody>
-                ${generatePlanetDividerRows(10)}
-            </tbody>
-        </table>
+    <div id="table36-content" style="margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+        <h2 class="collapsible-heading ${t36Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table36-body', this)" style="user-select: auto; font-size: 22px;">
+            Table 37 : Shortened Effective Links Divider
+        </h2>
+        <div id="table36-body" class="collapsible-body" style="display: ${t36Open ? 'block' : 'none'};">
 
-        <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px;">2. 12 Cuspal Sublords Divider (Table 10 Based)</h3>
-        <table style="width: 100%; border-collapse: collapse; text-align: center;">
-            <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
-                ${getIslandHeaders(false)}
-            </tr>
-            <tbody>
-                ${generateCuspDividerRows(10)}
-            </tbody>
-        </table>
+            <h3 style="color: #38bdf8; margin-top: 20px; font-size: 20px;">1. Planets Divider (Table 10 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(true)}
+                </tr>
+                <tbody>
+                    ${generatePlanetDividerRows(10)}
+                </tbody>
+            </table>
 
-        </div> </div> `;
-    /* ==================== END OF TABLE 10 ==================== */
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 20px;">2. 12 Cuspal Sublords Divider (Table 10 Based)</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center;">
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707);">
+                    ${getIslandHeaders(false)}
+                </tr>
+                <tbody>
+                    ${generateCuspDividerRows(10)}
+                </tbody>
+            </table>
 
+        </div> 
+    </div> 
+    `;
+    /* ==================== END OF TABLE 36 ==================== */
 
-
-
-
-
-
-
-
-
-
-
-
-
+    // NOW CLOSE TABLE 34 COMPLETELY (This closes the #table10-body and #table10-content divs)
+    html += `</div> </div>`;
 
     anchor.insertAdjacentHTML("beforebegin", html);
+	
+	
+	
+	
+	
+	
+	
+	
     
     /* =============================
        MIRROR PIVOT SYNCHRONIZATION
@@ -5943,6 +6289,12 @@ function applyDateTimeChange(){
   }
 }
 
+
+
+
+
+
+
 function syncDateTimeTool(){
   if(!BASE_MASTER_DATETIME) return;
 
@@ -5951,46 +6303,31 @@ function syncDateTimeTool(){
     SHIFT_SECONDS * 1000
   );
 
-  dateCtrl.value = d.toISOString().slice(0,10);
-  timeCtrl.value = d.toTimeString().slice(0,8);
+  // FIX: Force strictly Local Time for both Date and Time outputs
+  const pad = (n) => String(n).padStart(2, '0');
+  
+  const localDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const localTime = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+  dateCtrl.value = localDate;
+  timeCtrl.value = localTime;
 
   const miniTime = document.getElementById("miniTimeInput");
   if(miniTime) {
-      miniTime.value = timeCtrl.value;
+      miniTime.value = localTime;
   }
 }
 </script>
 
-<div class="kpShiftBox">
-  <div class="kpShiftTitle">
-    Synthetic Time Shift &nbsp; | &nbsp; Date–Time Control
-  </div>
 
-  <div class="kpShiftGrid">
 
-    <div class="kpLeft">
-      Jump :
-      <input id="jumpVal" type="number" value="30" style="width:70px">
-      <select id="jumpMode">
-        <option value="sec">Seconds</option>
-        <option value="min">Minutes</option>
-      </select>
 
-      <button onclick="shiftStep(-1)">◀</button>
-      <button onclick="shiftStep(1)">▶</button>
 
-      <div id="shiftCounter">
-        Current Shift : 0 min 0 sec
-      </div>
-    </div>
 
-    <div class="kpRight">
-      📅 <input type="date" id="dateCtrl" oninput="applyDateTimeChange()">
-	⏱ <input type="time" id="timeCtrl" step="1" oninput="applyDateTimeChange()">
-    </div>
 
-  </div>
-</div>
+
+
+
 
 <script>
 document.querySelector("button[onclick='buildCuspalChart()']")
@@ -7841,7 +8178,8 @@ let CHART_SOURCE_MODE = "short";
 let CHART_SHOW_EFF_A = true;
 let CHART_SHOW_EFF_B = true;   
 let CHART_SHOW_EFF_C = false;
-let CHART_SECTION_OPEN = false; 
+let CHART_SECTION_OPEN = true; 
+let CHART_REST_OPEN = false; // <-- New variable to track the "EXPAND REST" state // <-- Table 40 Default Expanded 
 
 // Global State for Manual Overrides
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
@@ -7915,7 +8253,7 @@ function getSelectedEFFGroupsForCharts(p) {
 		
     } else if (CHART_SOURCE_MODE === "short") {
         /* Shortened Mode (Table 10) */
-        let shortEff = computeTable10Row(p);
+        let shortEff = computeTable10Row(p, true); // 🔥 Exclude Add Sublord for Chart calculation
         out.push(...parseEffStrToMultipleGroups(shortEff)); 
     } else {
         /* Effective Mode (Table 9) */
@@ -8069,29 +8407,54 @@ function calculateInnerScore(nums) {
 }
 
 // =========================================================
-// DATA RESOLVERS (Evaluates multiple groups and takes MAX)
+// DATA RESOLVERS (Evaluates multiple groups and applies Flat Grace Marks)
 // =========================================================
+
+function getOuterGraceMarks(groupArray) {
+    if (!groupArray || groupArray.length === 0) return 0;
+    const validOuter = [2, 4, 6, 8, 10, 12];
+    const count = groupArray.filter(n => validOuter.includes(n)).length;
+    return count * 10; // +10 for every Even number
+}
+
+function getInnerGraceMarks(groupArray) {
+    if (!groupArray || groupArray.length === 0) return 0;
+    const validInner = [1, 3, 5, 7, 9, 11];
+    const count = groupArray.filter(n => validInner.includes(n)).length;
+    return count * 10; // +10 for every Odd number
+}
 
 function getCalculatedOuterScore(p) {
     let groups = getSelectedEFFGroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
     
-    // 1. Calculate scores for all groups
+    // 🔥 STARLORD / SUB-SUB GRACE MARKS ENGINE (Flat +10 for Even numbers)
+    if ((T10_ADD_STARLORD || T10_ADD_SUBSUB) && CHART_SOURCE_MODE === "short") {
+        let baseGroup = groups[0];
+        let baseScore = calculateOuterScore(baseGroup);
+        
+        // Only apply grace marks if the base score is struggling (<= 30)
+        if (baseScore <= 30) {
+            let totalGrace = 0;
+            // Check all appended bypassed groups (they start at index 1)
+            for (let i = 1; i < groups.length; i++) {
+                totalGrace += getOuterGraceMarks(groups[i]);
+            }
+            return Math.min(100, baseScore + totalGrace); // Cap at 100%
+        } else {
+            return baseScore; // Too high to receive grace marks
+        }
+    }
+
+    // --- STANDARD LOGIC ---
     let scoredGroups = groups.map(grp => ({
         length: grp.length,
         score: calculateOuterScore(grp)
     }));
-    
-    // 2. Keep ONLY groups that have a valid score in your dictionary (> 0)
     let validGroups = scoredGroups.filter(g => g.score > 0);
-    
-    // If nothing matched the dictionary, return 0
     if (validGroups.length === 0) return 0;
     
-    // 3. Find the maximum length among the VALID groups
     let maxLength = Math.max(...validGroups.map(g => g.length));
-    
-    // 4. Take the highest score among the valid groups of that maximum length
     let maxScore = 0;
     validGroups.forEach(g => {
         if (g.length === maxLength && g.score > maxScore) {
@@ -8106,22 +8469,33 @@ function getCalculatedInnerScore(p) {
     let groups = getSelectedEFFGroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
     
-    // 1. Calculate scores for all groups
+    // 🔥 STARLORD / SUB-SUB GRACE MARKS ENGINE (Flat +10 for Odd numbers)
+    if ((T10_ADD_STARLORD || T10_ADD_SUBSUB) && CHART_SOURCE_MODE === "short") {
+        let baseGroup = groups[0];
+        let baseScore = calculateInnerScore(baseGroup);
+        
+        // Only apply grace marks if the base score is struggling (<= 30)
+        if (baseScore <= 30) {
+            let totalGrace = 0;
+            // Check all appended bypassed groups
+            for (let i = 1; i < groups.length; i++) {
+                totalGrace += getInnerGraceMarks(groups[i]);
+            }
+            return Math.min(100, baseScore + totalGrace); // Cap at 100%
+        } else {
+            return baseScore; // Too high to receive grace marks
+        }
+    }
+
+    // --- STANDARD LOGIC ---
     let scoredGroups = groups.map(grp => ({
         length: grp.length,
         score: calculateInnerScore(grp)
     }));
-    
-    // 2. Keep ONLY groups that have a valid score in your dictionary (> 0)
     let validGroups = scoredGroups.filter(g => g.score > 0);
-    
-    // If nothing matched the dictionary, return 0
     if (validGroups.length === 0) return 0;
     
-    // 3. Find the maximum length among the VALID groups
     let maxLength = Math.max(...validGroups.map(g => g.length));
-    
-    // 4. Take the highest score among the valid groups of that maximum length
     let maxScore = 0;
     validGroups.forEach(g => {
         if (g.length === maxLength && g.score > maxScore) {
@@ -8590,22 +8964,8 @@ function buildBarCharts() {
     html += `
     <h2 class="collapsible-heading ${collapsedClass}" 
         onclick="CHART_SECTION_OPEN = !CHART_SECTION_OPEN; toggleSection('charts-body', this)" 
-        style="
-            text-align: center; 
-            color: #facc15; 
-            font-weight: 900; 
-            letter-spacing: 3px; 
-            margin-bottom: 25px; 
-            font-size: 26px; 
-            cursor: pointer; 
-            background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); 
-            padding: 18px; 
-            border-radius: 8px; 
-            border: 2px solid #a86b17; 
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); 
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
-        ">
-        Table 13 - PLANETARY STRENGTH BAR CHART
+        style="user-select: auto;">
+        Table 40 : PLANETARY STRENGTH BAR CHART
     </h2>
     <div id="charts-body" class="collapsible-content" style="display:${displayState};">
     `;
@@ -8662,6 +9022,19 @@ function buildBarCharts() {
     // 2. Render Inner Life Chart 
     html += renderVerticalChart(planetsOrder, "inner");
 	
+    // --- NEW COLLAPSIBLE SECTION FOR THE REST ---
+    let restCollapsedClass = CHART_REST_OPEN ? "" : "collapsed";
+    let restDisplayState = CHART_REST_OPEN ? "block" : "none";
+
+    html += `
+    <h2 class="collapsible-heading ${restCollapsedClass}" 
+        onclick="CHART_REST_OPEN = !CHART_REST_OPEN; toggleSection('charts-rest-body', this)" 
+        style="user-select: auto; margin-top: 40px; text-align: center; font-size: 22px; color: #38bdf8; background: #120606; padding: 15px; border: 1px dashed #0284c7; border-radius: 8px; box-shadow: 0 0 10px rgba(2,132,199,0.2);">
+        EXPAND REST
+    </h2>
+    <div id="charts-rest-body" class="collapsible-content" style="display:${restDisplayState}; margin-top: 20px;">
+    `;
+
 	// ---> NEW: Render the 12 Bhava CSL Table
     html += renderBhavaCSLTable();
     
@@ -8671,7 +9044,10 @@ function buildBarCharts() {
     // 4. Render The Manual Overrides Table 
     html += renderOverrideTable(planetsOrder);
     
-    // Close the collapsible body & wrapper
+    // Close the REST collapsible body
+    html += `</div>`;
+
+    // Close the main collapsible body & wrapper
     html += `</div>`; 
     html += `</div>`;
     anchor.insertAdjacentHTML("beforebegin", html);
@@ -9324,32 +9700,35 @@ function computeTable11Row(p) {
     return [...new Set(combinedArr)].sort((a,b) => a - b).join(",");
 }
 
+
+
+
+
+
+
 // =========================================================
-// 3. HTML BUILDER
+// 3. HTML BUILDER (TABLE 21)
 // =========================================================
 function buildTable11Divider() {
     let t11Open = document.getElementById("table11-divider-body")?.style.display === "block";
     let oldWrapper = document.getElementById("table11-divider-wrapper");
     if (oldWrapper) oldWrapper.remove();
 
-    // Look for Table 12 first, if it exists, inject right before it.
-    let t12 = document.getElementById("function-divider-wrapper");
-    let t10 = document.getElementById("table10-content");
-    let targetAnchor = t12 || t10;
-    let insertPos = t12 ? "beforebegin" : "afterend";
-
+    // 🔥 TARGET TABLE 30 (table9-content) AND INSERT BEFORE IT to push Table 21 above it
+    let targetAnchor = document.getElementById("table9-content");
     if (!targetAnchor) return;
 
     let html = `
     <div id="table11-divider-wrapper" style="margin-top: 50px;">
-        <h2 class="collapsible-heading ${t11Open ? 'open' : 'collapsed'}" onclick="toggleCollapsible('table11-divider-body', this)" 
-            style="text-align: center; color: #facc15; font-weight: 900; letter-spacing: 3px; margin-bottom: 25px; font-size: 26px; cursor: pointer; background: linear-gradient(135deg, #2a0f0f 0%, #5c000f 50%, #2a0f0f 100%); padding: 18px; border-radius: 8px; border: 2px solid #a86b17; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 15px rgba(255,159,28,0.2); text-shadow: 2px 2px 5px rgba(0,0,0,0.9);">
-            Table 11 - Planets & 12 Cuspal All Level Inner & Outer Divider
+        <h2 class="collapsible-heading ${t11Open ? 'open' : 'collapsed'}" onclick="toggleCollapsible('table11-divider-body', this)" style="user-select: auto;">
+            Table 21 : Planets & 12 Cuspal All Level Inner & Outer Divider
         </h2>
+		
+		
+		
+		
         
         <div id="table11-divider-body" class="collapsible-body" style="display: ${t11Open ? 'block' : 'none'};">
-		
-		
             
             <div style="margin-top: 20px; margin-bottom:15px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; text-align:center;">
                 
@@ -9404,9 +9783,20 @@ function buildTable11Divider() {
         </div>
     </div>`;
 
-    targetAnchor.insertAdjacentHTML(insertPos, html);
+    // 🔥 This line inserts Table 21 ABOVE Table 34
+    targetAnchor.insertAdjacentHTML("beforebegin", html);
     renderTable11Inner();
 }
+
+
+
+
+
+
+
+
+
+
 
 function renderTable11Inner() {
     let order = getPivotSortedPlanets();
@@ -9613,7 +10003,105 @@ if (typeof renderTable11Inner === "function" && !renderTable11Inner._wrapped) {
 
 
 
+
+
+
+
+<div style="margin-top: 60px; margin-bottom: 60px; padding: 0 20px;">
+    <h2 style="text-align:left; color:#ff9f1c; font-size:22px; letter-spacing:1px; margin-bottom: 20px; border-bottom: 1px solid rgba(168, 107, 23, 0.4); padding-bottom: 10px;">
+        Date Difference Utility
+    </h2>
+    
+    <div style="background: #1f1410; border: 1px solid #a86b17; border-radius: 8px; padding: 25px; box-shadow: 0 0 15px rgba(255,159,28,0.2); display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 40px;">
+        
+        <label style="color: #facc15; font-weight: 800; display: flex; flex-direction: column; gap: 8px; font-size: 15px;">
+            Start Date
+            <input type="date" id="toolStartDate" style="background: #020617; color: #fde68a; border: 1px solid #ca8a04; padding: 10px 15px; border-radius: 6px; outline: none; color-scheme: dark; font-family: monospace; font-size: 16px;">
+        </label>
+
+        <label style="color: #facc15; font-weight: 800; display: flex; flex-direction: column; gap: 8px; font-size: 15px;">
+            End Date
+            <input type="date" id="toolEndDate" style="background: #020617; color: #fde68a; border: 1px solid #ca8a04; padding: 10px 15px; border-radius: 6px; outline: none; color-scheme: dark; font-family: monospace; font-size: 16px;">
+        </label>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="color: #facc15; font-weight: 800; font-size: 15px;">Calculated Difference</span>
+            <div id="toolDateDiff" style="background: #0c0505; border: 1px solid #3a1a12; padding: 10px 25px; border-radius: 6px; color: #93c5fd; font-weight: 900; font-size: 18px; min-width: 250px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
+                Waiting for dates...
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   DATE DIFFERENCE TOOL LOGIC
+   ========================================================= */
+function calcToolDateDiff() {
+    const fromVal = document.getElementById("toolStartDate").value;
+    const toVal   = document.getElementById("toolEndDate").value;
+    const out     = document.getElementById("toolDateDiff");
+
+    if(!fromVal || !toVal) {
+        out.innerHTML = "Select both dates";
+        out.style.color = "#ef4444";
+        return;
+    }
+
+    const [fy, fm, fd] = fromVal.split("-").map(Number);
+    const [ty, tm, td] = toVal.split("-").map(Number);
+
+    let fromDate = new Date(fy, fm - 1, fd);
+    let toDate   = new Date(ty, tm - 1, td);
+
+    let sign = "";
+    let start = fromDate;
+    let end   = toDate;
+
+    if(toDate < fromDate){
+        sign = "-";
+        start = toDate;
+        end   = fromDate;
+    }
+
+    let years  = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    let days   = end.getDate() - start.getDate();
+
+    if(days < 0){
+        months--;
+        days += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+    }
+
+    if(months < 0){
+        years--;
+        months += 12;
+    }
+
+    out.style.color = "#93c5fd"; // Restore blue color
+    out.innerHTML = `${sign}${years} years ${months} months ${days} days`;
+}
+
+// Attach event listeners for real-time calculation
+document.getElementById("toolStartDate").addEventListener("change", calcToolDateDiff);
+document.getElementById("toolEndDate").addEventListener("change", calcToolDateDiff);
+
+// Initialize with today's date so it works immediately upon load
+(function initDateTool() {
+    const todayStr = new Date().toISOString().split("T")[0];
+    document.getElementById("toolStartDate").value = todayStr;
+    document.getElementById("toolEndDate").value = todayStr;
+    calcToolDateDiff();
+})();
+</script>
+
+
+
+
+
 </body>
 </html>
+
 
 
