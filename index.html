@@ -1403,6 +1403,79 @@ function saveJSON(){
 
 
 
+
+
+
+
+
+
+
+/* =========================================================
+   RESET ALL TOGGLES & CHECKBOXES TO FACTORY DEFAULTS
+   ========================================================= */
+function resetAllTogglesToDefault() {
+
+    // Reset Logic Variables
+    window.T10_ADD_STARLORD = true;
+    window.T10_ADD_SUBLORD = false;
+    window.T10_ADD_SUBSUB = false;
+    window.T10_IGNORE_SSL = false;
+
+    window.HB_IGNORE_STAR = true;
+    window.HB_IGNORE_SSL = false;
+    window.HB_USE_PLACEMENT = false;
+    window.HB_SHOW_LEGENDS = false;
+
+    // Reset Checkboxes (WITH CHANGE EVENT)
+    const toggles = [
+        { id: "t10_add_starlord", val: true },
+        { id: "t10_add_sublord", val: false },
+        { id: "t10_add_subsub", val: false },
+        { id: "t10_ignore_ssl", val: false },
+        { id: "hbPlacementToggle", val: false },
+        { id: "hb_evenodd", val: false },
+        { id: "hb_pattern", val: true }
+    ];
+
+    toggles.forEach(t => {
+        let el = document.getElementById(t.id);
+        if (el) {
+            el.checked = t.val;
+
+            // 🔥 IMPORTANT FIX
+            el.dispatchEvent(new Event("change"));
+        }
+    });
+
+    // Reset Dropdowns (WITH CHANGE EVENT)
+    const dropdowns = {
+        "kPivot": "Lagna",
+        "pivotSelect": "Lagna",
+        "taraSelect": "SSL_CHANDRA",
+        "jumpMode": "sec"
+    };
+
+    for (let id in dropdowns) {
+        let el = document.getElementById(id);
+        if (el) {
+            el.value = dropdowns[id];
+
+            // 🔥 CRITICAL FIX (THIS WAS MISSING)
+            el.dispatchEvent(new Event("change"));
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 /* =========================================================
    LOAD JSON (UPDATED – WITH VIMSHOTTARI EVENTS)
    ========================================================= */
@@ -1451,7 +1524,9 @@ function loadJSON(){
                 document.getElementById(p+"_sec").value=d.planets[p].sec;
             });
 
-            /* ---------- RESTORE VIMSHOTTARI EVENTS (ONLY 5) ---------- */
+
+
+			/* ---------- RESTORE VIMSHOTTARI EVENTS (ONLY 5) ---------- */
             if(d.vimshottariEvents){
                 d.vimshottariEvents.forEach((ev,i)=>{
                     let idx=i+1;
@@ -1463,12 +1538,15 @@ function loadJSON(){
                     }
                 });
             }
+
+            /* ---------- RESET UI STATES & REFRESH ---------- */
+            resetAllTogglesToDefault(); // <--- Calls the reset brain
+            if(typeof buildCuspalChart === "function") buildCuspalChart();
         };
         r.readAsText(e.target.files[0]);
     };
     f.click();
 }
-
 
 
 
@@ -7883,7 +7961,8 @@ function loadSwissJSON(){
 		}
 
 
-            /* ---------- FINAL REFRESH ---------- */
+           /* ---------- FINAL REFRESH ---------- */
+            resetAllTogglesToDefault(); // <--- Ensures defaults for Swiss load
             buildCuspalChart();
             drawD1();
         };
@@ -7893,7 +7972,6 @@ function loadSwissJSON(){
 
     f.click();
 }
-
 
 
 
@@ -8458,7 +8536,7 @@ function getCalculatedOuterScore(p) {
         let baseScore = calculateOuterScore(baseGroup);
         
         // Only apply grace marks if the base score is struggling (<= 20)
-        if (baseScore <= 20) {
+        if (baseScore <= 30) {
             let totalGrace = 0;
             // Check all appended bypassed groups (they start at index 1)
             for (let i = 1; i < groups.length; i++) {
