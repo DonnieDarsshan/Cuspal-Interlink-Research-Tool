@@ -4099,9 +4099,9 @@ let HB_SHOW_LEGENDS = false;
 let HB_IGNORE_STAR = true; 
 let HB_IGNORE_SSL  = false; 
 let T10_IGNORE_SSL = false; 
-let T10_ADD_STARLORD = false; 
-let T10_ADD_SUBLORD = false; // 🔥 CHANGED: Add Sublord is now OFF by default
-let T10_ADD_SUBSUB = true;   // 🔥 CHANGED: Add Sub-Sublord is now ON by default
+let T10_ADD_STARLORD = true;   // 🔥 ADD STARLORD is now ON by default
+let T10_ADD_SUBLORD = false; 
+let T10_ADD_SUBSUB = false;    // 🔥 ADD SUB-SUBLORD is now OFF by default
 let HB_EXCEPTION_RULE = false;
 let HB_SUPERIOR_RULE = false;
 
@@ -4528,6 +4528,15 @@ function computeTable10DominanceWithSSL(top3Values, sslValues, pVals = [], sVals
     let dirP2 = director.filter(x => P2.includes(x));
     let dirP3 = director.filter(x => P3.includes(x));
 
+
+
+
+
+
+
+
+
+
     let patterns = [
         { arr: P1, match: m1, overlap: dirP1.length },
         { arr: P2, match: m2, overlap: dirP2.length },
@@ -4686,6 +4695,11 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
     else if (pS==="2,4,8,10" && stS==="2,8,9" && subS==="7" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
     else if (pS==="4,8,12" && stS==="" && subS==="2,4,8,10" && sslS==="7") finalArrBase = [2,4,8,10,12];
 
+    // 🔥 NEW FIX: Prevent upper-level values (like 4,8,12) from being cannibalized by Sublords (3,9) to form false patterns (3,9,12)
+    else if (pS==="4,8,12" && stS==="11" && subS==="3,9") finalArrBase = [3,9,11];
+    else if (pS==="11" && stS==="4,8,12" && subS==="3,9") finalArrBase = [3,9,11];
+    else if (stS==="4,8,12" && subS==="3,9" && sslS==="3,9") finalArrBase = [3,9];
+
 
 
 
@@ -4708,16 +4722,26 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
 
         const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
 
-        let patterns = [
+
+
+
+
+
+
+let patterns = [
             { group: [1,4,7,10], matches: all.filter(n => [1,4,7,10].includes(n)) },
             { group: [2,5,8,11], matches: all.filter(n => [2,5,8,11].includes(n)) },
             { group: [3,6,9,12], matches: all.filter(n => [3,6,9,12].includes(n)) }
         ];
 
+        // 🔥 FIX: Dynamic Director Fallback (Sub -> Star -> Planet)
+        // If the Sublord is empty, the Starlord gains authority to validate the pattern
+        let activeDirector = subVals.length > 0 ? subVals : (sVals.length > 0 ? sVals : pVals);
+
         patterns.sort((a, b) => {
             if (b.matches.length !== a.matches.length) return b.matches.length - a.matches.length;
-            let aSub = a.matches.filter(n => subVals.includes(n)).length;
-            let bSub = b.matches.filter(n => subVals.includes(n)).length;
+            let aSub = a.matches.filter(n => activeDirector.includes(n)).length;
+            let bSub = b.matches.filter(n => activeDirector.includes(n)).length;
             return bSub - aSub;
         });
 
@@ -4730,7 +4754,7 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
         // CONTEXT 1: THE "PERFECT FAMILY" (Perfect Pattern Synergy)
         // If all 4 members of a structural group (e.g., 1,4,7,10) are present, 
         // this perfect synergy overrides mere numerical volume. (Fixes your Venus 1,5 case)
-        if (bestPattern.matches.length === 4 && hasAny(subVals, bestPattern.group)) {
+        if (bestPattern.matches.length === 4 && hasAny(activeDirector, bestPattern.group)) {
             finalArrBase = bestPattern.matches;
         }
 
@@ -4746,7 +4770,7 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
 
         // CONTEXT 3: THE "STRONG FACTION" (Incomplete Pattern vs Standard Volume)
         // If a pattern has 3 members, it fights against standard volume.
-        else if (bestPattern.matches.length === 3 && hasAny(subVals, bestPattern.group)) {
+        else if (bestPattern.matches.length === 3 && hasAny(activeDirector, bestPattern.group)) {
             // If the opposing volume is strong enough (+2 advantage), volume wins. 
             // (Fixes your Rahu/Jupiter 2,4,8,10 case)
             if (evens.length >= odds.length + 2) {
@@ -4840,7 +4864,6 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
 
 
 
-
 // 🔥 NEW: Append bypassed Star Lord, Sub Lord, OR Sub-Sub Lord values conditionally
     if (T10_ADD_STARLORD || T10_ADD_SUBSUB || T10_ADD_SUBLORD) {
         let additions = [];
@@ -4854,15 +4877,16 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
         if (T3) {
             chain.forEach(ent => {
                 if (T3[ent]) {
-                    let subVals = String(T3[ent].sub || "").split(",").filter(n=>n).map(Number);
-                    let sslVals = String(T3[ent].ssl || "").split(",").filter(n=>n).map(Number);
-                    let starVals = String(T3[ent].star || "").split(",").filter(n=>n).map(Number);
+                    // Rename variables to avoid shadowing the main planet's outer variables
+                    let entSubVals = String(T3[ent].sub || "").split(",").filter(n=>n).map(Number);
+                    let entSslVals = String(T3[ent].ssl || "").split(",").filter(n=>n).map(Number);
+                    let entStarVals = String(T3[ent].star || "").split(",").filter(n=>n).map(Number);
 
                     // 1. Independent Sublord Evaluation (ONLY left out/untouched numbers)
                     if (T10_ADD_SUBLORD && !excludeSublordForGraphs) {
-                        if (subVals.length > 0) {
+                        if (entSubVals.length > 0) {
                             // strictly filter out numbers that are already in the final Effective Links
-                            let leftOut = subVals.filter(n => !finalArrPivot.includes(n));
+                            let leftOut = entSubVals.filter(n => !finalArrPivot.includes(n));
                             if (leftOut.length > 0) {
                                 let sortedSub = [...new Set(leftOut)].sort((a,b)=>a-b).join(",");
                                 if (sortedSub && !additions.includes(sortedSub)) {
@@ -4874,17 +4898,17 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
 
                     // 2. Mutually Exclusive Starlord / Sub-Sub Check
                     if (T10_ADD_STARLORD) {
-                        // If upper value (Sub or SSL) exists, Star Lord was bypassed
-                        if ((subVals.length > 0 || sslVals.length > 0) && starVals.length > 0) {
-                            let sortedStar = [...new Set(starVals)].sort((a,b)=>a-b).join(",");
+                        // Use outer variables (subVals, sslVals, sVals) to check if the main planet's Star Lord was bypassed
+                        if ((subVals.length > 0 || sslVals.length > 0) && sVals.length > 0) {
+                            let sortedStar = [...new Set(entStarVals)].sort((a,b)=>a-b).join(",");
                             if (sortedStar && !additions.includes(sortedStar) && sortedStar !== baseResult) {
                                 additions.push(sortedStar);
                             }
                         }
                     } else if (T10_ADD_SUBSUB) {
-                        // If Sublord exists, Sub-Sublord was bypassed (so we append it).
+                        // Use outer variables to check if the main planet's Sub-Sub Lord was bypassed
                         if (subVals.length > 0 && sslVals.length > 0) {
-                            let sortedSSL = [...new Set(sslVals)].sort((a,b)=>a-b).join(",");
+                            let sortedSSL = [...new Set(entSslVals)].sort((a,b)=>a-b).join(",");
                             if (sortedSSL && !additions.includes(sortedSSL) && sortedSSL !== baseResult) {
                                 additions.push(sortedSSL);
                             }
@@ -4902,7 +4926,6 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
     // 🔥 RETURN AS A SINGLE UNITED STRING SO THE GRAPH SCORES IT PROPERLY
     return baseResult;
 }
-
 
 
 
@@ -8412,16 +8435,17 @@ function calculateInnerScore(nums) {
 
 function getOuterGraceMarks(groupArray) {
     if (!groupArray || groupArray.length === 0) return 0;
-    const validOuter = [2, 4, 6, 8, 10, 12];
+    // 🔥 EXCLUDE 4, 8, 12. Add +10 for 2, 6, 10 AND 3, 7, 11
+    const validOuter = [2, 6, 10, 3, 7, 11]; 
     const count = groupArray.filter(n => validOuter.includes(n)).length;
-    return count * 10; // +10 for every Even number
+    return count * 10; 
 }
 
 function getInnerGraceMarks(groupArray) {
     if (!groupArray || groupArray.length === 0) return 0;
     const validInner = [1, 3, 5, 7, 9, 11];
     const count = groupArray.filter(n => validInner.includes(n)).length;
-    return count * 10; // +10 for every Odd number
+    return count * 10; 
 }
 
 function getCalculatedOuterScore(p) {
@@ -8433,13 +8457,14 @@ function getCalculatedOuterScore(p) {
         let baseGroup = groups[0];
         let baseScore = calculateOuterScore(baseGroup);
         
-        // Only apply grace marks if the base score is struggling (<= 30)
-        if (baseScore <= 30) {
+        // Only apply grace marks if the base score is struggling (<= 20)
+        if (baseScore <= 20) {
             let totalGrace = 0;
             // Check all appended bypassed groups (they start at index 1)
             for (let i = 1; i < groups.length; i++) {
                 totalGrace += getOuterGraceMarks(groups[i]);
             }
+            totalGrace = Math.min(30, totalGrace); // 🔥 CAP MAX GRACE MARKS TO +30
             return Math.min(100, baseScore + totalGrace); // Cap at 100%
         } else {
             return baseScore; // Too high to receive grace marks
@@ -8469,21 +8494,36 @@ function getCalculatedInnerScore(p) {
     let groups = getSelectedEFFGroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
     
-    // 🔥 STARLORD / SUB-SUB GRACE MARKS ENGINE (Flat +10 for Odd numbers)
+    // 🔥 STARLORD / SUB-SUB GRACE MARKS & PENALTY ENGINE 
     if ((T10_ADD_STARLORD || T10_ADD_SUBSUB) && CHART_SOURCE_MODE === "short") {
         let baseGroup = groups[0];
         let baseScore = calculateInnerScore(baseGroup);
         
-        // Only apply grace marks if the base score is struggling (<= 30)
+        let totalGrace = 0;
+        let totalPenalty = 0;
+        
+        // Calculate Additions and Penalties from bypassed groups
+        for (let i = 1; i < groups.length; i++) {
+            let bypassedGrp = groups[i];
+            // Addition: +10 for each 1, 3, 5, 7, 9, 11
+            totalGrace += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
+            // Penalty: -10 for each 4, 8, 12
+            totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
+        }
+
+        totalGrace = Math.min(30, totalGrace); // 🔥 CAP MAX GRACE MARKS TO +30
+
+        // RULE 1: If struggling (<= 30), add grace marks
         if (baseScore <= 30) {
-            let totalGrace = 0;
-            // Check all appended bypassed groups
-            for (let i = 1; i < groups.length; i++) {
-                totalGrace += getInnerGraceMarks(groups[i]);
-            }
-            return Math.min(100, baseScore + totalGrace); // Cap at 100%
-        } else {
-            return baseScore; // Too high to receive grace marks
+            return Math.min(100, baseScore + totalGrace);
+        } 
+        // RULE 2: If score is High (60 to 100), apply the 4,8,12 penalty
+        else if (baseScore >= 60) {
+            return Math.max(0, baseScore - totalPenalty);
+        } 
+        // RULE 3: If score is 40 or 50, do nothing (remains as it is)
+        else {
+            return baseScore; 
         }
     }
 
