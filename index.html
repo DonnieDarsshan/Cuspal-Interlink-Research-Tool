@@ -10218,6 +10218,264 @@ document.getElementById("toolEndDate").addEventListener("change", calcToolDateDi
 
 
 
+
+
+
+
+
+
+
+
+<script>
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   TABLE 45 : CUSPAL INTER LINKS SIGNIFICATORS
+   House View & Planets View (With Separated Source Grouping)
+   ========================================================= */
+
+function getSafeT3Prop(planet, prop) {
+    if (!planet || !window.__T3_CACHE__ || !window.__T3_CACHE__[planet]) return "";
+    return window.__T3_CACHE__[planet][prop] || "";
+}
+
+function buildTable45() {
+    let oldWrapper = document.getElementById("table45-wrapper");
+    if (oldWrapper) oldWrapper.remove();
+
+    let T3 = window.__T3_CACHE__;
+    if (!T3) return;
+
+    // ==========================================
+    // 1. GATHER DATA FOR HOUSE VIEW
+    // ==========================================
+    let occupantsByHouse = {};
+    let starLordByHouse = {};
+    let subLordByHouse = {};
+
+    for (let i = 1; i <= 12; i++) {
+        occupantsByHouse[i] = [];
+    }
+
+    let order = getPivotSortedPlanets();
+
+    planets.forEach(p => {
+        let placeStr = getSafeT3Prop(p, "place");
+        if (placeStr) {
+            placeStr.split(",").forEach(h => {
+                if (occupantsByHouse[h]) occupantsByHouse[h].push(p);
+            });
+        }
+        let starStr = getSafeT3Prop(p, "star");
+        if (starStr) {
+            starStr.split(",").forEach(h => { starLordByHouse[h] = p; });
+        }
+        let subStr = getSafeT3Prop(p, "sub");
+        if (subStr) {
+            subStr.split(",").forEach(h => { subLordByHouse[h] = p; });
+        }
+    });
+
+    // ==========================================
+    // 2. BUILD HOUSE VIEW ROWS
+    // ==========================================
+    let houseViewRows = "";
+    for (let i = 1; i <= 12; i++) {
+        let H = String(i);
+        
+        let F_arr = occupantsByHouse[H] || [];
+        let F = F_arr.map(p => markPlanet(p).split(' ')[0]).join(", ") || "--";
+        
+        let D_planet = starLordByHouse[H];
+        let D = D_planet ? markPlanet(D_planet).split(' ')[0] : "--";
+        
+        let B_planet = subLordByHouse[H];
+        let B = B_planet ? markPlanet(B_planet).split(' ')[0] : "--";
+
+        let E_arr = planets.filter(p => {
+            let kp = getPlanetKPLords(p);
+            return kp && F_arr.includes(kp.star);
+        });
+        let E = E_arr.map(p => markPlanet(p).split(' ')[0]).join(", ") || "--";
+
+        let C_arr = planets.filter(p => {
+            let kp = getPlanetKPLords(p);
+            return kp && D_planet && (kp.star === D_planet || kp.sub === D_planet);
+        });
+        let C = C_arr.map(p => markPlanet(p).split(' ')[0]).join(", ") || "--";
+
+        let A_arr = planets.filter(p => {
+            let kp = getPlanetKPLords(p);
+            return kp && B_planet && (kp.star === B_planet || kp.sub === B_planet);
+        });
+        let A = A_arr.map(p => markPlanet(p).split(' ')[0]).join(", ") || "--";
+
+        houseViewRows += `
+            <tr style="background: #1f1410; border-bottom: 1px solid #3a1a12;">
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #ff9f1c; font-size: 18px; font-weight: normal;">${H}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${A}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #facc15; font-size: 18px; font-weight: normal;">${B}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${C}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #facc15; font-size: 18px; font-weight: normal;">${D}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${E}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${F}</td>
+            </tr>
+        `;
+    }
+
+    // ==========================================
+    // 3. BUILD PLANET VIEW ROWS
+    // ==========================================
+    let planetViewRows = "";
+    order.forEach(p => {
+        let name = markPlanet(p).split(' ')[0];
+        let kp = getPlanetKPLords(p);
+        if (!kp) return;
+
+        let SL = kp.star;
+        let UL = kp.sub;
+
+        let F = getSafeT3Prop(p, "place") || "--";
+        let E = getSafeT3Prop(SL, "place") || "--";
+        let D = getSafeT3Prop(p, "star") || "--";
+        let B = getSafeT3Prop(p, "sub") || "--";
+
+        // Extract C without merging (Font size increased, weight normal)
+        let C_SL = getSafeT3Prop(SL, "star");
+        let C_UL = getSafeT3Prop(UL, "star");
+        let outC = [];
+        if (C_SL) outC.push(`<span style="color:#6ee7b7; font-size:18px; font-weight:normal;">${C_SL}</span> <span style="font-size:16px; color:#a8a29e; font-weight:normal;">(${markPlanet(SL).split(' ')[0]})</span>`);
+        if (C_UL && UL !== SL) outC.push(`<span style="color:#fdba74; font-size:18px; font-weight:normal;">${C_UL}</span> <span style="font-size:16px; color:#a8a29e; font-weight:normal;">(${markPlanet(UL).split(' ')[0]})</span>`);
+        let C = outC.length > 0 ? outC.join("<br>") : "--";
+
+        // Extract A without merging (Font size increased, weight normal)
+        let A_SL = getSafeT3Prop(SL, "sub");
+        let A_UL = getSafeT3Prop(UL, "sub");
+        let outA = [];
+        if (A_SL) outA.push(`<span style="color:#6ee7b7; font-size:18px; font-weight:normal;">${A_SL}</span> <span style="font-size:16px; color:#a8a29e; font-weight:normal;">(${markPlanet(SL).split(' ')[0]})</span>`);
+        if (A_UL && UL !== SL) outA.push(`<span style="color:#fdba74; font-size:18px; font-weight:normal;">${A_UL}</span> <span style="font-size:16px; color:#a8a29e; font-weight:normal;">(${markPlanet(UL).split(' ')[0]})</span>`);
+        let A = outA.length > 0 ? outA.join("<br>") : "--";
+
+        planetViewRows += `
+            <tr style="background: #1f1410; border-bottom: 1px solid #3a1a12;">
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #ff9f1c; font-size: 18px; font-weight: normal;">${name}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; line-height: 1.6; font-size: 18px; font-weight: normal;">${A}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #facc15; font-size: 18px; font-weight: normal;">${B}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; line-height: 1.6; font-size: 18px; font-weight: normal;">${C}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #facc15; font-size: 18px; font-weight: normal;">${D}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${E}</td>
+                <td style="padding: 10px; border: 1px solid #a86b17; color: #f3e8d0; font-size: 18px; font-weight: normal;">${F}</td>
+            </tr>
+        `;
+    });
+
+    let thStyle = "background: linear-gradient(180deg, #2a0f0f, #140707); color: #facc15; padding: 12px; border: 1px solid #a86b17; font-weight: normal; font-size: 18px;";
+
+    // ==========================================
+    // 4. INJECT HTML TO THE ABSOLUTE BOTTOM
+    // ==========================================
+    let html = `
+    <div id="table45-wrapper" style="margin-top: 50px; margin-bottom: 50px; padding: 0 20px;">
+        <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table45-body', this)" style="user-select: auto;">
+            Table 45 : Cuspal Inter Links Significators
+        </h2>
+        <div id="table45-body" class="collapsible-body" style="display: none; margin-top: 20px;">
+            
+            <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px; text-align: center;">House View</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center; background: #120606; border: 1px solid #a86b17;">
+                <thead>
+                    <tr>
+                        <th style="${thStyle} width:5%;">Cu</th>
+                        <th style="${thStyle} width:20%;">A</th>
+                        <th style="${thStyle} width:15%;">B</th>
+                        <th style="${thStyle} width:20%;">C</th>
+                        <th style="${thStyle} width:15%;">D</th>
+                        <th style="${thStyle} width:10%;">E</th>
+                        <th style="${thStyle} width:15%;">F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${houseViewRows}
+                </tbody>
+            </table>
+
+            <h3 style="color: #38bdf8; margin-top: 40px; font-size: 22px; text-align: center;">Planets View</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: center; background: #120606; border: 1px solid #a86b17;">
+                <thead>
+                    <tr>
+                        <th style="${thStyle} width:10%;">Planet</th>
+                        <th style="${thStyle} width:20%;">A</th>
+                        <th style="${thStyle} width:15%;">B</th>
+                        <th style="${thStyle} width:20%;">C</th>
+                        <th style="${thStyle} width:15%;">D</th>
+                        <th style="${thStyle} width:10%;">E</th>
+                        <th style="${thStyle} width:10%;">F</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${planetViewRows}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 25px; padding: 20px; background: #1f1410; border: 1px solid #a86b17; border-radius: 6px; color: #f3e8d0; font-size: 16px; box-shadow: 0 0 10px rgba(255,159,28,0.2); display: flex; flex-wrap: wrap; justify-content: space-between;">
+                <div style="flex: 1; min-width: 300px; line-height: 2.2;">
+                    <div><span style="color:#ff9f1c; font-size:18px;">A)</span> Planets Located in the Star/Sub of (B)</div>
+                    <div><span style="color:#ff9f1c; font-size:18px;">B)</span> Sub Lord of House</div>
+                    <div><span style="color:#ff9f1c; font-size:18px;">C)</span> Planets Located in the Star/Sub of (D)</div>
+                </div>
+                <div style="flex: 1; min-width: 300px; line-height: 2.2;">
+                    <div><span style="color:#ff9f1c; font-size:18px;">D)</span> Star Lord of House</div>
+                    <div><span style="color:#ff9f1c; font-size:18px;">E)</span> Planets in Occupant's Stars</div>
+                    <div><span style="color:#ff9f1c; font-size:18px;">F)</span> Occupant of House</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    `;
+
+    // Append to the absolute bottom of the document body
+    document.body.insertAdjacentHTML("beforeend", html);
+}
+
+// ==========================================
+// 5. AUTO-CHAIN INJECTION HOOK
+// ==========================================
+(function(){
+    // Hook it securely to the bar charts build process so it runs automatically
+    if (typeof buildBarCharts === "function") {
+        const _origBChart = buildBarCharts;
+        buildBarCharts = function() {
+            _origBChart();
+            buildTable45();
+        };
+    }
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
 </body>
 </html>
 
