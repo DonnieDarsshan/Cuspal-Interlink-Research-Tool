@@ -8274,16 +8274,59 @@ function enforceTableOrder(){
    DYNAMIC BAR CHARTS (OUTER LIFE & INNER LIFE) - EXTRACTION PROTOCOL
    ========================================================= */
 
+
+
 // Global states for Chart Checkboxes & Modes
 let CHART_SOURCE_MODE = "short";  
 let CHART_SHOW_EFF_A = true;
 let CHART_SHOW_EFF_B = true;   
 let CHART_SHOW_EFF_C = false;
 let CHART_SECTION_OPEN = true; 
-let CHART_REST_OPEN = false; // <-- New variable to track the "EXPAND REST" state // <-- Table 40 Default Expanded 
+let CHART_REST_OPEN = false; 
+
+// 🔥 NEW: Global State for Vimshottari Date on Charts
+let CHART_VIM_SOURCE = "chandra"; 
+
+// 🔥 NEW: Function to extract the Start & End Year of the planet's Mahadasha
+function getPlanetDashaSpan(planet) {
+    let d = typeof vimDOB === "function" ? vimDOB() : null;
+    if (!d) return "";
+
+    let abs = (CHART_VIM_SOURCE === "chandra") ? vimMoonAbs() : vimLagnaAbs();
+    if (abs == null || isNaN(abs)) return "";
+
+    let startObj = vimStart(abs, d);
+    let curDate = new Date(startObj.start);
+    let rotated = vimRotate(startObj.lord);
+
+    for (let i = 0; i < rotated.length; i++) {
+        let p = rotated[i];
+        let years = VIM_YEARS[p];
+        let endDate = vimAddYears(curDate, years);
+
+        if (p === planet) {
+            // If it's the very first running dasha, use the exact Date of Birth year
+            let startYear = (i === 0) ? d.getFullYear() : curDate.getFullYear();
+            let endYear = endDate.getFullYear();
+            
+            // Format end year to 2 digits (e.g., 2047 -> 47)
+            let endStr = String(endYear).slice(-2);
+            
+            return `${startYear} - ${endStr}`;
+        }
+        curDate = endDate;
+    }
+    return "";
+}
 
 // Global State for Manual Overrides
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
+
+
+
+
+
+
 
 function updateOverride(planet, type, value) {
     if (!window.OVERRIDE_SCORES[planet]) {
@@ -8698,6 +8741,11 @@ function renderOverrideTable(planetsOrder) {
 /* =========================================================
    BAR CHARTS (Clean Font & Elegant Boxes)
    ========================================================= */
+   
+   
+   
+   
+   
 function renderVerticalChart(planetsOrder, type) {
     let isOuter = type === "outer";
     
@@ -8733,9 +8781,11 @@ function renderVerticalChart(planetsOrder, type) {
 
     planetsOrder.forEach(p => {
         let score = isOuter ? getFinalOuterScore(p) : getFinalInnerScore(p);
-        
         let theme = getBarTheme(score);
         let shortName = markPlanet(p).split(' ')[0]; 
+        
+        // 🔥 NEW: Fetch the vimshottari span
+        let dashaSpan = getPlanetDashaSpan(p);
 
         html += `
             <div style="display:flex; flex-direction:column; align-items:center; width:9%; height:100%; justify-content:flex-end;">
@@ -8744,8 +8794,9 @@ function renderVerticalChart(planetsOrder, type) {
             </div>
         `;
 
+        // 🔥 UPDATED: Added the span label below the planet name block
         labelsHtml += `
-            <div style="width:9%; display:flex; justify-content:center;">
+            <div style="width:9%; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                 <div style="
                     background: linear-gradient(145deg, #2a0f0f 0%, #0c0404 100%);
                     border: 1px solid #a86b17;
@@ -8759,8 +8810,12 @@ function renderVerticalChart(planetsOrder, type) {
                     box-shadow: 0 4px 8px rgba(0,0,0,0.6);
                     text-transform: capitalize;
                     white-space: nowrap;
+                    margin-bottom: 8px;
                 ">
                     ${shortName}
+                </div>
+                <div style="font-size:14.5px; color:#facc15; font-weight:900; font-family:monospace; background:linear-gradient(180deg, #1f1410, #0c0505); padding:5px 10px; border:1px solid #a86b17; border-radius:6px; text-align:center; box-shadow:0 0 8px rgba(255,159,28,0.3); letter-spacing:0.5px;">
+                    ${dashaSpan}
                 </div>
             </div>
         `;
@@ -8774,6 +8829,19 @@ function renderVerticalChart(planetsOrder, type) {
     
     return html;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* =========================================================
    COMPARISON TABLE ENGINE (INNER VS OUTER LIFE)
@@ -9109,28 +9177,54 @@ function buildBarCharts() {
     </div>
     `;
 
-    let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
+
+
+
+
+
+
+
+
+
+let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
     let labelB = CHART_SOURCE_MODE === "raw" ? "Sub + Star of Sub" : "EFF B";
     let labelC = CHART_SOURCE_MODE === "raw" ? "Sub-Sub + Star of Sub-Sub" : "EFF C";
 
-    // --- EFF CHECKBOXES ---
+    // --- EFF CHECKBOXES & VIMSHOTTARI TOGGLES ---
     html += `
     <div style="display:flex; justify-content:center; gap:30px; margin-bottom:25px; font-weight:800; color:#facc15; background:#120606; padding:18px; border:1px solid #a86b17; border-radius:8px; box-shadow: 0 0 15px rgba(255,159,28,0.2); flex-wrap:wrap;">
-        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="chkEffA" ${CHART_SHOW_EFF_A ? "checked" : ""} 
-                   onchange="CHART_SHOW_EFF_A = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
-            ${labelA}
-        </label>
-        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="chkEffB" ${CHART_SHOW_EFF_B ? "checked" : ""} 
-                   onchange="CHART_SHOW_EFF_B = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
-            ${labelB}
-        </label>
-        <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="chkEffC" ${CHART_SHOW_EFF_C ? "checked" : ""} 
-                   onchange="CHART_SHOW_EFF_C = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
-            ${labelC}
-        </label>
+        
+        <div style="display:flex; gap:30px; align-items:center;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="chkEffA" ${CHART_SHOW_EFF_A ? "checked" : ""} 
+                       onchange="CHART_SHOW_EFF_A = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+                ${labelA}
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="chkEffB" ${CHART_SHOW_EFF_B ? "checked" : ""} 
+                       onchange="CHART_SHOW_EFF_B = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+                ${labelB}
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="chkEffC" ${CHART_SHOW_EFF_C ? "checked" : ""} 
+                       onchange="CHART_SHOW_EFF_C = this.checked; buildBarCharts();" style="transform:scale(1.3); accent-color:#ff9f1c;">
+                ${labelC}
+            </label>
+        </div>
+
+        <div style="border-left: 2px dashed #a86b17; padding-left: 30px; display: flex; gap: 30px; align-items:center;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'chandra'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Year Based on Chandra
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'lagna'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Year Based on Lagna
+            </label>
+        </div>
+
     </div>
     `;
 
