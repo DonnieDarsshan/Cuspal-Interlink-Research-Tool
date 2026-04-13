@@ -413,6 +413,57 @@ input[type="time"] {
 
 
 
+
+
+
+
+
+/* =========================================================
+   PIVOT & SCROLLBAR DARK MODE FIX
+   ========================================================= */
+
+/* 1. Force the Pivot Dropdown to go fully dark */
+#pivotSelect, select {
+    background: linear-gradient(180deg, #1f1410, #0c0505) !important;
+    color: #facc15 !important;
+    border: 1px solid #a86b17 !important;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 800;
+    cursor: pointer;
+    outline: none;
+    /* This tells the browser's native engine to drop the white UI */
+    color-scheme: dark !important; 
+}
+
+/* 2. Fix white patches inside the opened dropdown menu */
+#pivotSelect option, select option {
+    background-color: #0c0505 !important;
+    color: #facc15 !important;
+    font-weight: bold;
+}
+
+/* 3. Ultra-thin, barely visible scrollbar */
+::-webkit-scrollbar {
+    width: 4px !important;  /* Super thin vertical scrollbar */
+    height: 4px !important; /* Super thin horizontal scrollbar */
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important; /* Invisible track */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3a1a12 !important; /* Very dark brown, blends in */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a86b17 !important; /* Glows gold only when you try to grab it */
+}
+
+
+
 </style>
 
 
@@ -8285,39 +8336,116 @@ let CHART_SECTION_OPEN = true;
 let CHART_REST_OPEN = false; 
 
 // 🔥 NEW: Global State for Vimshottari Date on Charts
-let CHART_VIM_SOURCE = "chandra"; 
+let CHART_VIM_SOURCE = "chandra_year"; 
 
-// 🔥 NEW: Function to extract the Start & End Year of the planet's Mahadasha
+
+
+
+
+
+
+
+
+
+// 🔥 UPGRADED: Dynamic Dasha Span based on Pivot Selection
 function getPlanetDashaSpan(planet) {
     let d = typeof vimDOB === "function" ? vimDOB() : null;
     if (!d) return "";
 
-    let abs = (CHART_VIM_SOURCE === "chandra") ? vimMoonAbs() : vimLagnaAbs();
+    // Check the main pivot dropdown
+    let pivot = document.getElementById("pivotSelect")?.value || "Lagna";
+
+    // 1. If Pivot is a CSL (1 to 12), hide the dates completely
+    if (pivot.startsWith("CSL")) {
+        return "";
+    }
+
+    let isChandra = CHART_VIM_SOURCE.includes("chandra");
+    let showAge = CHART_VIM_SOURCE.includes("age");
+
+    let abs = isChandra ? vimMoonAbs() : vimLagnaAbs();
     if (abs == null || isNaN(abs)) return "";
 
     let startObj = vimStart(abs, d);
     let curDate = new Date(startObj.start);
     let rotated = vimRotate(startObj.lord);
 
+    // Pre-calculate all Mahadasha dates based on the selected moon/lagna
+    let mahaStartDates = {};
     for (let i = 0; i < rotated.length; i++) {
         let p = rotated[i];
         let years = VIM_YEARS[p];
         let endDate = vimAddYears(curDate, years);
-
-        if (p === planet) {
-            // If it's the very first running dasha, use the exact Date of Birth year
-            let startYear = (i === 0) ? d.getFullYear() : curDate.getFullYear();
-            let endYear = endDate.getFullYear();
-            
-            // Format end year to 2 digits (e.g., 2047 -> 47)
-            let endStr = String(endYear).slice(-2);
-            
-            return `${startYear} - ${endStr}`;
-        }
+        mahaStartDates[p] = { 
+            start: new Date(curDate), 
+            end: new Date(endDate), 
+            isFirst: (i === 0) 
+        };
         curDate = endDate;
     }
+
+    // Helper to format Age or Year based on the toggle state
+    const formatSpan = (startDt, endDt, isFirstStart) => {
+        if (showAge) {
+            let startAge = Math.max(0, Math.floor((startDt - d) / MS_YEAR));
+            let endAge = Math.floor((endDt - d) / MS_YEAR);
+            if (isFirstStart) startAge = 0;
+            return `${startAge} - ${endAge}`;
+        } else {
+            let startYear = isFirstStart ? d.getFullYear() : startDt.getFullYear();
+            let endYear = endDt.getFullYear();
+            return `${startYear} - ${String(endYear).slice(-2)}`;
+        }
+    };
+
+    // 2. If Pivot is Lagna, show standard Mahadasha Dates
+    if (pivot === "Lagna") {
+        let md = mahaStartDates[planet];
+        if (!md) return "";
+        return formatSpan(md.start, md.end, md.isFirst);
+    }
+
+    // 3. If Pivot is a Planet, show its Bukthi Dates within that Planet's Mahadasha
+    if (VIM_ORDER.includes(pivot)) {
+        let md = mahaStartDates[pivot];
+        if (!md) return "";
+
+        let bukthiStart = new Date(md.start);
+        let bukthiRotated = vimRotate(pivot); // Bukthis always start with the Mahadasha lord
+
+        for (let i = 0; i < bukthiRotated.length; i++) {
+            let bp = bukthiRotated[i];
+            let bYears = VIM_YEARS[pivot] * (VIM_YEARS[bp] / 120);
+            let bEndDate = vimAddYears(bukthiStart, bYears);
+
+            // Once we find the target planet in the Bukthi cycle, return its dates
+            if (bp === planet) {
+                return formatSpan(bukthiStart, bEndDate, (md.isFirst && i === 0));
+            }
+            bukthiStart = bEndDate;
+        }
+    }
+
     return "";
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Global State for Manual Overrides
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
@@ -8479,7 +8607,7 @@ const OUTER_SCORE_MAP = {
     "6,8": 40, "6,10": 80, "8,10": 40, "8,12": 30, "10,12": 40,
     
     // 6. Single Houses 
-    "1": 20, "2": 30, "3": 10, "4": 30, "5": 0, "6": 50, "7": 20, "8": 10, "9": 0, "10": 50, "11": 10, "12": 10
+    "1": 20, "2": 30, "3": 10, "4": 30, "5": 0, "6": 40, "7": 20, "8": 10, "9": 0, "10": 50, "11": 10, "12": 10
 };
 
 const INNER_SCORE_MAP = {
@@ -8745,7 +8873,6 @@ function renderOverrideTable(planetsOrder) {
    
    
    
-   
 function renderVerticalChart(planetsOrder, type) {
     let isOuter = type === "outer";
     
@@ -8784,8 +8911,13 @@ function renderVerticalChart(planetsOrder, type) {
         let theme = getBarTheme(score);
         let shortName = markPlanet(p).split(' ')[0]; 
         
-        // 🔥 NEW: Fetch the vimshottari span
+        // Fetch the vimshottari span (Mahadasha or Bukthi depending on Pivot)
         let dashaSpan = getPlanetDashaSpan(p);
+        
+        // Conditionally build the date box ONLY if a date exists (prevents empty boxes on CSL mode)
+        let spanHtml = dashaSpan 
+            ? `<div style="font-size:14.5px; color:#facc15; font-weight:900; font-family:monospace; background:linear-gradient(180deg, #1f1410, #0c0505); padding:5px 10px; border:1px solid #a86b17; border-radius:6px; text-align:center; box-shadow:0 0 8px rgba(255,159,28,0.3); letter-spacing:0.5px; margin-top:8px;">${dashaSpan}</div>` 
+            : ``;
 
         html += `
             <div style="display:flex; flex-direction:column; align-items:center; width:9%; height:100%; justify-content:flex-end;">
@@ -8794,7 +8926,6 @@ function renderVerticalChart(planetsOrder, type) {
             </div>
         `;
 
-        // 🔥 UPDATED: Added the span label below the planet name block
         labelsHtml += `
             <div style="width:9%; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                 <div style="
@@ -8810,14 +8941,10 @@ function renderVerticalChart(planetsOrder, type) {
                     box-shadow: 0 4px 8px rgba(0,0,0,0.6);
                     text-transform: capitalize;
                     white-space: nowrap;
-                    margin-bottom: 8px;
                 ">
                     ${shortName}
                 </div>
-                <div style="font-size:14.5px; color:#facc15; font-weight:900; font-family:monospace; background:linear-gradient(180deg, #1f1410, #0c0505); padding:5px 10px; border:1px solid #a86b17; border-radius:6px; text-align:center; box-shadow:0 0 8px rgba(255,159,28,0.3); letter-spacing:0.5px;">
-                    ${dashaSpan}
-                </div>
-            </div>
+                ${spanHtml} </div>
         `;
     });
 
@@ -8829,7 +8956,6 @@ function renderVerticalChart(planetsOrder, type) {
     
     return html;
 }
-
 
 
 
@@ -9212,16 +9338,26 @@ let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
             </label>
         </div>
 
-        <div style="border-left: 2px dashed #a86b17; padding-left: 30px; display: flex; gap: 30px; align-items:center;">
+        <div style="border-left: 2px dashed #a86b17; padding-left: 30px; display: flex; gap: 20px; align-items:center; flex-wrap:wrap;">
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra' ? 'checked' : ''} 
-                       onchange="CHART_VIM_SOURCE = 'chandra'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
-                Year Based on Chandra
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra_year' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'chandra_year'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Year - Chandra
             </label>
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna' ? 'checked' : ''} 
-                       onchange="CHART_VIM_SOURCE = 'lagna'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
-                Year Based on Lagna
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna_year' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'lagna_year'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Year - Lagna
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra_age' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'chandra_age'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Age - Chandra
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
+                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna_age' ? 'checked' : ''} 
+                       onchange="CHART_VIM_SOURCE = 'lagna_age'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
+                Age - Lagna
             </label>
         </div>
 
