@@ -535,6 +535,656 @@ input[type="time"] {
 
 
 
+
+
+
+<style>
+    :root { 
+        --grid-line: #ffcc00; 
+        --text-white: #ffffff; 
+        --asc-yellow: #ffcc00;
+    }
+
+    #onlineFetchBox { 
+        background: #0a0a0a; 
+        border: 1px solid var(--grid-line);
+        padding: 18px 22px; 
+        margin: 16px auto 30px auto; 
+        display: flex; 
+        flex-direction: column;
+        gap: 15px; 
+        color: var(--text-white); 
+        font-weight: 700; 
+        max-width: 1500px;
+        font-family: 'Arial', sans-serif;
+    }
+    
+    .fetch-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: flex-end; 
+        width: 100%;
+    }
+    
+    #onlineFetchBox .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    #onlineFetchBox input, #onlineFetchBox select { 
+        background: #111;
+        color: var(--asc-yellow); 
+        border: 1px solid var(--grid-line); 
+        padding: 6px 10px; 
+        font-weight: 700; 
+        outline: none;
+    }
+    
+    #onlineFetchBox input:focus, #onlineFetchBox select:focus {
+        border-color: #10b981;
+    }
+    
+    #onlineFetchBox select { cursor: pointer; }
+    #onlineFetchBox select option { background: #0c0505; color: #facc15; }
+
+    /* --- EGYPTIAN THEMED BUTTONS (-30% Size) --- */
+    .action-btn {
+        font-weight: 900;
+        font-size: 14px; 
+        padding: 4px 10px; 
+        margin: 0;
+        cursor: pointer;
+        color: #facc15; 
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+        border: 2px solid #b8860b; 
+        border-radius: 4px; 
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+        transition: all 0.1s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .action-btn:hover {
+        filter: brightness(1.25);
+    }
+
+    .action-btn:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Obsidian (Clear) */
+    .btn-clear { background: linear-gradient(to bottom, #475569, #1e293b); }
+
+    /* Carnelian Clay (Load) */
+    .btn-load { background: linear-gradient(to bottom, #9f361a, #521606); }
+
+    /* Lapis Lazuli (Save) */
+    .btn-save { background: linear-gradient(to bottom, #1e3a8a, #0f172a); }
+
+    /* Nile Emerald (Fetch) */
+    .btn-fetch { background: linear-gradient(to bottom, #059669, #022c22); }
+
+    /* Parrot Green success blast */
+    .btn-fetch.success {
+        background: #39ff14 !important;
+        color: #000 !important;
+        text-shadow: none !important;
+        border-color: #00cc00 !important;
+    }
+</style>
+
+<div id="onlineFetchBox">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+        <div style="color: #10b981; font-size: 16px; letter-spacing: 1px; flex: 1;">&#x1F310; CLOUD HOROSCOPE FETCHER</div>
+        
+        <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex: 1;">
+            <span style="color: #ccc; font-size: 13px;">Profile Name:</span>
+            <input type="text" id="onName" placeholder="e.g. Name" style="width: 200px; color: #fff; text-align: center; text-transform: uppercase;">
+        </div>
+        
+        <div style="flex: 1;"></div>
+    </div>
+ 
+    <div class="fetch-row">
+        <div class="form-group">
+            <span>&#x1F4C5; Date (DD-MM-YYYY)</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="onDay" placeholder="DD" maxlength="2" style="width:45px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 1, 31, 2)" oninput="smartJump(this, 'onMonth', 'day')"> -
+                <input type="text" id="onMonth" placeholder="MM" maxlength="2" style="width:45px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 1, 12, 2)" oninput="smartJump(this, 'onYear', 'month')"> -
+                <input type="text" id="onYear" placeholder="YYYY" maxlength="4" style="width:65px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 1900, 2100, 4)" oninput="smartJump(this, 'onHour', 'year')">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span>&#x23F1; Time (HH:MM:SS)</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="onHour" placeholder="HH" maxlength="2" style="width:45px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 0, 23, 2)" oninput="smartJump(this, 'onMin', 'hour')"> :
+                <input type="text" id="onMin" placeholder="MM" maxlength="2" style="width:45px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 0, 59, 2)" oninput="smartJump(this, 'mapSearchQuery', 'minute')"> :
+                <input type="text" id="onSec" value="00" maxlength="2" style="width:45px; text-align:center;"
+                    onkeydown="arrowSpinner(event, 0, 59, 2)">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <span>&#x1F4CD; Standard Places</span>
+            <select id="locationPreset" onchange="applyPresetLocation()" style="width: 180px;">
+                <option value="manual">Manual GPS (Default)</option>
+                <option value="13.3190737,77.1326306">Tumakuru</option>
+                <option value="12.918880,77.634986">Bengaluru</option>
+                <option value="13.315527,76.942059">Gubbi</option>
+                <option value="12.304776,76.655108">Mysore</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <span>&#x1F4CD; Latitude</span>
+            <input type="text" id="onlineLat" value="13.3190737" style="width: 115px;">
+        </div>
+        <div class="form-group">
+            <span>&#x1F4CD; Longitude</span>
+            <input type="text" id="onlineLon" value="77.1326306" style="width: 115px;">
+        </div>
+    </div>
+    
+    <div class="fetch-row" style="border-top: 1px solid #333; padding-top: 15px; width: 100%;">
+        <div class="form-group" style="width: 100%;">
+            <span>&#x1F50D; Online Map Search</span>
+            <div style="display:flex; gap:6px; align-items: center;">
+                <input type="text" id="mapSearchQuery" placeholder="Search Place..." style="width: 200px;"
+                    onkeydown="if(event.key === 'Enter') searchOnlineMap()">
+                <button onclick="searchOnlineMap()" style="background: var(--grid-line); color: #000; padding: 6px 12px; margin: 0; font-weight: bold; cursor: pointer; border-radius: 4px; white-space: nowrap;">Search</button>
+                <select id="mapSearchResults" style="display:none; width: 250px; margin: 0;"
+                    onchange="applyMapSelection()"></select>
+                <span id="detectedTzBadge" style="background: #111; border: 1px solid var(--grid-line); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: #10b981; display: none;">Asia/Kolkata</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="fetch-row" style="padding-top: 10px; justify-content: flex-end; width: 100%;">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            
+            <div id="serverWakeContainer" style="width: 210px; visibility: hidden; display: flex; flex-direction: column; gap: 4px; font-family: monospace; color: #10b981; font-size: 14px; font-weight: bold;">
+                <span id="wakeMessage">> SYS.WAKE...</span>
+                <span id="wakeTimer" style="letter-spacing: 1px;">[....................]</span>
+            </div>
+
+            <button class="action-btn btn-clear" onclick="clearFetchData()">&#x1F9F9; Clear</button>
+
+            <input type="file" id="loadProfileInput" accept=".json" style="display:none" onchange="loadCloudProfile(event)">
+            <button class="action-btn btn-load" onclick="document.getElementById('loadProfileInput').click()">&#x1F4C2; Load Profile</button>
+            <button class="action-btn btn-save" onclick="saveCloudProfile()">&#x1F4BE; Save Profile</button>
+            <button id="fetchCloudBtn" class="action-btn btn-fetch" onclick="fetchFromCloud()">Fetch Data &#x1F4E1;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let raw = null;
+    let currentTimezoneStr = "Asia/Kolkata";
+    let moonStarLord = "Sy";
+
+    function applyPresetLocation() {
+        const val = document.getElementById("locationPreset").value;
+        const tzBadge = document.getElementById("detectedTzBadge");
+
+        if (val === "manual") {
+            document.getElementById("onlineLat").value = "13.3190737";
+            document.getElementById("onlineLon").value = "77.1326306";
+        } else {
+            const coords = val.split(",");
+            document.getElementById("onlineLat").value = coords[0];
+            document.getElementById("onlineLon").value = coords[1];
+        }
+
+        currentTimezoneStr = "Asia/Kolkata";
+        if(tzBadge) {
+            tzBadge.innerText = currentTimezoneStr;
+            tzBadge.style.display = "inline-block";
+        }
+    }
+
+    let currentMapResults = [];
+
+    async function searchOnlineMap() {
+        const query = document.getElementById("mapSearchQuery").value.trim();
+        if (!query) return;
+
+        const btn = document.querySelector("button[onclick='searchOnlineMap()']");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Searching...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10`);
+            const data = await response.json();
+
+            const resultsDropdown = document.getElementById("mapSearchResults");
+            resultsDropdown.innerHTML = ""; 
+
+            if (data && data.results && data.results.length > 0) {
+                currentMapResults = data.results;
+                const defaultOpt = document.createElement("option");
+                defaultOpt.text = `-- Found ${data.results.length} places. Select one --`;
+                defaultOpt.value = "";
+                resultsDropdown.appendChild(defaultOpt);
+
+                data.results.forEach((place, index) => {
+                    const opt = document.createElement("option");
+                    let displayName = `${place.name}`;
+                    if(place.admin1) displayName += `, ${place.admin1}`;
+                    if(place.country) displayName += `, ${place.country}`;
+                    
+                    if (displayName.length > 60) displayName = displayName.substring(0, 57) + "...";
+                    opt.text = displayName;
+                    opt.value = index; 
+                    resultsDropdown.appendChild(opt);
+                });
+                resultsDropdown.style.display = "block";
+            } else {
+                resultsDropdown.style.display = "none";
+                console.warn("Place not found. Try adding a broader city name.");
+            }
+        } catch (error) {
+            console.warn("Network error while searching the map.");
+        } finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
+    }
+
+    function applyMapSelection() {
+        const dropdown = document.getElementById("mapSearchResults");
+        const selectedIndex = dropdown.value;
+        if (selectedIndex !== "") {
+            const selectedPlace = currentMapResults[selectedIndex];
+            document.getElementById("onlineLat").value = parseFloat(selectedPlace.latitude).toFixed(6);
+            document.getElementById("onlineLon").value = parseFloat(selectedPlace.longitude).toFixed(6);
+            document.getElementById("locationPreset").value = "manual";
+            
+            currentTimezoneStr = selectedPlace.timezone || "UTC";
+            const tzBadge = document.getElementById("detectedTzBadge");
+            if(tzBadge) {
+                tzBadge.innerText = currentTimezoneStr;
+                tzBadge.style.display = "inline-block";
+            }
+        }
+    }
+
+    function calculateAccurateOffset(tzString, d, m, y, hr, min) {
+        try {
+            const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:00Z`;
+            const dateObj = new Date(dateStr);
+            const formatter = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+            const parts = formatter.formatToParts(dateObj);
+            const tzPart = parts.find(p => p.type === 'timeZoneName').value;
+            if (tzPart === 'GMT') return 0;
+            const sign = tzPart.includes('-') ? -1 : 1;
+            const match = tzPart.match(/GMT[+-](\d{1,2})(?::(\d{2}))?/);
+            if(match) {
+                const hrs = parseInt(match[1] || 0);
+                const mins = parseInt(match[2] || 0);
+                return sign * ((hrs * 60) + mins);
+            }
+            return 330;
+        } catch(e) { return 330; }
+    }
+
+    function arrowSpinner(e, min, max, padding) {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            let val = parseInt(e.target.value);
+            if (isNaN(val)) {
+                if (max > 2000) val = new Date().getFullYear();
+                else val = min;
+            }
+            
+            if (e.key === "ArrowUp") val++;
+            if (e.key === "ArrowDown") val--;
+            
+            if (val > max) val = min;
+            if (val < min) val = max;
+            e.target.value = String(val).padStart(padding, '0');
+        }
+    }
+
+    function smartJump(currentElement, nextElementId, type) {
+        let val = currentElement.value;
+        val = val.replace(/\D/g, '');
+        currentElement.value = val;
+
+        if (val.length === 0) return;
+        let shouldJump = false;
+        
+        if (type === 'year') {
+            if (val.length >= 4) shouldJump = true;
+        } else {
+            if (val.length >= 2) {
+                shouldJump = true;
+            } else if (val.length === 1) {
+                let num = parseInt(val);
+                if (type === 'day' && num >= 4) shouldJump = true;
+                if (type === 'month' && num >= 2) shouldJump = true;
+                if (type === 'hour' && num >= 3) shouldJump = true;
+                if (type === 'minute' && num >= 6) shouldJump = true;
+            }
+        }
+
+        if (shouldJump) {
+            if (type !== 'year' && val.length === 1) {
+                currentElement.value = "0" + val;
+            }
+            document.getElementById(nextElementId).focus();
+        }
+    }
+
+
+
+
+    function clearFetchData() {
+        document.getElementById("onName").value = "";
+        document.getElementById("onDay").value = "";
+        document.getElementById("onMonth").value = "";
+        document.getElementById("onYear").value = "";
+        document.getElementById("onHour").value = "";
+        document.getElementById("onMin").value = "";
+        document.getElementById("onSec").value = "00";
+
+        /* RESET CLOUD TIMEZONE */
+        currentTimezoneStr = "Asia/Kolkata";
+        const tzBadge = document.getElementById("detectedTzBadge");
+        if (tzBadge) {
+            tzBadge.innerText = currentTimezoneStr;
+            tzBadge.style.display = "none";
+        }
+    }
+
+    let isFirstCloudFetch = true;
+    let wakeInterval = null;
+    
+	
+	
+	
+	/* =========================================================
+   ONLINE CLOUD FETCH ENGINE (Updated for DD-MM-YYYY)
+   ========================================================= */
+async function fetchFromCloud() {
+    const d = document.getElementById("onDay").value;
+    const m = document.getElementById("onMonth").value;
+    const y = document.getElementById("onYear").value;
+    
+    const hr = document.getElementById("onHour").value;
+    const min = document.getElementById("onMin").value;
+    const sec = document.getElementById("onSec").value || "00";
+
+    const latVal = document.getElementById("onlineLat").value;
+    const lonVal = document.getElementById("onlineLon").value;
+
+    if (!d || !m || !y || !hr || !min || !latVal || !lonVal) {
+        console.warn("Please fill in the full Date, Hour, Minute, and Coordinates.");
+        return;
+    }
+
+    const calculatedOffset = calculateAccurateOffset(currentTimezoneStr, d, m, y, hr, min);
+
+    const requestData = {
+        year: parseInt(y),
+        month: parseInt(m),
+        day: parseInt(d),
+        hour: parseInt(hr),
+        minute: parseInt(min),
+        second: parseInt(sec),
+        lat: parseFloat(latVal),
+        lon: parseFloat(lonVal),
+        timezone_offset: calculatedOffset, 
+        horary_mode: false 
+    };
+
+    const btn = document.getElementById("fetchCloudBtn");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Fetching Data... ⏳";
+    btn.disabled = true;
+
+    // 🔥 STOPWATCH RE-ACTIVATION
+    if (wakeInterval) clearInterval(wakeInterval);
+    const wakeContainer = document.getElementById("serverWakeContainer");
+    const wakeTimer = document.getElementById("wakeTimer");
+    const wakeMessage = document.getElementById("wakeMessage");
+
+    if (wakeContainer && wakeTimer && wakeMessage) {
+        wakeContainer.style.visibility = "visible";
+        wakeMessage.innerText = "> SYS.WAKE (Fetching...)";
+        let seconds = 0;
+        wakeTimer.innerText = `[ 0.0s ]`;
+        
+        wakeInterval = setInterval(() => {
+            seconds += 0.1;
+            wakeTimer.innerText = `[ ${seconds.toFixed(1)}s ]`;
+        }, 100);
+    }
+
+    try {
+        const response = await fetch('https://donnie-astro-engine.onrender.com/calculate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            const data = result.data;
+            
+            if(typeof clearAll === "function") clearAll();
+            
+            window.__LAST_SWISS_KP__ = data;
+
+            let p_y = String(y).padStart(4, "0");
+            let p_m = String(m).padStart(2, "0");
+            let p_d = String(d).padStart(2, "0");
+            let p_hr = String(hr).padStart(2, "0");
+            let p_min = String(min).padStart(2, "0");
+            let p_sec = String(sec).padStart(2, "0");
+
+            let baseDateEl = document.getElementById("baseDate");
+            let baseTimeEl = document.getElementById("baseTimeLock");
+            if(baseDateEl) baseDateEl.value = `${p_y}-${p_m}-${p_d}`;
+            if(baseTimeEl) baseTimeEl.value = `${p_hr}:${p_min}:${p_sec}`;
+
+            BASE_EPOCH = null;
+            if(typeof lockBaseDateTime === "function") lockBaseDateTime();
+            if(typeof captureBaseDateTime === "function") captureBaseDateTime();
+            if(typeof syncDateTimeTool === "function") syncDateTimeTool();
+            
+            window.PLANET_RETRO_STATE = {};
+            let retroSrc = data.ayanamshas?.Lahiri?.planets_retro || data.planets_retro;
+            if(retroSrc){
+                Object.keys(retroSrc).forEach(p=>{
+                    PLANET_RETRO_STATE[p] = !!retroSrc[p];
+                });
+            }
+            
+            document.getElementById("manualMode").checked = true;
+            if(typeof manualMode.onchange === "function") manualMode.onchange();
+            
+            if(typeof data.lagna === "number"){
+                writeToInputs("c1", data.lagna);
+            }
+            
+            if(data.cusps){
+                for(let i=1; i<=12; i++){
+                    if(typeof data.cusps[i] === "number"){
+                        writeToInputs("c"+i, data.cusps[i]);
+                    }
+                }
+            }
+            
+            if(data.planets){
+                Object.keys(data.planets).forEach(p=>{
+                    if(p === "Rahu" || p === "Ketu" || p.endsWith("_true")) return;
+                    if(document.getElementById(p+"_sign") && typeof data.planets[p] === "number"){
+                        writeToInputs(p, data.planets[p]);
+                    }
+                });
+                
+                if(typeof applyNodeModeKP === "function") applyNodeModeKP();
+            }
+            
+            if(typeof resetAllTogglesToDefault === "function") resetAllTogglesToDefault();
+            if(typeof buildCuspalChart === "function") buildCuspalChart();
+            if(typeof drawD1 === "function") drawD1();
+            
+            btn.innerHTML = "Success! ✅";
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 3000);
+
+        } else {
+            console.warn("Server Error: " + result.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error("Fetch error:", error);
+        console.warn("Network Error: Could not reach the server.");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    } finally {
+        if (wakeInterval) clearInterval(wakeInterval);
+        if (wakeContainer) wakeContainer.style.visibility = "hidden";
+    }
+}
+
+
+
+
+
+
+    function saveCloudProfile() {
+        const name = document.getElementById("onName").value.trim();
+        if (name.length < 4) {
+            return;
+        }
+
+        const profileData = {
+            type: "CloudHoroscopeProfile",
+            name: name,
+            date: {
+                d: document.getElementById("onDay").value,
+                m: document.getElementById("onMonth").value,
+                y: document.getElementById("onYear").value
+            },
+            time: {
+                h: document.getElementById("onHour").value,
+                min: document.getElementById("onMin").value,
+                sec: document.getElementById("onSec").value
+             },
+            coords: {
+                lat: document.getElementById("onlineLat").value,
+                lon: document.getElementById("onlineLon").value
+            },
+            timezoneStr: typeof currentTimezoneStr !== 'undefined' ? currentTimezoneStr : "Asia/Kolkata"
+        };
+        
+        const dataStr = JSON.stringify(profileData, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const safeName = name.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+        
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${safeName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function loadCloudProfile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                if(typeof clearFetchData === "function") clearFetchData();
+                if(typeof clearAll === "function") clearAll();
+
+                const data = JSON.parse(e.target.result);
+                if (data.type !== "CloudHoroscopeProfile") {
+                    console.warn("Invalid file. Please select a valid Cloud Horoscope Profile JSON.");
+                    return;
+                }
+
+                document.getElementById("onName").value = data.name || "";
+                
+                if (data.date) {
+                    document.getElementById("onDay").value = data.date.d || "";
+                    document.getElementById("onMonth").value = data.date.m || "";
+                    document.getElementById("onYear").value = data.date.y || "";
+                }
+                
+                if (data.time) {
+                    document.getElementById("onHour").value = data.time.h || "";
+                    document.getElementById("onMin").value = data.time.min || "";
+                    document.getElementById("onSec").value = data.time.sec || "00";
+                }
+                
+                if (data.coords) {
+                    document.getElementById("onlineLat").value = data.coords.lat || "";
+                    document.getElementById("onlineLon").value = data.coords.lon || "";
+                    document.getElementById("locationPreset").value = "manual"; 
+                }
+                
+                if (data.timezoneStr && typeof currentTimezoneStr !== 'undefined') {
+                    currentTimezoneStr = data.timezoneStr;
+                    const tzBadge = document.getElementById("detectedTzBadge");
+                    if (tzBadge) {
+                        tzBadge.innerText = currentTimezoneStr;
+                        tzBadge.style.display = "inline-block";
+                    }
+                }
+
+                // 🔥 AUTO START FETCHING AFTER LOADING CHART
+                setTimeout(() => {
+                    if (typeof fetchFromCloud === "function") fetchFromCloud();
+                }, 300);
+
+            } catch (error) {
+                console.error("Error parsing profile JSON:", error);
+                console.warn("Error reading the profile file. It might be corrupted.");
+            }
+        };
+        
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
 let BASE_EPOCH = null;
 function lockBaseDateTime(){
@@ -1403,6 +2053,9 @@ function saveJSON(){
         /* 🔥 DOB / TOB SAVE */
         baseDate: document.getElementById("baseDate").value || "",
         baseTime: document.getElementById("baseTimeLock").value || "",
+        
+        /* 🔥 TIMEZONE SAVE */
+        timezoneStr: typeof currentTimezoneStr !== 'undefined' ? currentTimezoneStr : "Asia/Kolkata",
 
         cusps:{},
         planets:{}
@@ -1485,8 +2138,28 @@ function resetAllTogglesToDefault() {
         { id: "t10_ignore_ssl", val: false },
         { id: "hbPlacementToggle", val: false },
         { id: "hb_evenodd", val: false },
-        { id: "hb_pattern", val: true }
+        { id: "hb_pattern", val: true },
+        { id: "hb_mixed", val: false },
+        { id: "hbAttractToggle", val: false },
+        { id: "toggleStarColumns", val: false },
+        { id: "hbUntenantedRule", val: false },
+        { id: "kpModeK", val: false },
+        { id: "vedicModeK", val: false },
+        { id: "retroModeK", val: false },
+        { id: "showCuspsD1", val: false },
+        { id: "vedicMode", val: false },
+        { id: "retroMode", val: false },
+        { id: "trueNodeModeKP", val: false },
+        { id: "kpLevelTheme", val: true }
     ];
+	
+	
+	
+	
+	
+	
+	
+	
 
     toggles.forEach(t => {
         let el = document.getElementById(t.id);
@@ -1539,8 +2212,12 @@ function loadJSON(){
     f.onchange=e=>{
         let r=new FileReader();
         r.onload=()=>{
+            // 🔥 PREVENT STATE LEAKAGE: PURGE OLD CHART COMPLETELY FIRST
+            if(typeof clearAll === "function") clearAll();
 
             let d=JSON.parse(r.result);
+			
+			
 
             /* ---------- NAME ---------- */
             if(d.personName && document.getElementById("personName")){
@@ -1553,6 +2230,16 @@ function loadJSON(){
             }
             if(d.baseTime){
                 document.getElementById("baseTimeLock").value=d.baseTime;
+            }
+            
+            /* ---------- TIMEZONE RESTORE ---------- */
+            if(d.timezoneStr && typeof currentTimezoneStr !== 'undefined'){
+                currentTimezoneStr = d.timezoneStr;
+                const tzBadge = document.getElementById("detectedTzBadge");
+                if (tzBadge) {
+                    tzBadge.innerText = currentTimezoneStr;
+                    tzBadge.style.display = "inline-block";
+                }
             }
 
             /* ---------- MODE ---------- */
@@ -1616,9 +2303,16 @@ function loadJSON(){
 
 
 function clearAll(){
-
-    /* RESET BASE TIME STATE */
+    /* RESET ALL GLOBAL VARIABLES & CACHE */
     BASE_EPOCH = null;
+    if(typeof BASE_MASTER_DATETIME !== 'undefined') BASE_MASTER_DATETIME = null;
+    if(typeof SHIFT_SECONDS !== 'undefined') SHIFT_SECONDS = 0;
+    if(typeof PLANET_RETRO_STATE !== 'undefined') PLANET_RETRO_STATE = {};
+    window.__LAST_SWISS_KP__ = null;
+    if(typeof TENANTED_CACHE !== 'undefined') TENANTED_CACHE = null;
+    if(typeof TARA_LAST_JANMA !== 'undefined') TARA_LAST_JANMA = null;
+    if(typeof TARA_MANUAL_LOCK !== 'undefined') TARA_MANUAL_LOCK = false;
+    window.__T3_CACHE__ = {};
 
     /* ENABLE + CLEAR DATE & TIME */
     document.getElementById("baseDate").disabled = false;
@@ -1649,9 +2343,30 @@ function clearAll(){
         document.getElementById(p+"_sec").value = "";
     });
 
+    /* CLEAR VIMSHOTTARI EVENTS */
+    for(let i=1; i<=5; i++){
+        let en = document.getElementById(`en${i}`);
+        let ed = document.getElementById(`ed${i}`);
+        if(en) en.value = "";
+        if(ed) ed.value = "";
+    }
+
     /* CLEAR OUTPUT */
     document.getElementById("output").innerHTML = "";
+
+    /* FORCE RESET ALL DROPDOWNS & TOGGLES TO FACTORY DEFAULTS */
+    if(typeof resetAllTogglesToDefault === "function") {
+        resetAllTogglesToDefault();
+    }
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -6503,7 +7218,7 @@ document.querySelector("button[onclick='buildCuspalChart()']")
     "
     onclick="toggleVimshottari()"
 >
-Vimshottari Dasha ▼
+Vimshottari Dasha ▶
 </h2>
 
 
@@ -6581,7 +7296,7 @@ Vimshottari Dasha ▼
 
 
 
-<div id="vimshottari-body">
+<div id="vimshottari-body" style="display: none;">
 
 <h2>Vimshottari Dasha - Chandra</h2>
 <div id="vimMoonBox" class="vimTable"></div>
@@ -7924,12 +8639,13 @@ function loadSwissJSON(){
     f.accept = "application/json";
 
     f.onchange = e => {
-
         let r = new FileReader();
         r.onload = () => {
+            // 🔥 PREVENT STATE LEAKAGE: PURGE OLD CHART COMPLETELY FIRST
+            if(typeof clearAll === "function") clearAll();
 
             let data = JSON.parse(r.result);
-			window.__LAST_SWISS_KP__ = data;
+            window.__LAST_SWISS_KP__ = data;
 			
 			
 			
@@ -8332,7 +9048,7 @@ let CHART_SOURCE_MODE = "short";
 let CHART_SHOW_EFF_A = true;
 let CHART_SHOW_EFF_B = true;   
 let CHART_SHOW_EFF_C = false;
-let CHART_SECTION_OPEN = true; 
+let CHART_SECTION_OPEN = false; 
 let CHART_REST_OPEN = false; 
 
 // 🔥 NEW: Global State for Vimshottari Date on Charts
@@ -9311,7 +10027,6 @@ function buildBarCharts() {
 
 
 
-
 let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
     let labelB = CHART_SOURCE_MODE === "raw" ? "Sub + Star of Sub" : "EFF B";
     let labelC = CHART_SOURCE_MODE === "raw" ? "Sub-Sub + Star of Sub-Sub" : "EFF C";
@@ -9340,22 +10055,22 @@ let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
 
         <div style="border-left: 2px dashed #a86b17; padding-left: 30px; display: flex; gap: 20px; align-items:center; flex-wrap:wrap;">
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra_year' ? 'checked' : ''} 
+                <input type="radio" name="vimDateMode" ${CHART_VIM_SOURCE === 'chandra_year' ? 'checked' : ''} 
                        onchange="CHART_VIM_SOURCE = 'chandra_year'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
                 Year - Chandra
             </label>
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna_year' ? 'checked' : ''} 
+                <input type="radio" name="vimDateMode" ${CHART_VIM_SOURCE === 'lagna_year' ? 'checked' : ''} 
                        onchange="CHART_VIM_SOURCE = 'lagna_year'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
                 Year - Lagna
             </label>
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'chandra_age' ? 'checked' : ''} 
+                <input type="radio" name="vimDateMode" ${CHART_VIM_SOURCE === 'chandra_age' ? 'checked' : ''} 
                        onchange="CHART_VIM_SOURCE = 'chandra_age'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
                 Age - Chandra
             </label>
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; color:#38bdf8;">
-                <input type="checkbox" ${CHART_VIM_SOURCE === 'lagna_age' ? 'checked' : ''} 
+                <input type="radio" name="vimDateMode" ${CHART_VIM_SOURCE === 'lagna_age' ? 'checked' : ''} 
                        onchange="CHART_VIM_SOURCE = 'lagna_age'; buildBarCharts();" style="transform:scale(1.3); accent-color:#38bdf8;">
                 Age - Lagna
             </label>
@@ -9363,6 +10078,19 @@ let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
 
     </div>
     `;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
     // 1. Render Outer Life Chart 
     html += renderVerticalChart(planetsOrder, "outer");
@@ -10691,17 +11419,1025 @@ function buildTable45() {
 })();
 
 
-
-
-
-
-
-
-
-
-
-
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+/* =========================================================
+   TABLE 50 : PREDICTION MODULE (FULL ENGINE + CHECKBOX SYNC)
+   ========================================================= */
+
+
+
+const PREDICTION_CSV_DATA = `
+"Health Good",,1,"1,3,5,7,9,11"
+"Health Bad",,1,"2,4,6,10"
+"Health Very Bad",,1,"6,8,12"
+"Gaining Status, Respect",,1,"10,11"
+"Success In Self Efforts",,1,11
+"Body Accustomed/Adapted To Anything",,1,"2,11"
+"Longevity - Medium Period",,1,"2,7"
+"Life",,1,"2,7,11"
+"Life",,1,"2,7,9"
+"Tendency To Fight Always",,1,"2,8"
+"Murders","MA,SA",1,"2,8"
+"Body Averting To Anything",,1,"2,8,12"
+"Good Person",,1,"3,5,7,9,11"
+"Courageous Person",,1,"3,6"
+"Famous Person",,1,"3,6,10"
+"Tendency To Create Peace Always",,1,"3,7"
+"Coward",,1,"3,8"
+"Longevity - Short Period",,1,"3,8"
+"Aversion To Education (Illiterate Person)",,1,"3,8"
+"Running Away From Native",,1,"3,8,12"
+"Living Outside Of One's Own Residence",,1,"3,9"
+"Person Living Alone",,1,"3,9"
+"Person Living In Joint Family",,1,"4,10"
+"Not Addicted To Anything","SA,KE",1,"4,6"
+"No Interest Towards Sexual Affairs","SA,KE",1,"4,6,8,10"
+"Accidents","MA,SA",1,"4,8"
+"Highly Educated Person",,1,"4,9,11"
+"Good Health",,1,"5,11"
+"For Smooth Functioning Of Parts Of Body Referring To Health",,1,"5,11"
+"Addicted To Drugs, Liquor, Women","VE,MA",1,"5,7"
+"Womanizer","VE,MA",1,"5,7,9,11"
+"Lost Status Of Famous Person",,1,"5,8,10"
+"Life With Sufferings",,1,"5,8,12"
+"Confident Person",,1,"5,9"
+"Longevity - Long Life",,1,"5,9"
+"Person Leading Independent",,1,6
+"Diseases",,1,6
+"Dislike Harmony, Unity, With Others",,1,"6,10"
+"Successful Life",,1,"6,11"
+"Life With Lots Of Diseases",,1,"6,8,12"
+"Person Living As Dependent With Others",,1,7
+"Adjustable With Others (Accord, Unity)",,1,"7,11"
+"Suicides",,1,8
+"Does Not Possess Any Capacity For Doing Research",,1,"8,11"
+"Run Away From Living Place",,1,"8,12"
+"Scholar And Authority In Research Field",,1,"9,12"
+"Creul Person",,1,"2,4,6,8,10,12"
+
+
+
+
+
+
+
+"Passive Income",,2,"1,3,5,7,9,11"
+"Active Income",,2,"2,4,6,8,10,12"
+"Rich Person","JU,VE",2,"2,4,6,10"
+"Rich Enjoying Life",,2,"1,3,5,7,9,11"
+"Money Worries",,2,"8,12"
+"Money Very Bad",,2,8
+"Wealth Strong",,2,"2,4,6,10"
+"For Free Flow Of Fund Cash Flow From Blockage",,2,4
+"Cash Deposits With Someone Else For Safety",,2,7
+"Cash Held Up / Stalled Outside",,2,8
+"Fund & Cash Flow - Blockage (Liability)",,2,9
+"Business Started With Cash As Investment",,2,10
+"Excess / Abnormal Monetary Receipts",,2,11
+"Moneytary Income, Not To Be Returned",,2,11
+"Cash/Fund Savings As Investments",,2,12
+"Small Debts",,2,"1,3"
+"Investments",,2,"10,12"
+"Small Debts",,2,"3,11"
+"For Selling Gold And Other Ornaments",,2,"3,12"
+"Separation Of Someone From Family",,2,"3,12"
+"Loss In Gold & Jewelry Business",,2,"3,5,9"
+"Exchange Of Transaction, Cash Into Cheque",,2,"3,6"
+"For Running Gold Jewelry Business",,2,"4,10"
+"Visit Of Relatives",,2,"4,11"
+"Scholarships",,2,"4,11"
+"Augmenting Gold Ornaments",,2,"4,12"
+"Purchase Of Households",,2,"4,6,11"
+"To Achieve For Scholarship",,2,"4,9"
+"Money Not Returned Back To Lender",,2,"5,11"
+"Parts Of Body Pertaining To 2nd Bhava To Be In Healthier Condition",,2,"5,11"
+"Expenditure For Goods",,2,"5,11,12"
+"Money Pledged For Gambling Purposes",,2,"5,12"
+"For Healthy Eye, Tooth, Throat",,2,"5,7,11"
+"Fluctuating Fund Flow (Unsteady)",,2,"5,9"
+"Money Issued As Donations (Gifts)",,2,"5,9"
+"Loss In Business, Started With Cash As Investment",,2,"5,9"
+"Steady Fund Flow",,2,"6,10"
+"Evade / Elude From Income Tax Dept",,2,"6,11"
+"Borrowings",,2,"6,11"
+"Money Banking Transactions",,2,"6,12"
+"Loans",,2,"6,8,11"
+"Eye, Tooth, Throat Troubles/Sufferings",,2,"6,8,12"
+"To Receive Help / Assistance From Others",,2,"7,11"
+"Loss Of Jewelry Items Due To Robbery",,2,"7,12"
+"To Be Land Up In Trouble With Income Tax Dept",,2,"7,12"
+"Receiving Donations/Gifts/Compliments",,2,"8,11"
+"Insurance Claims","SA",2,"8,11"
+"Swindling Of Others Jewelries By Bad Means",,2,"8,12"
+"Unnecessary Expenses / Expenditure",,2,"8,12"
+
+
+
+
+
+
+
+
+"To Go Out By Walk",,3,3
+"To Have Strong Will Power",,3,6
+"Deception Through Money Order",,3,8
+"Letter Correspondence",,3,9
+"To Shift From One Location To Another (Dislocation)",,3,9
+"To Involve In The Profession Of Broker",,3,10
+"Short Journeys",,3,11
+"Transfers",,3,"10,11"
+"Sale Of Properties",,3,"11,12"
+"Letter Correspondence",,3,"2,11"
+"Money Orders",,3,"2,11"
+"To Remain / Stay In The Same Place/Location",,3,"2,4"
+"Receipt/Collection Of Cheques",,3,"2,6"
+"Obstruction In Journey",,3,"2,8"
+"Obstruction In Dislocation",,3,"2,8"
+"Cheque Payments",,3,"2,8,12"
+"To Receive Money Order",,3,"2,9"
+"For Journey / Travelling",,3,"3,9"
+"Unable To File / Register A Suit",,3,"5,10"
+"To Act As A Commission Broker",,3,"5,10"
+"Pilgrimage By Foot",,3,"5,9"
+"For Smooth Functioning Of Part Of Body Covering Under 3rd Bhava",,3,"5,9,11"
+"To Become A Document Writer",,3,"6,10"
+"Filing A Suit",,3,"6,11"
+"Unable To Communicate Through Telephone",,3,"6,8"
+"Mental Disorder / Or Depressed Condition",,3,"6,8"
+"Heart Attack",,3,"6,8"
+"Diseases In Ear (S) / Nose",,3,"6,8,10"
+"Loss Of Sensation (Numbness) / Nervous Debility",,3,"6,8,12"
+"To Succeed In Obtaining Tenders",,3,"6,9,11"
+"To Sign Surety Documents",,3,"7,11"
+"News - True, Real And Factual In Nature",,3,"7,11"
+"Telephone Communications",,3,"7,9"
+"For Cancelation Of Contracts / Agreements",,3,"8,10"
+"Fake / Forgery Documents",,3,"8,10"
+"Unable To Correspond Through Letter",,3,"8,12"
+"Trouble Due To Standby As Surety",,3,"8,12"
+"False News / Communications",,3,"8,12"
+"To Lose Energy From One's Body",,3,"8,12"
+"To Install Telephone Booths / Center",,3,"9,10"
+"To Sign Contracts / Agreements",,3,"9,11"
+"To Ascertain For Original Documents",,3,"9,11"
+"Long Journeys",,3,"9,11"
+"Receipt Of Cheques",,3,"9,11"
+"Communications",,3,"9,11"
+"Agreements",,3,"9,11"
+"Negotiations",,3,"9,11"
+"To Perform As A Secret Agent /Or A As Spy",,3,"9,12"
+"For Foreign Travel",,3,"9,12"
+"Small Loan",,6,3
+
+
+
+
+
+
+
+"Marriage Within Relatives","MA",4,"1,3,5,7,9,11"
+"Rent Income Good",,4,"2,4,6,10"
+"Rent Enjoy Property No Income",,4,"5,9"
+"Rent Problems Litigation",,4,"8,12"
+"Property Loss","MA,VE",4,"5,8"
+"Property Never Buy",,4,"3,11"
+"Property Worries",,4,"8,12"
+"Real Estate Business","MA,VE",4,"2,4,6,10"
+"Real Estate Loss","MA,VE",4,"5,9"
+"Real Estate Problems","MA,VE",4,"8,12"
+"Property Good","MA",4,"2,4,6,10"
+"Property Bad","MA",4,"1,3,7,11"
+"Property Litigation","MA",4,"8,12"
+"Vehicle Accident Damage",,4,"6,8,12"
+"Vehicle Safe",,4,"1,3,5,7,9,11"
+"To Purchase Vehicles",,4,6
+"Vehicle Accident",,4,8
+"Productive Part Damaged",,4,8
+"Production Oriented Profession",,4,10
+"Moderate Level Education",,4,11
+"Land","MA",4,11
+"Cycle","SA",4,11
+"Motor Cycle","MA,VE,JU",4,11
+"Heavy Vehicles","MA,VE,MO",4,11
+"To Purchase Landed Properties",,4,12
+"Agricultural Land","MO,MA",4,"10,11"
+"To Purchase A Constructed House",,4,"10,12"
+"House","MA,VE",4,"11,12"
+"Hired Articles",,4,"2,6"
+"Agriculture",,4,"2,6,10"
+"Stable Properties",,4,"2,6,12"
+"Obstacles In Moderate Level Education",,4,"3,10"
+"Encumbrance In Properties",,4,"3,11"
+"Sale Of Landed Properties",,4,"3,12"
+"Sale Of Vehicles",,4,"3,12"
+"Sale Of Household Articles",,4,"3,12"
+"Productive Part Removal",,4,"3,12"
+"Sale Of House","VE",4,"3,12"
+"Unstable Properties",,4,"3,6,12"
+"Missing Of Vehicles",,4,"3,8,12"
+"To Purchase A Leased House",,4,"3,9"
+"Factory Lock Out",,4,"3,9"
+"Production Oriented Profession -Lockout",,4,"3,9"
+"To Purchase Leased Land",,4,"3,9"
+"Sale Of Heavy Vehicles",,4,"3,9,12"
+"Interchanging Of Vehicles",,4,"3,9,12"
+"Productive Part Replacement",,4,"3,9,12"
+"Factory Strike",,4,"5,10"
+"To Purchase Household Articles",,4,"5,11"
+"Pleasure Vehicles","MA,VE,JU",4,"5,11"
+"To Purchase Heavy Vehicles",,4,"6,10"
+"Employed In Factories/ Industries",,4,"6,10"
+"Engineer",,4,"6,10"
+"Architect",,4,"6,10"
+"Lower Grade School Teacher","VE",4,"6,10"
+"Furnitures, Cosmetics",,4,"6,11"
+"To Rent A House",,4,"6,12"
+"Daily Paid Worker In Factories",,4,"6,8"
+"Constructed House",,4,"6,9,11"
+"Vehicle Damaged",,4,"8,11"
+"Higher Level Education",,4,"9,11"
+"Ph.D/ Research Scholar",,4,"9,11,12"
+
+
+
+
+
+
+"Child Birth No Childlessness","JU",5,"4,12"
+"Child Birth 100% Good","JU",5,"1,3,5,7,9,11"
+"Child Birth Strong","JU",5,"3,7,11"
+"Child Birth Average","JU",5,"2,6,10"
+"Child Birth Very Bad","JU",5,"4,8,12"
+"Love Marriage Strong",,5,"1,3,5,7,9,11"
+"Love Breakup",,5,"4,8,12"
+"Politics Success","SU",5,"2,6,10"
+"Politics Failure","SU",5,"1,5,9"
+"First Night",,5,11
+"Child Short-Lived",,5,12
+"Blood Cells In Spoiling Condition",,5,12
+"Popular/Famous Astrologer",,5,"1,10"
+"To Get Trained In Arts",,5,"1,11"
+"Clearing Debts",,5,"1,11"
+"Healthy Life",,5,"1,11"
+"Disease Due To Blood Cells",,5,"1,6"
+"Spiritual Life","SA,KE",5,"10,11"
+"Fine Arts","VE",5,"10,11"
+"Professional Astrologer",,5,"2,10"
+"Gambling House",,5,"2,10"
+"To Gain In Gambling",,5,"2,11"
+"Child Birth",,5,"2,11"
+"Black Money",,5,"2,11"
+"Menopause (An End To Menses Cycle)",,5,"2,4,6"
+"To Do Commission Business",,5,"2,6"
+"To Work As Assistant Under Astrologer",,5,"2,6"
+"Winning Gambles/Races",,5,"2,6,11"
+"Priest Of A Temple",,5,"2,9"
+"Artist",,5,"3,10"
+"Lottery Business",,5,"3,10"
+"Blood Donation",,5,"3,12"
+"Sports Man (Player)",,5,"3,6,11"
+"To Lose One's Consciousness; To Affect One's Deep Knowledge",,5,"3,8,12"
+"For Regular Menstrual Cycle",,5,"3,9"
+"Love Failure",,5,"4,10"
+"Delivery Of Unhealthy Child",,5,"4,10"
+"To Teach Arts",,5,"4,10"
+"Divorce In Love Marriage",,5,"4,10"
+"Teacher In Astrology",,5,"4,10"
+"Sculptor",,5,"4,10"
+"For Irregular Menstrual Cycle",,5,"4,10"
+"To Become An Ascetic; Saint; (Reclusive Life)","SA",5,"4,10"
+"Ones Failure Life In Cine Field",,5,"4,10,12"
+"To Quit Politics",,5,"4,9"
+"Ones Successful Life In Cine Field",,5,"6,10"
+"To Be A Winner In Sports",,5,"6,11"
+"Winning Games",,5,"6,11"
+"Feast And Festivals",,5,"6,11"
+"Delivery Of Twins",,5,"7,11"
+"Illicit Love Affairs",,5,"7,11"
+"Love Marriage",,5,"7,11"
+"Obscene /Indecent Actor",,5,"8,10"
+"To Lose In Gambling",,5,"8,12"
+"Humiliated Due To Obscene/Indecent",,5,"8,12"
+"Abnormal Menstrual Bleeding",,5,"8,12"
+"Rape","MA",5,"8,12"
+"Giving Bribes",,5,"8,12"
+"To Have Healthy Blood Cells",,5,"9,11"
+"Researcher In Astrology",,5,"9,11"
+"Temple Trustee",,5,"9,11"
+"Illegal Affairs",,5,"9,11"
+"Indirect Love Affairs",,5,"9,12"
+
+
+
+
+
+
+
+
+
+"Job Monthly Income",,6,"2,4,6,10"
+"Job Enjoyment More Money Less",,6,"1,3,7,11"
+"Job No Money",,6,"5,9"
+"Job Heavy Loss",,6,"8,12"
+"Loan",,6,"2,4,6,10"
+"Heavy Loan",,6,8
+"Loan Repayment Easy",,6,"3,7,11"
+"Loan Not Possible",,6,"1,5,9"
+"Loan Blocked",,6,12
+"Inner Job Nature",,6,"1,3,5,7,9,11"
+"Hardworking Job",,6,"2,4,6,8,10,12"
+"Diseases Frequent","SU",6,"6,8,12"
+"Recovery From Disease",,6,1
+"Disease",,6,1
+"Secret Activities Of Partner",,6,5
+"To Win In Law Suits (Litigations)",,6,11
+"Winning Opponents",,6,11
+"Divorce",,6,12
+"Winning Litigation",,6,"1,11"
+"Medical Treatment To Diseases",,6,"1,12"
+"Borrow Money To Re-Pay Previous Loan",,6,"1,2"
+"Operation/Surgery",,6,"1,3,8,12"
+"Troublesome Disease",,6,"1,8"
+"Damage To Organ By Diseases",,6,"1,8"
+"Self Unconsciousness",,6,"1,8,12"
+"Borrowing (To Get Loan)",,6,"2,10"
+"Service - As An Employee",,6,"2,10"
+"Clearing Debts By Borrowings",,6,"2,11,12"
+"Money Borrowed For Other Transaction(S)",,6,"2,12"
+"Purchase Of Food Items & Related Materials",,6,"2,4"
+"Problem In Loan Transactions",,6,"2,9"
+"To Get Hand Loan (Money Without Interest)",,6,"3,11"
+"Problem Due To Hand Loan",,6,"3,8"
+"Airborne Disease (Vada)",,6,"3,8"
+"To Do Catering Business (Cooking Work)",,6,"4,10"
+"Disease Which Is Incurable",,6,"4,10"
+"Purchase Of New Dress Materials",,6,"4,11"
+"Purchase Second Hand (Used) Articles/Items",,6,"4,8"
+"To Remain Sick Permanently",,6,"4,8"
+"Life-Long Diseases",,6,"4,8"
+"Hereditary Disease",,6,"4,9"
+"To Recover From Disease",,6,"5,11"
+"Purchase Of Medicines",,6,"5,11"
+"To Attend A Feast",,6,"5,11"
+"Relief From Diseases",,6,"5,11"
+"To Recover From Coma Stage",,6,"5,7,11"
+"Return Of Borrowings (Loan Pay Back)",,6,"5,8,12"
+"Unsuccessful In Borrowing (Failure)",,6,"5,9"
+"To Relieve From Troublesome Disease",,6,"7,11"
+"Worker(S) On Daily Wages",,6,"8,10"
+"To Get Huge Loan",,6,"8,10"
+"To Work As Apprentice (Learner)",,6,"8,10"
+
+
+
+
+
+
+
+
+"Marriage Outside Caste",,7,"6,8,12"
+"Marriage Early","VE",7,"1,3,5,7,9,11"
+"Marriage Average",,7,"2,4,10"
+"Marriage Delayed",,7,"6,8,12"
+"Unmarried Possibility",,7,"6,12"
+"Second Marriage","VE,MA",7,"4,6,8,12"
+"Marriage Harmony Good","VE",7,"1,3,5,7,9,11"
+"Marriage Public Recognition",,7,"1,3,5,7,9,11"
+"Marriage Weak Recognition",,7,"2,4,6,10"
+"Guest Arrival",,7,4
+"Hidden / Indirect Enemies",,7,12
+"Marriage",,7,"5,7,11"
+"Religious Related Union Agreement",,7,"1,5,9"
+"Customer",,7,"10,11"
+"Catch Hold Of Thief",,7,"2,11"
+"To Bring Others Into Our Self Control",,7,"2,11"
+"Second Child",,7,"2,11"
+"Thief",,7,"2,12"
+"Giver Of Bank Loan",,7,"2,6,9,11"
+"To Exit / Abandon From A Contract",,7,"2,8"
+"Arguments/Debates",,7,"2,8"
+"Co-Operative Union Agreement",,7,"3,5,9,11"
+"Separation From Partnership Business",,7,"3,6,9"
+"To Enter / Get Into A Contract",,7,"3,9"
+"Temporary Separation",,7,"3,9"
+"Commercial Unions",,7,"3,9"
+"Party Of Agreement",,7,"3,9,11"
+"Partnership In Business",,7,"4,10"
+"Separation / Failure In Negotiation",,7,"4,10"
+"Ever Unsatisfied Person",,7,"4,10"
+"Troubles From Guest",,7,"4,12"
+"To Recover From Contagious Disease",,7,"5,11"
+"To Act As Mediator / Negotiator",,7,"5,11"
+"Union Agreement",,7,"5,11"
+"Business Partner",,7,"5,11"
+"Failure To Bring Others Into Our Self Control",,7,"5,8"
+"To Win/Success Over Enemies",,7,"6,11"
+"Divorce",,7,"6,12"
+"Troubles From Enemies",,7,"8,12"
+"To Elect / Select Non-Confidant(S)",,7,"8,12"
+"Enemies",,7,"8,12"
+"To Elect/Select Confidant(S)",,7,"9,11"
+"One Who Indulges In Multiple Affairs",,7,"9,11"
+
+
+
+
+
+
+
+
+
+
+
+"Major Accident",,8,"6,8,12"
+"Accident Avoided",,8,"1,3,5,7,9,11"
+"Major Surgery",,8,"2,4,6,8,10,12"
+"Natural Death",,8,8
+"Clearing Debts",,8,12
+"Unexpected Happiness",,8,"1,11"
+"Unexpected Sorrow / Grief",,8,"1,12"
+"Unexpected Hidden Life",,8,"1,12"
+"Unexpected Escape From Death",,8,"1,2"
+"Gain Due To Unexpected Love Affairs",,8,"1,2,5"
+"Recovery From Unexpected Sudden Disease",,8,"1,5,11"
+"Unexpected Sudden Disease",,8,"1,6"
+"Unexpected Sufferings Due To Pains /Agony",,8,"1,8"
+"Unexpected Sudden Suicide",,8,"1,8"
+"Unexpected Fruition Of Bribe/Corrupt Money",,8,"2,10"
+"Sudden Gains",,8,"2,11"
+"Unexpected Profits Of Money",,8,"2,11"
+"Unexpected Loss From Insurance Amount",,8,"2,12"
+"Unexpected Losses",,8,"2,12"
+"Unexpected Eye Affect (Affliction)",,8,"2,4,8"
+"Unexpected Fruition Of Insurance Amount",,8,"2,6"
+"Heavy Loan",,8,"2,6,11"
+"Unexpected Restraints In Cash Flow",,8,"2,9"
+"Unexpected Sudden Death",,8,"3,10"
+"Unexpected Dispute/Encumbrance From Properties",,8,"3,11"
+"Unexpected Mental Satisfaction",,8,"3,11"
+"Unexpected Loss Of Possession",,8,"3,12"
+"Unexpected Run Away (Escape) From Living Place",,8,"3,12"
+"Unexpected Mental Illness (Disease)",,8,"3,6"
+"Unexpected Contract Agreement",,8,"3,7,9"
+"Unexpected Mental Disorder / Suffering",,8,"3,8"
+"Unexpected Break In Contract",,8,"3,9"
+"Unexpected Separation From Love Affairs",,8,"4,10"
+"Unexpected Encumbrance In Hereditary Properties",,8,"4,11"
+"Unexpected Purchase Of Properties",,8,"4,12"
+"Unexpected Accidents",,8,"4,12"
+"Unexpected Escape From Accident",,8,"4,7"
+"Unexpected Accident",,8,"4,8"
+"Unexpected Fruition Of Hereditary Properties",,8,"4,9"
+"Trouble From Unexpected Immoral Affairs",,8,"4,9"
+"Escape From Unexpected Humiliation",,8,"5,11"
+"Unexpected Love Affairs",,8,"5,11"
+"Spoiling Name & Fame",,8,"5,12"
+"Loss Due To Unexpected Love Affairs",,8,"5,12"
+"Unexpected Humiliation",,8,"5,8"
+"Unexpected Immoral Affairs",,8,"5,9"
+"Unexpected Sudden Labour Strike",,8,"5,9"
+"Unexpected Sudden Fruition Of Employment",,8,"6,10"
+"Sudden Gifts",,8,"6,11"
+"Unexpected Sudden Separation (Divorce)",,8,"6,12"
+"Unexpected Sudden Marriage",,8,"7,11"
+"Unexpected Trouble / Incommode From Partner",,8,"7,8"
+"Unexpected Higher Education",,8,"9,11"
+"Unexpected Sudden Research Activity",,8,"9,12"
+
+
+
+
+
+
+
+
+
+"Second Marriage Possible",,9,"1,3,5,7,9,11"
+"Second Marriage Not Possible",,9,"4,6,10,12"
+"Higher Education Break",,9,"8,12"
+"Higher Education Not Used",,9,"5,9"
+"Higher Education Career Link",,9,"2,4,6,10"
+"Higher Education Different Field",,9,"1,3,7,11"
+"Foreign Job","RA,MO",9,"2,4,6,10"
+"Hereditary Disease",,9,6
+"Second Marriage",,9,7
+"Higher Education",,9,11
+"Long Journey",,9,12
+"Immoral / Illegal Affairs",,9,12
+"Secret Links / Relationships",,9,12
+"Change In Profession",,9,"10,12"
+"To Perform Export Business",,9,"10,12"
+"Success In Reasearches",,9,"11,12"
+"Child Birth Third Child",,9,"2,11"
+"Fortune",,9,"2,11"
+"Father Rejoining Family",,9,"2,11"
+"To Be Employed In Financial Institutions",,9,"2,6,10"
+"Trouble In Obtaining Hereditary Vehicles & Business Assets",,9,"3,10"
+"Fruition/Possession Of Hereditary Succession Rights",,9,"3,11"
+"To Obtain Lease / Contract Agreement",,9,"3,11"
+"Reception Of Information",,9,"3,11"
+"To Perform As Secret Agent / Cid",,9,"3,12"
+"For Pilgrimage",,9,"3,7"
+"Trouble In Obtaining Lease/Contract Agreement",,9,"3,8"
+"Loss Of Hereditary Succession Rights",,9,"3,8,12"
+"To Obtain Hereditary Vehicles & Business Assets",,9,"4,10"
+"To Lose First Respect (Hereditary)",,9,"4,10"
+"To Do One's Service As A Professor",,9,"4,10"
+"Job /Service Related To One's Education",,9,"4,10"
+"Visit Of Unknown",,9,"4,11"
+"Fruition Of Hereditary Properties",,9,"4,12"
+"Trouble Due To Immoral / Illegal Affairs With Lover",,9,"4,12"
+"To Receive First Respect (Hereditary)",,9,"5,11"
+"Relief From Disease Due To Divine Grace",,9,"5,11"
+"To Perform Divine Service",,9,"5,11"
+"To Become A Trusted Political Leader",,9,"5,11"
+"To Repay/ Settle Hereditary Loans",,9,"5,12"
+"Termination Of Foreign Service/Job At Abroad",,9,"5,8"
+"Getting Punished Due To Divine Judgment / Action",,9,"5,8,12"
+"Employment/Service Opportunity In Abroad",,9,"6,10"
+"Hereditary Loan Burden",,9,"6,12"
+"Involvement In Secret Research",,9,"6,12"
+"Obstruction In Second Marriage",,9,"6,8"
+"Loss Of Hereditary Treasure /Wealth",,9,"8,11"
+"Obstruction In Higher Education",,9,"8,12"
+
+
+
+
+
+
+
+"Job /Service Without Any Rank And Position",,10,5
+"Trouble Through Profession / Service",,10,5
+"No Growth In Business / Profession (Stagnation)",,10,8
+"Fraudulent Business (Intended To Deceive The Clients)",,10,8
+"Frequent Shutdown Of Business Units",,10,9
+"Job/Service With Rank And Position",,10,"1,6"
+"Business Deadlock (Standstill)",,10,"1,7"
+"Profession/Service With Huge Enormous Income",,10,"2,11"
+"Multiple Service / Job Activities",,10,"2,12"
+"Business Investors / Capitalists",,10,"2,12"
+"Commission Business",,10,"2,3,11"
+"To Run Brothel House (Prostitution)",,10,"2,5,9"
+"Service","ME,VE",10,"2,6"
+"Daily Labour","SA",10,"2,6"
+"Permanent Job / Service",,10,"2,6"
+"Sustained Growth For Ever In Business / Service",,10,"2,6"
+"Promotion In Job",,10,"2,6,11"
+"Job/Service Inclines To Accept Bribery/Corruption",,10,"2,8"
+"Cashier",,10,"2,8"
+"Outdoor Bussiness",,10,"3,12"
+"Job With Frequent Displacements / Transfers",,10,"3,12"
+"Production Of Materials",,10,"3,4"
+"Production & Sales Jobs",,10,"3,4,12"
+"Lady Broker",,10,"3,5,7,9,11"
+"Distraint/Seizure Of Business Unit / Industry",,10,"3,5,8,12"
+"Self Bussiness",,10,"3,7"
+"Coordinator / Mason's Supervisor",,10,"3,7"
+"Commercial Center Rent",,10,"3,7,12"
+"Production Oriented Business Profession/Service",,10,"4,10"
+"Doing Business As Hoarder",,10,"4,12"
+"Job / Service Based On Daily Wages",,10,"4,6"
+"Joint Business Venture With Others",,10,"4,7"
+"Business Competitions",,10,"4,7"
+"Temporary Job / Service",,10,"5,8"
+"Break In Service / Job",,10,"5,9"
+"Unemployed / Unable To Get Any Service",,10,"5,9"
+"Second Profession",,10,"6,12"
+"Accountants & Auditors",,10,"6,12"
+"Surgeons",,10,"6,8"
+"Break In Profession",,10,"7,11"
+"Doing Business On One's Name For The Sake Of One's Close Aide",,10,"7,12"
+"Trouble Through Large Business Units/ Industries",,10,"8,12"
+"Illegal Business Activity",,10,"8,12"
+"Retirement",,10,"9,12"
+
+
+
+
+
+
+
+"Satisfaction Of Desires",,11,1
+"Bore Well Water Found","MO",11,4
+"Favourable Situation To One On Satisfactory Events",,11,5
+"Suffering From Vitamin Deficiency (A Kind Of Disease)",,11,6
+"Troubles / Lose Arise Due To Greedy Action",,11,"8,12"
+"To Reach Status Rank, And Cadre As Per One's Wish",,11,"1,10"
+"Happy/Blissful Man",,11,"1,11"
+"To Fulfill One's Self Desire",,11,"1,11"
+"Satisfactory Child Birth As Per One's Wish",,11,"1,5"
+"Successful Man In All Aspects Of One's Life",,11,"1,6"
+"Frustration Due To One's Self Desire",,11,"1,8"
+"To Get Prestigious Post As Per One's Wish",,11,"1,9"
+"Develop One's Wish To End With Greedy Action",,11,"2,12"
+"House Sold For Good Price",,11,"2,6"
+"Fructification Of Job / Service As Per Own Wish",,11,"2,6"
+"Winning Any Girl Love",,11,"2,7"
+"Return From Foreign Country",,11,"2,8"
+"Happy Moments Through Friends",,11,"3,5"
+"Accord / Integration Among Unions",,11,"3,5,9"
+"Successful In Self Desires / One's Expectation",,11,"3,6"
+"Attachment With A Person As Per One's Own Wish /Liking",,11,"3,7"
+"Sufferings Through Friends",,11,"3,8"
+"Feeling Happy Through Son-In-Law/ Daughter-In-Law",,11,"3,9"
+"Unhappy Man",,11,"4,10"
+"Troubles Through Daughter-In-Law, Son-In-Law",,11,"4,10"
+"Rejection In Love With Someone To Whom One Has Shown Her Love Earlier",,11,"4,10"
+"Dissatisfactory Child Birth Against One's Wish",,11,"4,10"
+"Unable To Fix Marriage With Someone As Per Own Wish",,11,"4,6,10"
+"Getting Business Partner As Per Own Wish / Liking",,11,"4,7,10"
+"No Knowledge In Learning Art Of Any Kind / Branch",,11,"4,8"
+"Troubles Through Illegal Affairs",,11,"4,8"
+"Forfeit /To Lose From One's Prestigious Post",,11,"4,8"
+"Dissolutions / Disintegration Among Unions",,11,"4,8,10"
+"Recovery From Vitamin Deficiency (A Kind Of Disease)",,11,"5,10"
+"Sprightly Man (Jolly, Highly Spirited)",,11,"5,11"
+"Marriage With Someone As Per Own Liking",,11,"5,7"
+"Child Birth For Wife",,11,"5,8"
+"Failure In Self Desires /One's Expectation",,11,"5,8"
+"Dissatisfactory Business Partner",,11,"5,8,12"
+"To Obtain Wisdom On Interested / Favourite Art(S)",,11,"5,9"
+"Unable To Get The Chance For A Desired Job",,11,"5,9"
+"Illegal Affairs With A Person Of One's Own Liking",,11,"5,9"
+"Attachment With A Person One Who Dislikes",,11,"6,10"
+"Unfavourable Situation To One On Satisfactory Events",,11,"6,8"
+"Very Good Contender In All Divisions Of Life",,11,"8,12"
+"Unable To Fructify One's Own Wishes",,11,"8,12"
+
+
+
+
+
+"Profit Through Investments",,12,2
+"Troubles Through Investments",,12,7
+"Secret Threatening By Someone",,12,7
+"Impediments In Research Study",,12,8
+"To Accomplish Research Study",,12,9
+"To Perform Secret Business",,12,10
+"Man Of Hidden Attitude",,12,"1,11"
+"Secret Diseases",,12,"1,6"
+"Separation Of Secret Agent From Oneself",,12,"1,6"
+"Secret Agents / Spy",,12,"1,7"
+"To Spoil Name & Fame",,12,"1,8"
+"Troubles Through Hidden Attitude",,12,"1,8"
+"Danger Due To Secrets",,12,"1,8"
+"Investment In Business",,12,"2,10"
+"Income Tax Troubles",,12,"2,5,8"
+"To Obtain Secret Loan",,12,"2,6"
+"Recovery Of Money (Lost)",,12,"2,6,11"
+"Secret Looting",,12,"2,8"
+"Return To Motherland / From Abroad",,12,"2,8"
+"To Undergo Secret Abortion",,12,"3,10"
+"To Retain The Secrets Secretly",,12,"3,10"
+"To Forgo The Hidden Article From One's Hand",,12,"3,12"
+"Secret Delivery (Child Birth)",,12,"3,5"
+"Sale Of Products Bussiness",,12,"3,6"
+"Trouble In Holding Unauthorized Illegal Stock Items",,12,"3,7"
+"Troubles Through Secret Communications, Contacts",,12,"3,8"
+"To Capture / Steal One's Secret",,12,"3,8"
+"Absconding",,12,"3,8,12"
+"Imprisonment","RA",12,"3,8,9"
+"Secret Communications / Contacts",,12,"3,9"
+"To Reside In Foreign Country / Abroad",,12,"3,9"
+"Success In Secret Planning",,12,"4,10"
+"Investment In Buildings Land",,12,"4,11"
+"Success In Secret Plans",,12,"4,11"
+"Benami Properties",,12,"4,6"
+"Problems In Secret Marriage",,12,"4,6"
+"Unauthorized Holding Of Stocks Illegally",,12,"4,6"
+"Trouble In Secret Planning",,12,"4,7"
+"Trouble In Benami Properties",,12,"4,7"
+"Trouble Through Secret Love Affairs",,12,"4,7"
+"Troubles Through Secret Illegal Relationships",,12,"4,7"
+"Secret Love Affairs",,12,"5,11"
+"To Recover From Secret Diseases",,12,"5,11"
+"To Make Settlement/Repayment Of Secret Loan",,12,"5,11"
+"To Come Out Of Secret Acts",,12,"5,11"
+"For Secret Marriage",,12,"5,7"
+"Clearing Debts",,12,"5,8"
+"Unavailability Of Secret Works",,12,"5,9"
+"Secret Illegal Relationships",,12,"5,9"
+"To Establish Secret Works / Tasks",,12,"6,10"
+"Impediments In Secret Loan",,12,"7,8"
+"To Expose Outward One's Secret Act",,12,"7,8"
+"Secret Dangers",,12,"7,8"
+"Being Caught During Adulterating",,12,"7,9"
+"Adulterating In Business",,12,"8,10"
+"To Incur Loss From Investments",,12,"8,12"
+"To Bring Out The Secret Into Spotlight",,12,"9,11"
+"Body Part Replacement",,12,"2,4,6,8,10,12"
+
+
+
+
+
+
+
+
+
+`;
+
+
+
+
+
+
+
+
+
+let PREDICTION_RULES = [];
+
+/* =========================================================
+   SMART CSV PARSER (BLAZING FAST - FIXES THE 5 SEC LAG)
+   ========================================================= */
+function parsePredictionRow(rowText) {
+    let insideQuote = false;
+    let columns = [];
+    let currentWord = "";
+
+    for (let i = 0; i < rowText.length; i++) {
+        let char = rowText[i];
+        if (char === '"') {
+            insideQuote = !insideQuote; 
+        } else if (char === ',' && !insideQuote) {
+            // Strip quotes as we push
+            columns.push(currentWord.trim().replace(/"/g, ''));
+            currentWord = ""; 
+        } else {
+            currentWord += char;
+        }
+    }
+    // Push the final column
+    columns.push(currentWord.trim().replace(/"/g, ''));
+    return columns;
+}
+
+// Parser
+function initPredictionEngine() {
+    PREDICTION_RULES = [];
+    const lines = PREDICTION_CSV_DATA.split(/\r?\n/);
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line || line.includes("Events Of Life")) continue;
+
+        // 🔥 REPLACED SLOW REGEX WITH LIGHTNING FAST PARSER
+        let parts = parsePredictionRow(line);
+
+        if (parts.length >= 4) {
+            // The quotes are already stripped by the new parser!
+            let event = parts[0];
+            let planetsStr = parts[1] || "";
+            let cuspStr = parts[2] || "";
+            let housesStr = parts[3] || "";
+
+            if (event && housesStr) {
+                let houses = housesStr.split(/[, ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+                PREDICTION_RULES.push({
+                    event: event,
+                    planetsStr: planetsStr,
+                    cusp: cuspStr ? parseInt(cuspStr) : null,
+                    houses: houses
+                });
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// Digits grouper helper
+function renderMatchGroups(fullMatches, partialGroups) {
+    let out = "";
+    if (fullMatches.length > 0) {
+        out += `<div style="color:#86efac; margin-top:8px; margin-bottom:8px;"><b style="color:#22c55e;">Full Combinations:</b>
+        <ul style="margin:4px 0; padding-left:20px; line-height:1.4;"><li>${fullMatches.join('</li><li>')}</li></ul></div>`;
+    }
+    
+    let keys = Object.keys(partialGroups).map(Number).sort((a,b) => b - a); 
+    keys.forEach(k => {
+        if (partialGroups[k].length > 0) {
+            out += `<div style="color:#fdba74; margin-top:8px; margin-bottom:8px;"><b style="color:#f97316;">${k} Digit Matching:</b>
+            <ul style="margin:4px 0; padding-left:20px; line-height:1.4;"><li>${partialGroups[k].join('</li><li>')}</li></ul></div>`;
+        }
+    });
+    return out;
+}
+
+// Planets - Syncs entirely with Checkboxes in Table 35
+function renderPlanetPredictions() {
+    let html = "";
+    let planetsList = getPivotSortedPlanets(); 
+    
+    planetsList.forEach((p, index) => {
+        // GRAB THE FULL STRING INCLUDING ALL CHECKBOX ADDITIONS
+        let fullEffStr = computeTable10Row(p);
+        
+        // EXTRACT EVERY SINGLE NUMBER IN THAT STRING (e.g. 1,4,7 + 2,6 = [1,4,7,2,6])
+        let rawNumbers = fullEffStr.match(/\d+/g);
+        let eff = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
+        
+        let fullMatches = [];
+        let partialGroups = {};
+        
+        PREDICTION_RULES.forEach(r => {
+            let intersection = r.houses.filter(h => eff.includes(h));
+            let matchLen = intersection.length;
+            
+            // STRICT RULE: Planet matcher strictly ignores 1-digit matches
+            if (matchLen < 2) return; 
+            
+            let hint = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
+            let cuspRef = r.cusp ? ` <span style="color:#a8a29e; font-size:12px;">(from Cusp ${r.cusp})</span>` : "";
+            
+            if (matchLen === r.houses.length && r.houses.length > 0) {
+                fullMatches.push(`<span style="color:#facc15;">${r.event}</span>${cuspRef} <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
+            } else {
+                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
+                partialGroups[matchLen].push(`<span style="color:#cbd5e1;">${r.event}</span>${cuspRef} <span style="color:#64748b; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
+            }
+        });
+        
+        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
+        let pSafeId = `planet-collapser-${index}`;
+        
+        if (groupHTML) {
+            html += `
+            <div style="margin-bottom:15px; padding:12px; border:1px solid var(--border-soft); background:var(--panel-bg); border-radius:6px; border-left:4px solid #10b981;">
+                <h4 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('${pSafeId}', this)" style="color:#10b981; margin-top:0; margin-bottom:0; font-size:16px; cursor:pointer;">
+                    ${markPlanet(p)} <span style="color:#94a3b8; font-size:13px; font-weight:normal;">[${fullEffStr}]</span>
+                </h4>
+                <div id="${pSafeId}" class="collapsible-body" style="display: none; padding-top: 10px;">
+                    ${groupHTML}
+                </div>
+            </div>`;
+        }
+    });
+    
+    return html || "<div style='color:#94a3b8; text-align:center;'>No matching combinations found for Planets (Minimum 2 digits).</div>";
+}
+
+// Cuspal - Syncs entirely with Checkboxes in Table 35
+function renderCuspalPredictions() {
+    let html = "";
+    let baseCusps = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+    
+    baseCusps.forEach(c => {
+        let bhava = c.bhava; 
+        let csl = c.subLord;
+
+        // GRAB THE FULL STRING INCLUDING ALL CHECKBOX ADDITIONS
+        let fullEffStr = computeTable10Row(csl);
+        
+        // EXTRACT EVERY SINGLE NUMBER IN THAT STRING
+        let rawNumbers = fullEffStr.match(/\d+/g);
+        let eff = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
+        
+        let fullMatches = [];
+        let partialGroups = {};
+        
+        PREDICTION_RULES.forEach(r => {
+            if (r.cusp !== bhava) return; 
+            
+            let intersection = r.houses.filter(h => eff.includes(h));
+            let matchLen = intersection.length;
+            
+            if (matchLen === 0) return;
+            
+            let hint = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
+            
+            if (matchLen === r.houses.length && r.houses.length > 0) {
+                fullMatches.push(`<span style="color:#facc15;">${r.event}</span> <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
+            } else if (matchLen > 0) {
+                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
+                partialGroups[matchLen].push(`<span style="color:#cbd5e1;">${r.event}</span> <span style="color:#64748b; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
+            }
+        });
+        
+        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
+        let cSafeId = `cusp-collapser-${bhava}`;
+        
+        if (groupHTML) {
+            html += `
+            <div style="margin-bottom:15px; padding:12px; border:1px solid var(--border-soft); background:var(--panel-bg); border-radius:6px; border-left:4px solid #3b82f6;">
+                <h4 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('${cSafeId}', this)" style="color:#3b82f6; margin-top:0; margin-bottom:0; font-size:16px; cursor:pointer;">
+                    Cusp ${bhava} (${markPlanet(csl)}) <span style="color:#94a3b8; font-size:13px; font-weight:normal;">[${fullEffStr}]</span>
+                </h4>
+                <div id="${cSafeId}" class="collapsible-body" style="display: none; padding-top: 10px;">
+                    ${groupHTML}
+                </div>
+            </div>`;
+        }
+    });
+    
+    return html || "<div style='color:#94a3b8; text-align:center;'>No matching combinations found for Cusps.</div>";
+}
+
+// Master HTML Renderer
+function buildTable50() {
+    initPredictionEngine(); 
+    
+    let old = document.getElementById("table50-container");
+    if (old) old.remove(); 
+    
+    let html = `
+    <div id="table50-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed var(--border-gold); padding-top: 25px;">
+        <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table50-body', this)" style="user-select: auto; font-size: 24px; color: var(--accent-saffron); cursor:pointer;">
+            Table 50 : Prediction Module
+        </h2>
+        <div id="table50-body" class="collapsible-body" style="display: block;">
+
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                
+                <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+                    <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('planets-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
+                        PLANETS MATCHER
+                    </h3>
+                    <div id="planets-matcher-body" class="collapsible-body" style="display: block; padding-top:15px;">
+                        ${renderPlanetPredictions()}
+                    </div>
+                </div>
+
+                <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+                    <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('cuspal-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
+                        CUSPAL MATCHER
+                    </h3>
+                    <div id="cuspal-matcher-body" class="collapsible-body" style="display: block; padding-top:15px;">
+                        ${renderCuspalPredictions()}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", html);
+}
+
+// Auto-run when the rest of your calculations finish building
+(function(){
+    if (typeof buildBarCharts === "function") {
+        const _orig = buildBarCharts;
+        buildBarCharts = function() {
+            _orig.apply(this, arguments);
+            setTimeout(buildTable50, 500); 
+        };
+    }
+})();
+</script>
+
+
+
+
+
+
+
 
 
 
