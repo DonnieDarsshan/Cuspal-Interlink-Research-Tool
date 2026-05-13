@@ -2220,13 +2220,12 @@ function saveJSON(){
 
 
 
-
 /* =========================================================
    RESET ALL TOGGLES & CHECKBOXES TO FACTORY DEFAULTS
    ========================================================= */
 function resetAllTogglesToDefault() {
 
-    // Reset Logic Variables
+    // 1. Reset Global Logic Variables
     window.T10_ADD_STARLORD = true;
     window.T10_ADD_SUBLORD = false;
     window.T10_ADD_SUBSUB = false;
@@ -2237,14 +2236,28 @@ function resetAllTogglesToDefault() {
     window.HB_USE_PLACEMENT = false;
     window.HB_SHOW_LEGENDS = false;
 
-    // Reset Checkboxes (WITH CHANGE EVENT)
+    window.HB_EVENODD = false; 
+    window.HB_PATTERN = true;
+    window.HB_MIXED = false;
+    window.HB_ATTRACTION_MODE = false;
+    window.HB_SHOW_STARS = false;
+    window.HB_SPLIT_SOURCE = false;
+    window.HB_EXCEPTION_RULE = false;
+    window.HB_SUPERIOR_RULE = false;
+    window.HB_UNTENANTED_RULE = false;
+
+    window.DIVIDER_INC_A = true;
+    window.DIVIDER_INC_B = true;
+    window.DIVIDER_INC_C = false;
+
+    // 2. Reset Checkboxes
     const toggles = [
         { id: "t10_add_starlord", val: true },
         { id: "t10_add_sublord", val: false },
         { id: "t10_add_subsub", val: false },
         { id: "t10_ignore_ssl", val: false },
         { id: "hbPlacementToggle", val: false },
-        { id: "hb_evenodd", val: false },
+        { id: "hb_evenodd", val: false }, 
         { id: "hb_pattern", val: true },
         { id: "hb_mixed", val: false },
         { id: "hbAttractToggle", val: false },
@@ -2257,45 +2270,60 @@ function resetAllTogglesToDefault() {
         { id: "vedicMode", val: false },
         { id: "retroMode", val: false },
         { id: "trueNodeModeKP", val: false },
-        { id: "kpLevelTheme", val: true }
+        { id: "kpLevelTheme", val: true },
+        { id: "countRepetition", val: false },
+        { id: "ignoreStar", val: false }, 
+        { id: "ignoreSSL", val: false },
+        { id: "ignoreSubRow", val: false },
+        { id: "ignoreSSLRow", val: true }, 
+        { id: "ignoreStarOfSub", val: false },
+        { id: "ignoreStarOfSSL", val: true }, 
+        { id: "t6_ignoreSOS", val: false },
+        { id: "t6_ignoreSOSS", val: false },
+        // 🔥 TABLE 50 CHECKBOXES ADDED HERE
+        { id: "t50CenterAlign", val: false },
+        { id: "t50Untenanted", val: true },
+        { id: "t50_show_extra_stars", val: false }
     ];
-	
-	
-	
-	
-	
-	
-	
-	
 
     toggles.forEach(t => {
         let el = document.getElementById(t.id);
         if (el) {
             el.checked = t.val;
-
-            // 🔥 IMPORTANT FIX
+            // Dispatch event to force update immediately
             el.dispatchEvent(new Event("change"));
         }
     });
 
-    // Reset Dropdowns (WITH CHANGE EVENT)
+    // 3. Reset Dropdowns
     const dropdowns = {
         "kPivot": "Lagna",
         "pivotSelect": "Lagna",
+        "pivotSelectMirror": "Lagna",
+        "pivotSelect_mirror": "Lagna",
         "taraSelect": "SSL_CHANDRA",
-        "jumpMode": "sec"
+        "taraSelect_mirror": "SSL_CHANDRA",
+        "jumpMode": "sec",
+        // 🔥 TABLE 50 PIVOT ADDED HERE
+        "t50PivotMirror": "Lagna"
     };
 
     for (let id in dropdowns) {
         let el = document.getElementById(id);
         if (el) {
             el.value = dropdowns[id];
-
-            // 🔥 CRITICAL FIX (THIS WAS MISSING)
             el.dispatchEvent(new Event("change"));
         }
     }
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -2404,11 +2432,8 @@ function loadJSON(){
 
 
 /* =========================================================
-   CLEAR ALL (UNCHANGED)
+   CLEAR ALL (NUCLEAR PURGE FOR NEW CHARTS)
    ========================================================= */
-
-
-
 function clearAll(){
     /* RESET ALL GLOBAL VARIABLES & CACHE */
     BASE_EPOCH = null;
@@ -2458,16 +2483,36 @@ function clearAll(){
         if(ed) ed.value = "";
     }
 
-    /* CLEAR OUTPUT */
-    document.getElementById("output").innerHTML = "";
+    /* 🔥 THE NUCLEAR PURGE: CLEAR ALL DYNAMIC HTML CONTAINERS 🔥 */
+    if(document.getElementById("output")) document.getElementById("output").innerHTML = "";
+    if(document.getElementById("pivotCuspalTable")) document.getElementById("pivotCuspalTable").innerHTML = "";
+    
+    let t5Shell = document.getElementById("table5-shell");
+    if(t5Shell) t5Shell.remove(); 
+    
+    let t3Wrap = document.getElementById("table3");
+    if(t3Wrap) t3Wrap.remove();
+
+    if(document.getElementById("table9-content")) document.getElementById("table9-content").remove();
+    if(document.getElementById("table33-content")) document.getElementById("table33-content").remove();
+    if(document.getElementById("table10-content")) document.getElementById("table10-content").remove();
+    if(document.getElementById("table36-content")) document.getElementById("table36-content").remove();
+    if(document.getElementById("table8-content")) document.getElementById("table8-content").remove();
+
+    /* 🔥 WIPE TABLE 50 AND 80 GRIDS SO OLD DATA DOES NOT SURVIVE */
+    if(document.getElementById("t50GridContainer")) document.getElementById("t50GridContainer").innerHTML = "";
+    if(document.getElementById("planets-matcher-body")) document.getElementById("planets-matcher-body").innerHTML = "";
+    if(document.getElementById("cuspal-matcher-body")) document.getElementById("cuspal-matcher-body").innerHTML = "";
+
+    /* 🔥 WIPE TABLE 50 SORT DROPDOWN SO IT RESETS TO CHANDRA STARLORD ON NEW CHART */
+    let t50Sort = document.getElementById("t50SortSelect");
+    if(t50Sort) t50Sort.innerHTML = "";
 
     /* FORCE RESET ALL DROPDOWNS & TOGGLES TO FACTORY DEFAULTS */
     if(typeof resetAllTogglesToDefault === "function") {
         resetAllTogglesToDefault();
     }
 }
-
-
 
 
 
@@ -7316,7 +7361,7 @@ document.querySelector("button[onclick='buildCuspalChart()']")
 <div id="vimshottari-wrapper">
 
     <h2 id="vimMainHeading" class="collapsible-heading collapsed" onclick="toggleSection('vimshottari-body', this)" style="user-select: auto; background: #000; padding: 10px; margin-bottom: 18px;" >
-        Table 50 : VIMSHOTTARI DASHA
+        Table 45 : VIMSHOTTARI DASHA
     </h2>
 
 
@@ -11284,7 +11329,7 @@ document.getElementById("toolEndDate").addEventListener("change", calcToolDateDi
 
 
 /* =========================================================
-   TABLE 45 : CUSPAL INTER LINKS SIGNIFICATORS
+   TABLE 65 : CUSPAL INTER LINKS SIGNIFICATORS
    House View & Planets View (With Separated Source Grouping)
    ========================================================= */
 
@@ -11430,9 +11475,9 @@ function buildTable45() {
     // ==========================================
     let html = `
     <div id="table45-wrapper" style="margin-top: 50px; margin-bottom: 50px; padding: 0 20px;">
-        <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table45-body', this)" style="user-select: auto;">
-            Table 45 : Cuspal Inter Links Significators
-        </h2>
+	<h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table45-body', this)" style="user-select: auto;">
+		Table 65 : Cuspal Inter Links Significators
+		</h2>
         <div id="table45-body" class="collapsible-body" style="display: none; margin-top: 20px;">
             
             <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px; text-align: center;">House View</h3>
@@ -11557,8 +11602,8 @@ function buildTable45() {
 <div id="table50-transit-bhava-container" style="margin-top:50px; margin-bottom: 50px; padding: 0 20px;">
 
     <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table60-body', this)" style="user-select: auto; font-size: 22px; margin-bottom:15px; color:#ff9f1c; font-weight:700; letter-spacing:1px; text-align:left;">
-        TABLE 60 : TRANSIT SIGNIFICATOR TABLE
-    </h2>
+			TABLE 75 : TRANSIT SIGNIFICATOR TABLE
+			</h2>
 
     <div id="table60-body" class="collapsible-body" style="display: none;">
 
@@ -11887,9 +11932,9 @@ function buildTable45() {
                     
                     return `
                     <tr style="background: #1f1410; border-bottom: 1px solid #4a2a1a;">
-                        <td style="padding: 10px; border: 1px solid #4a2a1a;">
-                            <div style="font-weight: 900; color: #ff9f1c; font-size: 16px;">${planet}</div>
-                            <div style="color: #38bdf8; font-size: 15px; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">${planetLinks.str}</div>
+                        <td style="padding: 10px; border: 1px solid #4a2a1a; background: linear-gradient(135deg, #8b0000, #4a0000); box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                            <div style="font-weight: 900; color: #facc15; font-size: 16px; text-shadow: 1px 1px 2px #000;">${planet}</div>
+                            <div style="color: #bae6fd; font-size: 15px; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px; text-shadow: 1px 1px 2px #000;">${planetLinks.str}</div>
                         </td>
                         <td style="padding: 10px; border: 1px solid #4a2a1a;">
                             <div style="color: #ffffff; font-weight: bold; font-size: 16px;">${tStar}</div>
@@ -11945,9 +11990,9 @@ function buildTable45() {
             html += `
             <tr style="background: #1f1410; border-bottom: 1px solid #4a2a1a;">
                 <td style="padding: 8px; border: 1px solid #4a2a1a; font-weight: 900; color: #ffffff; font-size: 16px;">${c.bhava}</td>
-                <td style="padding: 10px; border: 1px solid #4a2a1a;">
-                    <div style="font-weight: 900; color: #ff9f1c; font-size: 16px;">${c.subLord}</div>
-                    <div style="color: #38bdf8; font-size: 15px; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px;">${pData.planetLinksStr}</div>
+                <td style="padding: 10px; border: 1px solid #4a2a1a; background: linear-gradient(135deg, #8b0000, #4a0000); box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                    <div style="font-weight: 900; color: #facc15; font-size: 16px; text-shadow: 1px 1px 2px #000;">${c.subLord}</div>
+                    <div style="color: #bae6fd; font-size: 15px; margin-top: 5px; font-weight: bold; letter-spacing: 0.5px; text-shadow: 1px 1px 2px #000;">${pData.planetLinksStr}</div>
                 </td>
                 <td style="padding: 10px; border: 1px solid #4a2a1a;">
                     <div style="color: #ffffff; font-weight: bold; font-size: 16px;">${pData.tStar}</div>
@@ -12951,21 +12996,17 @@ function renderCuspalPredictions() {
 }
 
 // Master HTML Renderer
-function buildTable50() {
-    initPredictionEngine(); 
-    
-    let old = document.getElementById("table50-container");
-    if (old) old.remove(); 
-    
+function buildTable80() {
+    initPredictionEngine();
+    let old = document.getElementById("table80-container");
+    if (old) old.remove();
     let html = `
-    <div id="table50-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed var(--border-gold); padding-top: 25px;">
-        <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table50-body', this)" style="user-select: auto; font-size: 24px; color: var(--accent-saffron); cursor:pointer;">
-            Table 70 : Prediction Module
+    <div id="table80-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed var(--border-gold); padding-top: 25px;">
+        <h2 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table80-body', this)" style="user-select: auto; font-size: 24px; color: var(--accent-saffron); cursor:pointer;">
+            Table 80 : Prediction Module
         </h2>
-        <div id="table50-body" class="collapsible-body" style="display: block;">
-
+        <div id="table80-body" class="collapsible-body" style="display: block;">
             <div style="display:flex; flex-direction:column; gap:20px;">
-                
                 <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
                     <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('planets-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
                         PLANETS MATCHER
@@ -12983,15 +13024,44 @@ function buildTable50() {
                         ${renderCuspalPredictions()}
                     </div>
                 </div>
-
             </div>
-
         </div>
     </div>
     `;
-
     document.body.insertAdjacentHTML("beforeend", html);
 }
+
+// BULLETPROOF PREDICTION MODULE HOOK
+window.addEventListener('DOMContentLoaded', () => {
+    let attempts = 0;
+    
+    let hookInterval = setInterval(() => {
+        if (typeof window.buildTable9 === "function") {
+            clearInterval(hookInterval); 
+            
+            const _origTable9 = window.buildTable9;
+            window.buildTable9 = function() {
+                if (_origTable9) _origTable9.apply(this, arguments);
+                
+                setTimeout(() => {
+                    try {
+                        if (typeof buildTable80 === "function") buildTable80(); // Calling the new name
+                    } catch (error) {
+                        console.error("❌ Prediction Module Crashed:", error);
+                    }
+                }, 500); 
+            };
+        }
+        attempts++;
+        if (attempts > 20) clearInterval(hookInterval); 
+    }, 500);
+});
+
+
+
+
+
+
 
 // Auto-run when the rest of your calculations finish building
 (function(){
@@ -13029,6 +13099,405 @@ function buildTable50() {
 
 
 
+
+<style>
+    /* Custom True Dark Mode Checkbox */
+    input[type="checkbox"].t50-dark-cb {
+        appearance: none;
+        -webkit-appearance: none;
+        background-color: #0c0505;
+        margin: 0;
+        font: inherit;
+        color: currentColor;
+        width: 1.25em;
+        height: 1.25em;
+        border: 2px solid #a86b17;
+        border-radius: 4px;
+        display: grid;
+        place-content: center;
+        cursor: pointer;
+        transform: translateY(2px); /* optical alignment */
+    }
+    input[type="checkbox"].t50-dark-cb::before {
+        content: "";
+        width: 0.7em;
+        height: 0.7em;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
+        box-shadow: inset 1em 1em #ff9f1c; /* Saffron color check */
+        background-color: #ff9f1c;
+        transform-origin: center;
+        clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    }
+    input[type="checkbox"].t50-dark-cb:checked::before {
+        transform: scale(1);
+    }
+</style>
+
+<div id="table50-container" style="margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+    <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table50-body', this)" style="user-select: auto; font-size: 22px;">
+        Table 50 : Nadi Significator for Cuspal Interlink
+    </h2>
+    <div id="table50-body" class="collapsible-body" style="display: block;">
+        
+        <div style="margin-top: 20px; margin-bottom:25px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; display:flex; justify-content:center; align-items:center; gap:25px; flex-wrap:wrap;">
+            
+            <label style="color:var(--grid-line, #facc15); font-weight:bold; font-size:16px; display:flex; align-items:center; gap:8px;">
+                SORT BY:
+                <select id="t50SortSelect" onchange="buildTable50()" style="background:#000; color:#fff; border:1px solid #a86b17; padding:6px 10px; font-size:16px; font-weight:bold; cursor:pointer;">
+                    </select>
+            </label>
+
+            <label style="color:var(--grid-line, #facc15); font-weight:bold; font-size:16px; display:flex; align-items:center; gap:8px;">
+                PIVOT:
+                <select id="t50PivotMirror" onchange="
+                    const mainPivot = document.getElementById('pivotSelect');
+                    if(mainPivot) {
+                        mainPivot.value = this.value;
+                        mainPivot.dispatchEvent(new Event('change'));
+                    }
+                    const sortSel = document.getElementById('t50SortSelect');
+                    if(sortSel) {
+                        sortSel.value = this.value;
+                    }
+                    buildTable50();
+                " style="background:#000; color:#fff; border:1px solid #a86b17; padding:6px 10px; font-size:16px; font-weight:bold; cursor:pointer;">
+                    </select>
+            </label>
+
+            <label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:#ff8800; font-weight:bold; font-size:16px;">
+                <input type="checkbox" id="t50CenterAlign" class="t50-dark-cb" onchange="buildTable50()">
+                Center Align
+            </label>
+
+            <label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:#c084fc; font-weight:bold; font-size:16px;">
+                <input type="checkbox" id="t50Untenanted" class="t50-dark-cb" checked onchange="buildTable50()">
+                Untenanted
+            </label>
+
+            <label style="color:#a855f7; cursor:pointer; font-size:16px; display:inline-flex; align-items:center; gap:8px; font-weight:bold;">
+                <input type="checkbox" id="t50_show_extra_stars" class="t50-dark-cb" onchange="buildTable50()"> 
+                Show Star of Sublord & Star of Sub-sub
+            </label>
+            
+        </div>
+
+        <div id="t50GridContainer" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%;">
+        </div>
+
+    </div>
+</div>
+
+<script>
+const T50_FULL_NAMES = {
+    "Sy": "Sun", "Ch": "Moon", "Ma": "Mars", "Me": "Mercury", "Bu": "Mercury",
+    "Ju": "Jupiter", "Ve": "Venus", "Sa": "Saturn", "Ra": "Rahu", "Ke": "Ketu"
+};
+
+function getT50FormatString(pCode) {
+    if (!pCode || pCode === "--") return "";
+    let t3 = window.__T3_CACHE__[pCode];
+    if (!t3) return "Pending";
+    
+    let sub = t3.sub || "--";
+    let ssl = t3.ssl || "--";
+    let star = t3.star || "--";
+    
+    if (sub === "--" && ssl === "--" && star === "--") {
+        let extraArr = [];
+        if (t3.place) extraArr.push(...String(t3.place).split(","));
+        if (t3.sign)  extraArr.push(...String(t3.sign).split(","));
+        extraArr = extraArr.map(x => x.trim()).filter(x => x !== "");
+        extraArr.sort((a, b) => Number(a) - Number(b));
+        let extraStr = extraArr.length > 0 ? extraArr.join(",") : "";
+        return `-- + -- + --${extraStr ? ' + ' + extraStr : ''}`;
+    } else {
+        return `${sub} + ${ssl} + ${star}`;
+    }
+}
+
+// ------------------------------------------------------------------
+// AUTO-SYNC HEIGHTS ALGORITHM: Ensures perfect straight lines
+// ------------------------------------------------------------------
+function t50SyncRowHeights() {
+    let container = document.getElementById("t50GridContainer");
+    if (!container) return;
+    let boxes = Array.from(container.children);
+    
+    boxes.forEach(box => {
+        let rows = box.querySelectorAll('.t50-inner-row');
+        rows.forEach(r => r.style.height = "auto");
+    });
+
+    for (let i = 0; i < boxes.length; i += 3) {
+        let rowBoxes = boxes.slice(i, i + 3);
+        
+        for (let r = 0; r < 6; r++) {
+            let maxRowH = 0;
+            rowBoxes.forEach(box => {
+                let rows = box.querySelectorAll('.t50-inner-row');
+                if (rows[r] && rows[r].style.display !== "none") {
+                    maxRowH = Math.max(maxRowH, rows[r].offsetHeight);
+                }
+            });
+            if (maxRowH > 0) {
+                rowBoxes.forEach(box => {
+                    let rows = box.querySelectorAll('.t50-inner-row');
+                    if (rows[r] && rows[r].style.display !== "none") {
+                        rows[r].style.height = maxRowH + "px";
+                    }
+                });
+            }
+        }
+    }
+}
+
+window.addEventListener('resize', () => {
+    if (document.getElementById('table50-body') && document.getElementById('table50-body').style.display !== "none") {
+        t50SyncRowHeights();
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function buildTable50() {
+    let container = document.getElementById("t50GridContainer");
+    if(!container) return;
+    container.innerHTML = "";
+
+    let masterPivot = document.getElementById("pivotSelect");
+    let mirrorPivot = document.getElementById("t50PivotMirror");
+    if(masterPivot && mirrorPivot && mirrorPivot.options.length === 0) {
+        mirrorPivot.innerHTML = masterPivot.innerHTML;
+        mirrorPivot.value = masterPivot.value;
+    }
+
+    let sortSel = document.getElementById("t50SortSelect");
+    
+    // 1. If options are empty, build them and instantly default to Moon's Starlord
+    if(sortSel && sortSel.options.length === 0) {
+        planets.forEach(p => sortSel.add(new Option(T50_FULL_NAMES[p] || p, p)));
+        if(typeof getPlanetKPLords === "function") {
+            let kpMoon = getPlanetKPLords("Chandra");
+            if(kpMoon && kpMoon.star && kpMoon.star !== "--") {
+                sortSel.value = kpMoon.star;
+            }
+        }
+    }
+
+    // 2. 🔥 BULLETPROOF INTERCEPTOR 🔥
+    // If another dropdown (like Pivot) accidentally forces this to an invalid value (like "Lagna"),
+    // this intercepts the error and snaps it right back to Moon's Starlord.
+    if(sortSel && (!sortSel.value || !planets.includes(sortSel.value))) {
+        if(typeof getPlanetKPLords === "function") {
+            let kpMoon = getPlanetKPLords("Chandra");
+            if(kpMoon && kpMoon.star && kpMoon.star !== "--") {
+                sortSel.value = kpMoon.star;
+            } else {
+                sortSel.value = "Sy"; // absolute fallback
+            }
+        }
+    }
+
+    let startPlanet = sortSel ? (sortSel.value || "Sy") : "Sy";
+    let idx = planets.indexOf(startPlanet);
+    let sortedPlanets = idx !== -1 ? planets.slice(idx).concat(planets.slice(0, idx)) : planets;
+
+    let centerAlign = document.getElementById("t50CenterAlign")?.checked;
+    let isUntenantedActive = document.getElementById("t50Untenanted")?.checked;
+    let showExtraStars = document.getElementById("t50_show_extra_stars")?.checked;
+
+    function checkTenantedStatus(pl) {
+        if (!pl || pl === "--") return false;
+        if (typeof TENANTED_CACHE !== 'undefined' && TENANTED_CACHE) {
+            return TENANTED_CACHE.has(pl);
+        }
+        return true; 
+    }
+
+    function createDivider() {
+        let div = document.createElement("div");
+        div.style.height = "2px";
+        div.style.background = "linear-gradient(90deg, transparent 0%, #ff9f1c 50%, transparent 100%)";
+        div.style.margin = "8px 0";
+        div.style.opacity = "0.75";
+        return div;
+    }
+
+    sortedPlanets.forEach(p => {
+        let kp = getPlanetKPLords(p);
+        if (!kp) return;
+        
+        let starOfSub = kp.sub ? (getPlanetKPLords(kp.sub)?.star || "") : "";
+        let starOfSSL = kp.ssl ? (getPlanetKPLords(kp.ssl)?.star || "") : "";
+
+        let pTenanted = checkTenantedStatus(p);
+        let subTenanted = checkTenantedStatus(kp.sub);
+        let sslTenanted = checkTenantedStatus(kp.ssl);
+
+        let pMainHeader = T50_FULL_NAMES[p] || p;
+        if (!pTenanted) pMainHeader += " $";
+
+        let box = document.createElement("div");
+        box.style.border = "1px solid #a86b17";
+        box.style.background = "linear-gradient(180deg, #1f1410, #0c0505)";
+        box.style.padding = "15px";
+        box.style.borderRadius = "8px";
+        box.style.boxShadow = "0 0 10px rgba(255,159,28,0.15)";
+        box.style.display = "flex";
+        box.style.flexDirection = "column";
+
+        let header = document.createElement("h3");
+        header.style.color = "#facc15";
+        header.style.textAlign = "center";
+        header.style.margin = "0 0 12px 0";
+        header.style.borderBottom = "2px solid #a86b17";
+        header.style.paddingBottom = "8px";
+        header.innerText = pMainHeader;
+        box.appendChild(header);
+
+        function addRow(label, planetCode, color, showData, collapseRowGlobally) {
+            let row = document.createElement("div");
+            row.className = "t50-inner-row"; 
+            row.style.boxSizing = "border-box"; 
+            
+            if (collapseRowGlobally) {
+                row.style.display = "none";
+                return row; 
+            }
+
+            row.style.paddingBottom = "4px";
+            row.style.marginBottom = "6px";
+
+            let pCodeDisplay = "";
+            let val = "";
+
+            if (showData && planetCode && planetCode !== "--") {
+                let fullName = T50_FULL_NAMES[planetCode] || planetCode;
+                let isCodeTenanted = checkTenantedStatus(planetCode);
+                pCodeDisplay = !isCodeTenanted ? `${fullName} $` : fullName; 
+                val = getT50FormatString(planetCode);
+            }
+
+            if (centerAlign) {
+                row.style.display = "flex";
+                row.style.flexDirection = "column";
+                row.style.justifyContent = "center";
+                row.style.alignItems = "center";
+                row.style.textAlign = "center";
+                
+                row.innerHTML = `<div style="color:${color}; font-weight:bold; font-size:16px; margin-bottom:4px; line-height:1.2;">${label}</div>
+                                 <div style="font-weight:bold; font-size:16px; letter-spacing:0.5px;">
+                                    <span style="color:#f5e9c6; margin-right:8px;">${pCodeDisplay}</span>
+                                    <span style="color:#ff9f1c;">${val}</span>
+                                 </div>`;
+            } else {
+                row.style.display = "grid";
+                row.style.gridTemplateColumns = "110px 100px 1fr";
+                row.style.gap = "8px";
+                row.style.alignItems = "center"; 
+                
+                row.innerHTML = `<span style="color:${color}; font-weight:bold; font-size:16px; line-height:1.3;">${label}</span>
+                                 <span style="color:#f5e9c6; font-weight:bold; font-size:16px;">${pCodeDisplay}</span>
+                                 <span style="font-weight:bold; font-size:16px; letter-spacing:0.5px; color:#ff9f1c;">${val}</span>`;
+            }
+            return row;
+        }
+
+        // ZONE 1
+        box.appendChild(addRow("Planet", p, "#38bdf8", true, false));
+        let showStarlordData = !(isUntenantedActive && !pTenanted);
+        box.appendChild(addRow("Starlord", kp.star, "#f472b6", showStarlordData, false));
+
+        box.appendChild(createDivider());
+
+        // ZONE 2
+        box.appendChild(addRow("Sub-lord", kp.sub, "#fbbf24", true, false));
+        let collapseExtra = !showExtraStars;
+        let showSosData = !(isUntenantedActive && !subTenanted);
+        box.appendChild(addRow("Star of Sub", starOfSub, "#a855f7", showSosData, collapseExtra));
+
+        box.appendChild(createDivider());
+
+        // ZONE 3
+        box.appendChild(addRow("Sub-sub", kp.ssl, "#22c55e", true, false));
+        let showSosslData = !(isUntenantedActive && !sslTenanted);
+        box.appendChild(addRow("Star of<br>Sub-Sub", starOfSSL, "#ef4444", showSosslData, collapseExtra));
+
+        container.appendChild(box);
+    });
+
+    setTimeout(() => {
+        t50SyncRowHeights();
+    }, 50);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// =========================================================
+// BULLETPROOF PREDICTION MODULE HOOK
+// =========================================================
+window.addEventListener('DOMContentLoaded', () => {
+    let attempts = 0;
+    
+    let hookInterval = setInterval(() => {
+        if (typeof window.buildTable9 === "function") {
+            clearInterval(hookInterval); 
+            console.log("🔧 Prediction Module successfully hooked into the main chain!");
+            
+            const _origTable9 = window.buildTable9;
+            
+            window.buildTable9 = function() {
+                if (_origTable9) _origTable9.apply(this, arguments);
+                
+                setTimeout(() => {
+                    console.log("🚀 Firing Prediction Module...");
+                    try {
+                        if (typeof buildTable50 === "function") {
+                            buildTable50();
+                            console.log("✅ Prediction Module Loaded Successfully!");
+                        }
+                    } catch (error) {
+                        console.error("❌ Prediction Module Crashed:", error);
+                        const container = document.getElementById("table50-container");
+                        if(container) {
+                            container.innerHTML += `<div style="color:#ef4444; padding:20px; border:2px solid red; margin-top:10px;">
+                                <b>PREDICTION MODULE ERROR:</b> ${error.message} <br><br> Press F12 and check the Console.
+                            </div>`;
+                        }
+                    }
+                }, 500); 
+            };
+        }
+        
+        attempts++;
+        if (attempts > 20) clearInterval(hookInterval); 
+    }, 500);
+});
+
+
+
+</script>
 
 
 
