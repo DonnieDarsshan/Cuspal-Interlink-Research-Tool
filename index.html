@@ -499,7 +499,7 @@ input[type="time"] {
 
     <div id="navTimeTool" style="display:block;">
         <select id="miniPivotSelect" title="Select Pivot"></select>
-        <input type="time" id="miniTimeInput" step="1" title="HH:MM:SS">
+        <input type="time" id="miniTimeInput" step="1" title="HH:MM:SS" oninput="applyMiniTimeChange()">
     </div>
 
 </div>
@@ -949,6 +949,8 @@ input[type="time"] {
             console.warn("Timezone fetch failed. Falling back to IST.", error);
         }
 
+        const useKpNew = document.getElementById("kpAyanamshaMode")?.checked;
+
         const requestData = {
             year: parseInt(y),
             month: parseInt(m),
@@ -959,7 +961,8 @@ input[type="time"] {
             lat: parseFloat(latVal),
             lon: parseFloat(lonVal),
             timezone_offset: dynamicOffset, // 🔥 Dynamic offset applied here!
-            horary_mode: false 
+            horary_mode: false,
+            ayanamsha: useKpNew ? "kp_new" : "lahiri"
         };
 
         const btn = document.getElementById("fetchCloudBtn");
@@ -1367,6 +1370,7 @@ function lockBaseDateTime(){
         <label style="font-weight:700;color:#facc15;"><input type="checkbox" id="vedicMode"> Vedic House (±15°)</label>
         <label><input type="checkbox" id="retroMode"> Retro</label>
         <label><input type="checkbox" id="trueNodeModeKP" > True Node</label>
+        <label><input type="checkbox" id="kpAyanamshaMode" checked onchange="if(event && event.isTrusted) fetchFromCloud()"> KP New Ayanamsha</label>
         <label style="font-weight:700;"><input type="checkbox" id="kpLevelTheme" checked> Level Theme</label>
         <label style="font-weight:800;color:#ff9f1c;"><input type="checkbox" id="navToggleMode"> Nav Bar (1-9)</label>
     </div>
@@ -2270,6 +2274,7 @@ function resetAllTogglesToDefault() {
         { id: "vedicMode", val: false },
         { id: "retroMode", val: false },
         { id: "trueNodeModeKP", val: false },
+        { id: "kpAyanamshaMode", val: true },
         { id: "kpLevelTheme", val: true },
         { id: "countRepetition", val: false },
         { id: "ignoreStar", val: false }, 
@@ -7314,28 +7319,56 @@ function applyDateTimeChange(){
 
 
 
-function syncDateTimeTool(){
-  if(!BASE_MASTER_DATETIME) return;
-
-  const d = new Date(
-    BASE_MASTER_DATETIME.getTime() +
-    SHIFT_SECONDS * 1000
-  );
-
-  // FIX: Force strictly Local Time for both Date and Time outputs
-  const pad = (n) => String(n).padStart(2, '0');
-  
-  const localDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const localTime = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-
-  dateCtrl.value = localDate;
-  timeCtrl.value = localTime;
-
-  const miniTime = document.getElementById("miniTimeInput");
-  if(miniTime) {
-      miniTime.value = localTime;
-  }
+function applyMiniTimeChange(){
+    if(!BASE_MASTER_DATETIME) return;
+    const dateVal = document.getElementById("dateCtrl").value;
+    const timeVal = document.getElementById("miniTimeInput").value;
+    if(!dateVal || !timeVal) return;
+    
+    const n = new Date(dateVal + "T" + timeVal);
+    const newShift = Math.round((n - BASE_MASTER_DATETIME) / 1000);
+    const delta = newShift - SHIFT_SECONDS;
+    if(delta !== 0){
+        applyShift(delta);
+    }
 }
+
+function syncDateTimeTool(){
+    if(!BASE_MASTER_DATETIME) return;
+    const d = new Date(
+        BASE_MASTER_DATETIME.getTime() + SHIFT_SECONDS * 1000
+    );
+
+    // FIX: Force strictly Local Time for both Date and Time outputs
+    const pad = (n) => String(n).padStart(2, '0');
+    const localDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const localTime = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    
+    // 1. Sync Middle Shift Tool
+    if (document.getElementById("dateCtrl")) document.getElementById("dateCtrl").value = localDate;
+    if (document.getElementById("timeCtrl")) document.getElementById("timeCtrl").value = localTime;
+    
+    // 2. Sync Top Right Mini Time Tool
+    const miniTime = document.getElementById("miniTimeInput");
+    if(miniTime) {
+        miniTime.value = localTime;
+    }
+
+    // 3. PERFECT SYNC: Push to Cloud Fetcher Inputs!
+    if (document.getElementById("onDay")) document.getElementById("onDay").value = pad(d.getDate());
+    if (document.getElementById("onMonth")) document.getElementById("onMonth").value = pad(d.getMonth() + 1);
+    if (document.getElementById("onYear")) document.getElementById("onYear").value = d.getFullYear();
+    if (document.getElementById("onHour")) document.getElementById("onHour").value = pad(d.getHours());
+    if (document.getElementById("onMin")) document.getElementById("onMin").value = pad(d.getMinutes());
+    if (document.getElementById("onSec")) document.getElementById("onSec").value = pad(d.getSeconds());
+}
+
+
+
+
+
+
+
 </script>
 
 
