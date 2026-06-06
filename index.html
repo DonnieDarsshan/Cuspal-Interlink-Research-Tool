@@ -518,6 +518,13 @@ input[type="time"] {
 
 
 
+
+
+
+
+
+
+
 <style>
 #baseTimeBox{ background:var(--panel-bg); border:2px solid #a86b17; padding:14px 18px; margin:16px 0 14px; display:flex; flex-wrap:wrap; gap:25px; align-items:center; color:#f3e8d0; font-weight:700; }
 #baseTimeBox input{ background:#160d0a; color:#ff9f1c; border:1px solid #a86b17; padding:6px 10px; font-weight:700; }
@@ -6819,13 +6826,22 @@ function computeEffectiveLinksRow(p){
 
 	/* ---- 1. GET RAW ARRAYS FIRST ---- */
     let valsA1 = getHBValuesRaw(p) || [];
-    let valsA2 = (!(HB_UNTENANTED_RULE && planetUntenanted) && kp.star) ? (getHBValuesRaw(kp.star) || []) : [];
+    let valsA2 = kp.star ? (getHBValuesRaw(kp.star) || []) : [];
     
     let valsB1 = getHBValuesRaw(kp.sub) || [];
-    let valsB2 = (!(HB_UNTENANTED_RULE && subUntenanted) && starOfSub) ? (getHBValuesRaw(starOfSub) || []) : [];
+    let valsB2 = starOfSub ? (getHBValuesRaw(starOfSub) || []) : [];
     
     let valsC1 = getHBValuesRaw(kp.ssl) || [];
-    let valsC2 = (!(HB_UNTENANTED_RULE && sslUntenanted) && starOfSSL) ? (getHBValuesRaw(starOfSSL) || []) : [];
+    let valsC2 = starOfSSL ? (getHBValuesRaw(starOfSSL) || []) : [];
+
+    // 🔥 NEW UNTENANTED RULE LOGIC
+    // If ON: Tenanted (No $) = Ignore Planet/Sub/SSL, use ONLY Star. 
+    // Untenanted ($) = Keep BOTH.
+    if (HB_UNTENANTED_RULE) {
+        if (!planetUntenanted) { valsA1 = []; srcA = []; }
+        if (!subUntenanted) { valsB1 = []; srcB = []; }
+        if (!sslUntenanted) { valsC1 = []; srcC = []; }
+    }
 
 	/* =========================================
 	   2. EXCEPTION RULE (FIGHT BEFORE PARITY FILTER)
@@ -13064,6 +13080,16 @@ function buildTable80() {
     document.body.insertAdjacentHTML("beforeend", html);
 }
 
+
+
+
+
+
+
+
+
+
+
 // BULLETPROOF PREDICTION MODULE HOOK
 window.addEventListener('DOMContentLoaded', () => {
     let attempts = 0;
@@ -13097,15 +13123,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 // Auto-run when the rest of your calculations finish building
-(function(){
-    if (typeof buildBarCharts === "function") {
-        const _orig = buildBarCharts;
-        buildBarCharts = function() {
-            _orig.apply(this, arguments);
-            setTimeout(buildTable50, 500); 
-        };
-    }
-})();
+    (function(){
+        if (typeof buildBarCharts === "function") {
+            const _orig = buildBarCharts;
+            buildBarCharts = function() {
+                _orig.apply(this, arguments);
+                setTimeout(() => {
+                    if (typeof buildTable50 === "function") buildTable50();
+                    if (typeof buildTable55 === "function") buildTable55();
+                }, 500);
+            };
+        }
+    })();
 </script>
 
 
@@ -13204,7 +13233,7 @@ window.addEventListener('DOMContentLoaded', () => {
             </label>
 
             <label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:#c084fc; font-weight:bold; font-size:16px;">
-                <input type="checkbox" id="t50Untenanted" class="t50-dark-cb" checked onchange="buildTable50()">
+                <input type="checkbox" id="t50Untenanted" class="t50-dark-cb" onchange="buildTable50()">
                 Untenanted
             </label>
 
@@ -13220,6 +13249,172 @@ window.addEventListener('DOMContentLoaded', () => {
 
     </div>
 </div>
+
+
+
+
+<div id="table55-container" style="margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px;"></div>
+
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+function buildTable55() {
+    let container = document.getElementById("table55-container");
+    if (!container || typeof planets === 'undefined' || !cuspsData) return;
+
+    let dbaOrder = ["Surya", "Chandra", "Mangala", "Rahu", "Jupiter", "Saturn", "Budha", "Ketu", "Venus"];
+    let validPlanets = planets.length > 0 ? planets : dbaOrder;
+
+    function formatPlanetString(p) {
+        if (!window.__T3_CACHE__ || !window.__T3_CACHE__[p]) return markPlanet(p);
+        let t3 = window.__T3_CACHE__[p];
+        let sub = t3.sub || "--";
+        let ssl = t3.ssl || "--";
+        let star = t3.star || "--";
+        return `${markPlanet(p)} - <span style="color:#f87171;">${sub}</span> + <span style="color:#d97706;">${ssl}</span> + <span style="color:#38bdf8;">${star}</span>`;
+    }
+
+    function formatPlanetColumn(p) {
+        if (!window.__T3_CACHE__ || !window.__T3_CACHE__[p]) return `<span style="font-size: 16px; font-weight: bold;">${markPlanet(p)}</span>`;
+        let t3 = window.__T3_CACHE__[p];
+        let sub = t3.sub || "--";
+        let ssl = t3.ssl || "--";
+        let star = t3.star || "--";
+        return `<span style="font-size: 16px; font-weight: bold;">${markPlanet(p)}</span><br><span style="font-size:14px; font-weight:normal;"><span style="color:#f87171;">${sub}</span> + <span style="color:#d97706;">${ssl}</span> + <span style="color:#38bdf8;">${star}</span></span>`;
+    }
+
+    let html = `
+    <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table55-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
+        Table 55 : Planets Agent & Counter
+    </h2>
+    <div id="table55-body" class="collapsible-body" style="display: block; margin-top: 20px;">
+        
+        <table style="width: 100%; border-collapse: collapse; text-align: center; border: 1px solid #a86b17; background: #120606; table-layout: auto;">
+            <thead>
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707); color: #facc15;">
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">Planet</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: 60px !important; min-width: 60px !important; max-width: 60px !important; font-size: 18px !important; font-weight: bold;">Count</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Starlord</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Sublord</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Sub-Sublord</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    validPlanets.forEach(targetP => {
+        let viaStar = [], viaSub = [], viaSSL = [];
+        
+        validPlanets.forEach(p => {
+            let kp = getPlanetKPLords(p);
+            if (!kp) return;
+            if (kp.star === targetP) viaStar.push(formatPlanetString(p));
+            if (kp.sub === targetP) viaSub.push(formatPlanetString(p));
+            if (kp.ssl === targetP) viaSSL.push(formatPlanetString(p));
+        });
+
+        let totalCount = viaStar.length + viaSub.length + viaSSL.length;
+
+        html += `
+        <tr style="border-bottom: 1px solid #3a1a12; background: #1a0f0c;">
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #ff9f1c; vertical-align: middle;">
+                ${formatPlanetColumn(targetP)}
+            </td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #ffffff; font-weight: bold; font-size: 20px; vertical-align: middle; background: rgba(255, 255, 255, 0.05);">
+                ${totalCount}
+            </td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaStar.join("<br>") || "--"}</td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaSub.join("<br>") || "--"}</td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaSSL.join("<br>") || "--"}</td>
+        </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; text-align: center; border: 1px solid #a86b17; background: #120606; table-layout: auto; margin-top: 20px;">
+            <thead>
+                <tr>
+                    <th colspan="5" style="background: linear-gradient(180deg, #3f0008, #1a0004); color: #facc15; font-weight: bold; padding: 12px; border: 1px solid #a86b17; font-size: 22px;">
+                        12 Bhava Cuspal Sublords Agents
+                    </th>
+                </tr>
+                <tr style="background: linear-gradient(180deg, #2a0f0f, #140707); color: #facc15;">
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: 40px !important; min-width: 40px !important; max-width: 40px !important; font-size: 18px !important; font-weight: bold;">Cusp</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">Planet</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Starlord</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Sublord</th>
+                    <th style="padding: 10px; border: 1px solid #a86b17; width: auto; font-size: 18px !important; font-weight: bold;">via Sub-Sublord</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    let sortedCusps = [...cuspsData].sort((a,b) => a.bhava - b.bhava);
+
+    sortedCusps.forEach(c => {
+        let targetP = c.subLord;
+        let viaStar = [], viaSub = [], viaSSL = [];
+        
+        validPlanets.forEach(p => {
+            let kp = getPlanetKPLords(p);
+            if (!kp) return;
+            if (kp.star === targetP) viaStar.push(formatPlanetString(p));
+            if (kp.sub === targetP) viaSub.push(formatPlanetString(p));
+            if (kp.ssl === targetP) viaSSL.push(formatPlanetString(p));
+        });
+
+        html += `
+        <tr style="border-bottom: 1px solid #3a1a12; background: #1a0f0c;">
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #ff9f1c; font-weight: bold; font-size: 18px; vertical-align: middle;">
+                ${c.bhava}
+            </td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #ff9f1c; vertical-align: middle;">
+                ${formatPlanetColumn(targetP)}
+            </td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaStar.join("<br>") || "--"}</td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaSub.join("<br>") || "--"}</td>
+            <td style="padding: 8px; border: 1px solid #a86b17; color: #f3e8d0; line-height: 1.8; font-size: 15px;">${viaSSL.join("<br>") || "--"}</td>
+        </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
+
+
 
 <script>
 const T50_FULL_NAMES = {
@@ -13400,7 +13595,11 @@ function buildTable50() {
         header.innerText = pMainHeader;
         box.appendChild(header);
 
-        function addRow(label, planetCode, color, showData, collapseRowGlobally) {
+        
+		
+		
+		
+		function addRow(label, planetCode, color, showNumbers, collapseRowGlobally) {
             let row = document.createElement("div");
             row.className = "t50-inner-row"; 
             row.style.boxSizing = "border-box"; 
@@ -13416,11 +13615,17 @@ function buildTable50() {
             let pCodeDisplay = "";
             let val = "";
 
-            if (showData && planetCode && planetCode !== "--") {
+            if (planetCode && planetCode !== "--") {
                 let fullName = T50_FULL_NAMES[planetCode] || planetCode;
                 let isCodeTenanted = checkTenantedStatus(planetCode);
+                
+                // Name and $ symbol ALWAYS display
                 pCodeDisplay = !isCodeTenanted ? `${fullName} $` : fullName; 
-                val = getT50FormatString(planetCode);
+                
+                // Numbers ONLY display if the rule allows it
+                if (showNumbers) {
+                    val = getT50FormatString(planetCode);
+                }
             }
 
             if (centerAlign) {
@@ -13448,25 +13653,31 @@ function buildTable50() {
             return row;
         }
 
-        // ZONE 1
-        box.appendChild(addRow("Planet", p, "#38bdf8", true, false));
-        let showStarlordData = !(isUntenantedActive && !pTenanted);
-        box.appendChild(addRow("Starlord", kp.star, "#f472b6", showStarlordData, false));
+        // ZONE 1 (Planet & Starlord)
+        // If Untenanted is ON: show planet numbers ONLY if it has the $ symbol (!pTenanted).
+        let showPlanetNumbers = !isUntenantedActive || !pTenanted;
+        
+        box.appendChild(addRow("Planet", p, "#38bdf8", showPlanetNumbers, false));
+        box.appendChild(addRow("Starlord", kp.star, "#f472b6", true, false));
 
         box.appendChild(createDivider());
 
-        // ZONE 2
-        box.appendChild(addRow("Sub-lord", kp.sub, "#fbbf24", true, false));
+        // ZONE 2 (Sub-lord & Star of Sub)
+        // If Untenanted is ON: show sub-lord numbers ONLY if it has the $ symbol (!subTenanted).
         let collapseExtra = !showExtraStars;
-        let showSosData = !(isUntenantedActive && !subTenanted);
-        box.appendChild(addRow("Star of Sub", starOfSub, "#a855f7", showSosData, collapseExtra));
+        let showSubNumbers = !isUntenantedActive || !subTenanted;
+
+        box.appendChild(addRow("Sub-lord", kp.sub, "#fbbf24", showSubNumbers, false));
+        box.appendChild(addRow("Star of Sub", starOfSub, "#a855f7", true, collapseExtra));
 
         box.appendChild(createDivider());
 
-        // ZONE 3
-        box.appendChild(addRow("Sub-sub", kp.ssl, "#22c55e", true, false));
-        let showSosslData = !(isUntenantedActive && !sslTenanted);
-        box.appendChild(addRow("Star of<br>Sub-Sub", starOfSSL, "#ef4444", showSosslData, collapseExtra));
+        // ZONE 3 (Sub-sub & Star of Sub-sub)
+        // If Untenanted is ON: show sub-sub numbers ONLY if it has the $ symbol (!sslTenanted).
+        let showSslNumbers = !isUntenantedActive || !sslTenanted;
+
+        box.appendChild(addRow("Sub-sub", kp.ssl, "#22c55e", showSslNumbers, false));
+        box.appendChild(addRow("Star of<br>Sub-Sub", starOfSSL, "#ef4444", true, collapseExtra));
 
         container.appendChild(box);
     });
@@ -13486,11 +13697,23 @@ function buildTable50() {
 
 
 
-
 // =========================================================
 // BULLETPROOF PREDICTION MODULE HOOK
 // =========================================================
 window.addEventListener('DOMContentLoaded', () => {
+    
+    // 🔥 FIX: Override the global reset function so Untenanted NEVER turns back on automatically
+    if (typeof window.resetAllTogglesToDefault === "function") {
+        const _origReset = window.resetAllTogglesToDefault;
+        window.resetAllTogglesToDefault = function() {
+            _origReset.apply(this, arguments);
+            let t50Checkbox = document.getElementById("t50Untenanted");
+            if (t50Checkbox) {
+                t50Checkbox.checked = false; // Strictly enforce OFF
+            }
+        };
+    }
+
     let attempts = 0;
     
     let hookInterval = setInterval(() => {
@@ -13507,6 +13730,13 @@ window.addEventListener('DOMContentLoaded', () => {
                     console.log("🚀 Firing Prediction Module...");
                     try {
                         if (typeof buildTable50 === "function") {
+                            // Double check it is off before first render
+                            let t50cb = document.getElementById("t50Untenanted");
+                            if(t50cb && !t50cb.dataset.init) {
+                                t50cb.checked = false;
+                                t50cb.dataset.init = "true";
+                            }
+                            
                             buildTable50();
                             console.log("✅ Prediction Module Loaded Successfully!");
                         }
@@ -13527,7 +13757,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (attempts > 20) clearInterval(hookInterval); 
     }, 500);
 });
-
 
 
 </script>
