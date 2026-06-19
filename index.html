@@ -642,6 +642,10 @@ input[type="time"] {
     }
 </style>
 
+
+
+
+
 <div id="onlineFetchBox">
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
         <div style="color: #10b981; font-size: 16px; letter-spacing: 1px; flex: 1;">&#x1F310; CLOUD HOROSCOPE FETCHER</div>
@@ -702,6 +706,7 @@ input[type="time"] {
                     <option value="N" selected>N</option><option value="S">S</option>
                 </select>
                 <input type="text" id="dmsLatMin" value="20" style="width:35px; text-align:center;" oninput="syncCoords('dms')"><span style="color:#facc15;">'</span>
+                <input type="text" id="dmsLatSec" value="24" style="width:35px; text-align:center;" oninput="syncCoords('dms')"><span style="color:#facc15;">"</span>
                 
                 <span style="color:#a86b17; margin:0 5px;">|</span>
                 
@@ -710,8 +715,16 @@ input[type="time"] {
                     <option value="E" selected>E</option><option value="W">W</option>
                 </select>
                 <input type="text" id="dmsLonMin" value="06" style="width:35px; text-align:center;" oninput="syncCoords('dms')"><span style="color:#facc15;">'</span>
+                <input type="text" id="dmsLonSec" value="02" style="width:35px; text-align:center;" oninput="syncCoords('dms')"><span style="color:#facc15;">"</span>
             </div>
         </div>
+		
+		
+		
+		
+		
+		
+		
     </div>
     
     <div class="fetch-row" style="border-top: 1px solid #333; padding-top: 15px; width: 100%;">
@@ -764,26 +777,47 @@ input[type="time"] {
             let lat = parseFloat(document.getElementById('onlineLat').value) || 0;
             let lon = parseFloat(document.getElementById('onlineLon').value) || 0;
             
+            // Latitude Conversion
             document.getElementById('dmsLatDir').value = lat >= 0 ? 'N' : 'S';
             lat = Math.abs(lat);
-            document.getElementById('dmsLatDeg').value = Math.floor(lat);
-            document.getElementById('dmsLatMin').value = Math.floor((lat - Math.floor(lat)) * 60).toString().padStart(2, '0');
+            let latDeg = Math.floor(lat);
+            let latMinFloat = (lat - latDeg) * 60;
+            let latMin = Math.floor(latMinFloat);
+            let latSec = Math.round((latMinFloat - latMin) * 60);
+            if(latSec === 60) { latSec = 0; latMin++; }
+            if(latMin === 60) { latMin = 0; latDeg++; }
+            document.getElementById('dmsLatDeg').value = latDeg;
+            document.getElementById('dmsLatMin').value = latMin.toString().padStart(2, '0');
+            document.getElementById('dmsLatSec').value = latSec.toString().padStart(2, '0');
 
+            // Longitude Conversion
             document.getElementById('dmsLonDir').value = lon >= 0 ? 'E' : 'W';
             lon = Math.abs(lon);
-            document.getElementById('dmsLonDeg').value = Math.floor(lon);
-            document.getElementById('dmsLonMin').value = Math.floor((lon - Math.floor(lon)) * 60).toString().padStart(2, '0');
+            let lonDeg = Math.floor(lon);
+            let lonMinFloat = (lon - lonDeg) * 60;
+            let lonMin = Math.floor(lonMinFloat);
+            let lonSec = Math.round((lonMinFloat - lonMin) * 60);
+            if(lonSec === 60) { lonSec = 0; lonMin++; }
+            if(lonMin === 60) { lonMin = 0; lonDeg++; }
+            document.getElementById('dmsLonDeg').value = lonDeg;
+            document.getElementById('dmsLonMin').value = lonMin.toString().padStart(2, '0');
+            document.getElementById('dmsLonSec').value = lonSec.toString().padStart(2, '0');
+
         } else if (source === 'dms') {
+            // Latitude Conversion
             let latDeg = parseFloat(document.getElementById('dmsLatDeg').value) || 0;
             let latMin = parseFloat(document.getElementById('dmsLatMin').value) || 0;
+            let latSec = parseFloat(document.getElementById('dmsLatSec').value) || 0;
             let latDir = document.getElementById('dmsLatDir').value;
-            let lat = latDeg + (latMin / 60);
+            let lat = latDeg + (latMin / 60) + (latSec / 3600);
             if (latDir === 'S') lat = -lat;
 
+            // Longitude Conversion
             let lonDeg = parseFloat(document.getElementById('dmsLonDeg').value) || 0;
             let lonMin = parseFloat(document.getElementById('dmsLonMin').value) || 0;
+            let lonSec = parseFloat(document.getElementById('dmsLonSec').value) || 0;
             let lonDir = document.getElementById('dmsLonDir').value;
-            let lon = lonDeg + (lonMin / 60);
+            let lon = lonDeg + (lonMin / 60) + (lonSec / 3600);
             if (lonDir === 'W') lon = -lon;
 
             document.getElementById('onlineLat').value = lat.toFixed(6);
@@ -2229,8 +2263,6 @@ function saveJSON(){
 
 
 
-
-
 /* =========================================================
    RESET ALL TOGGLES & CHECKBOXES TO FACTORY DEFAULTS
    ========================================================= */
@@ -2280,9 +2312,8 @@ function resetAllTogglesToDefault() {
         { id: "showCuspsD1", val: false },
         { id: "vedicMode", val: false },
         { id: "retroMode", val: false },
-        { id: "trueNodeModeKP", val: false },
-        { id: "kpAyanamshaMode", val: true },
-        { id: "kpLevelTheme", val: true },
+        // 🔥 kpAyanamshaMode, trueNodeModeKP, and kpLevelTheme HAVE BEEN DELETED FROM THIS LIST!
+        // This stops the system from instantly forcing them back to "true" when the server finishes fetching!
         { id: "countRepetition", val: false },
         { id: "ignoreStar", val: false }, 
         { id: "ignoreSSL", val: false },
@@ -2292,7 +2323,6 @@ function resetAllTogglesToDefault() {
         { id: "ignoreStarOfSSL", val: true }, 
         { id: "t6_ignoreSOS", val: false },
         { id: "t6_ignoreSOSS", val: false },
-        // 🔥 TABLE 50 CHECKBOXES ADDED HERE
         { id: "t50CenterAlign", val: false },
         { id: "t50Untenanted", val: true },
         { id: "t50_show_extra_stars", val: false }
@@ -2302,12 +2332,13 @@ function resetAllTogglesToDefault() {
         let el = document.getElementById(t.id);
         if (el) {
             el.checked = t.val;
-            // Dispatch event to force update immediately
-            el.dispatchEvent(new Event("change"));
+            // No dispatchEvent here, so it resets silently without triggering infinite loops
         }
     });
 
-    // 3. Reset Dropdowns
+    if(typeof applyKPTheme === "function") applyKPTheme();
+
+    // 3. Reset Dropdowns (SILENTLY)
     const dropdowns = {
         "kPivot": "Lagna",
         "pivotSelect": "Lagna",
@@ -2316,27 +2347,14 @@ function resetAllTogglesToDefault() {
         "taraSelect": "SSL_CHANDRA",
         "taraSelect_mirror": "SSL_CHANDRA",
         "jumpMode": "sec",
-        // 🔥 TABLE 50 PIVOT ADDED HERE
         "t50PivotMirror": "Lagna"
     };
 
     for (let id in dropdowns) {
         let el = document.getElementById(id);
-        if (el) {
-            el.value = dropdowns[id];
-            el.dispatchEvent(new Event("change"));
-        }
+        if (el) el.value = dropdowns[id];
     }
 }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2364,8 +2382,6 @@ function loadJSON(){
 
             let d=JSON.parse(r.result);
 			
-			
-
             /* ---------- NAME ---------- */
             if(d.personName && document.getElementById("personName")){
                 document.getElementById("personName").value=d.personName;
@@ -2409,8 +2425,6 @@ function loadJSON(){
                 document.getElementById(p+"_sec").value=d.planets[p].sec;
             });
 
-
-
 			/* ---------- RESTORE VIMSHOTTARI EVENTS (ONLY 5) ---------- */
             if(d.vimshottariEvents){
                 d.vimshottariEvents.forEach((ev,i)=>{
@@ -2425,22 +2439,13 @@ function loadJSON(){
             }
 
             /* ---------- RESET UI STATES & REFRESH ---------- */
-            resetAllTogglesToDefault(); // <--- Calls the reset brain
-            if(typeof buildCuspalChart === "function") buildCuspalChart();
+            resetAllTogglesToDefault(); // Resets everything properly without jumping the gun
+            if(typeof buildCuspalChart === "function") buildCuspalChart(); // Master trigger creates chart with default toggles
         };
         r.readAsText(e.target.files[0]);
     };
     f.click();
 }
-
-
-
-
-
-
-
-
-
 
 
 /* =========================================================
@@ -2457,6 +2462,9 @@ function clearAll(){
     if(typeof TARA_LAST_JANMA !== 'undefined') TARA_LAST_JANMA = null;
     if(typeof TARA_MANUAL_LOCK !== 'undefined') TARA_MANUAL_LOCK = false;
     window.__T3_CACHE__ = {};
+
+    /* 🔥 WIPE CUSPS DATA TO PREVENT OLD CHART SURVIVING */
+    if (typeof cuspsData !== 'undefined') cuspsData = [];
 
     /* ENABLE + CLEAR DATE & TIME */
     document.getElementById("baseDate").disabled = false;
