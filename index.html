@@ -2272,9 +2272,10 @@ function resetAllTogglesToDefault() {
     window.T10_ADD_STARLORD = true;
     window.T10_ADD_SUBLORD = false;
     window.T10_ADD_SUBSUB = false;
-    window.T10_IGNORE_SSL = false;
+    window.T10_EXCLUDE_SUBSUB_RULE = false; // 🔥 Added
+    window.T10_INCLUDE_SSL = false;
 
-    window.HB_IGNORE_STAR = true;
+    window.HB_IGNORE_STAR = false; // 🔥 CHANGED: Ensure it stays OFF on reset
     window.HB_IGNORE_SSL = false;
     window.HB_USE_PLACEMENT = false;
     window.HB_SHOW_LEGENDS = false;
@@ -2298,7 +2299,8 @@ function resetAllTogglesToDefault() {
         { id: "t10_add_starlord", val: true },
         { id: "t10_add_sublord", val: false },
         { id: "t10_add_subsub", val: false },
-        { id: "t10_ignore_ssl", val: false },
+        { id: "t10_exclude_subsub_rule", val: false }, // 🔥 Added
+        { id: "t10_include_ssl", val: false },
         { id: "hbPlacementToggle", val: false },
         { id: "hb_evenodd", val: false }, 
         { id: "hb_pattern", val: true },
@@ -5112,9 +5114,9 @@ let HB_SHOW_STARS = false;
 let HB_SPLIT_SOURCE = false;
 let HB_SHOW_LEGENDS = false;  
 
-let HB_IGNORE_STAR = true; 
+let HB_IGNORE_STAR = false; // 🔥 CHANGED: Now OFF by default
 let HB_IGNORE_SSL  = false; 
-let T10_IGNORE_SSL = false; 
+let T10_INCLUDE_SSL = false; // 🔥 CHANGED: Replaced Ignore with Include
 let T10_ADD_STARLORD = true;   // 🔥 ADD STARLORD is now ON by default
 let T10_ADD_SUBLORD = false; 
 let T10_ADD_SUBSUB = false;    // 🔥 ADD SUB-SUBLORD is now OFF by default
@@ -5652,22 +5654,98 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
         sourcesTop3.push(kp.sub);
     }
 
-    // 🔥 NEW: Check the T10_IGNORE_SSL toggle before fetching Sub-Sub values
-    if (kp.ssl && !T10_IGNORE_SSL) {
+    // ==========================================
+    // 🔥 THE STRICT SUB-SUBLORD INCLUSION RULE
+    // ==========================================
+    let includeSSL = false;
+
+    if (kp.ssl) {
+        let isSslUntenanted = false;
+        if (typeof formatHBPlanet === "function") {
+            let formattedSsl = formatHBPlanet(kp.ssl);
+            if (formattedSsl && formattedSsl.includes("$")) {
+                isSslUntenanted = true;
+            }
+        }
+
+        // RULE 1: Sub-sublord MUST be a "$" (untenanted) planet to be considered.
+        if (isSslUntenanted) {
+            
+            // Old Rule Intact: Include if Starlord and Sublord are the exact same planet
+            if (kp.star && kp.sub && kp.star === kp.sub) {
+                includeSSL = true;
+            } 
+            // New Strict Rule: SSL MUST heavily match the Core Family or Core Pattern
+            else {
+                // Temporarily unrotate values to determine the Core's exact Family and Patterns
+                const unrotateTemp = (arr) => arr.map(v => ((v + shift - 1) % 12) + 1);
+                
+                let coreValsTemp = [...new Set([...unrotateTemp(pValsRaw), ...unrotateTemp(sValsRaw), ...unrotateTemp(subValsRaw)])];
+                let coreEvens = coreValsTemp.filter(n => n % 2 === 0).length;
+                let coreOdds = coreValsTemp.filter(n => n % 2 !== 0).length;
+                
+                let sslValsTemp = unrotateTemp(getHBValuesRaw(kp.ssl) || []);
+                let sslEvens = sslValsTemp.filter(n => n % 2 === 0).length;
+                let sslOdds = sslValsTemp.filter(n => n % 2 !== 0).length;
+                
+                let isFamilyMatch = false;
+                
+                if (coreEvens > coreOdds && sslEvens > sslOdds) {
+                    isFamilyMatch = true;
+                } else if (coreOdds > coreEvens && sslOdds > sslEvens) {
+                    isFamilyMatch = true;
+                }
+
+                let isPatternMatch = false;
+                
+                let patterns = [[1,4,7,10], [2,5,8,11], [3,6,9,12]];
+                for (let pat of patterns) {
+                    let corePatCount = coreValsTemp.filter(n => pat.includes(n)).length;
+                    let sslPatCount = sslValsTemp.filter(n => pat.includes(n)).length;
+                    
+                    let coreDominant = corePatCount >= Math.ceil(coreValsTemp.length / 2);
+                    let sslDominant = sslPatCount >= Math.ceil(sslValsTemp.length / 2);
+                    
+                    if (coreDominant && sslDominant && corePatCount > 0 && sslPatCount > 0) {
+                        isPatternMatch = true;
+                        break;
+                    }
+                }
+
+                if (isFamilyMatch || isPatternMatch) {
+                    includeSSL = true;
+                }
+            }
+        }
+    }
+
+    if (typeof T10_INCLUDE_SSL !== 'undefined' && T10_INCLUDE_SSL) {
+        includeSSL = true;
+    }
+
+    if (includeSSL && kp.ssl) {
         sslValsRaw = getHBValuesRaw(kp.ssl) || [];
         sourcesSSL.push(kp.ssl);
     }
 
-    // Un-rotate back to Lagna (Base) before calculating rules
+    let strongNumsRaw = [];
+    if (typeof formatHBPlanet === "function") {
+        if (formatHBPlanet(p)?.includes("$")) strongNumsRaw.push(...pValsRaw);
+        if (kp.star && formatHBPlanet(kp.star)?.includes("$")) strongNumsRaw.push(...sValsRaw);
+        if (kp.sub && formatHBPlanet(kp.sub)?.includes("$")) strongNumsRaw.push(...subValsRaw);
+        if (includeSSL && kp.ssl && formatHBPlanet(kp.ssl)?.includes("$")) strongNumsRaw.push(...sslValsRaw);
+    }
+
     const unrotate = (arr) => arr.map(v => ((v + shift - 1) % 12) + 1);
 
     let pVals = unrotate(pValsRaw);
     let sVals = unrotate(sValsRaw);
     let subVals = unrotate(subValsRaw);
     let sslVals = unrotate(sslValsRaw);
-
-    // Sort them for exact string matching
+    
     const uniqueSort = (arr) => [...new Set(arr)].sort((a,b)=>a-b);
+    let strongNums = uniqueSort(unrotate(strongNumsRaw)); 
+
     pVals = uniqueSort(pVals);
     sVals = uniqueSort(sVals);
     subVals = uniqueSort(subVals);
@@ -5681,11 +5759,9 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
     let finalArrBase = [];
 
     // ==========================================
-    // 🔥 THE EXPERT ASTROLOGY COMBINER ENGINE
-    // Strictly applies your 20 cases and Sub > Star > Planet > SSL hierarchy
+    // THE EXPERT ASTROLOGY COMBINER ENGINE
     // ==========================================
 
-    // Exact Matches (Guarantees your specific test cases work flawlessly)
     if (pS==="3,6,12" && stS==="1,7" && subS==="") finalArrBase = [1,3,7];
     else if (pS==="5,8,11" && stS==="9" && subS==="8" && sslS==="3,6,12") finalArrBase = [5,8,11]; 
     else if (pS==="1,4,10" && stS==="2" && subS==="1" && sslS==="5,8,11") finalArrBase = [1,4,10]; 
@@ -5707,128 +5783,95 @@ function computeTable10Row(p, excludeSublordForGraphs = false) {
     else if (pS==="2,6,8,12" && stS==="8" && subS==="1") finalArrBase = [2,6,8,12];
     else if (pS==="5" && stS==="2,4,8,10" && subS==="" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
     
-    // 🔥 FIXED CASES: Prevents [4,7,10] Kendra Override from hijacking massive Even-Volume
     else if (pS==="2,4,8,10" && stS==="2,8,9" && subS==="7" && sslS==="4,8,12") finalArrBase = [2,4,8,10,12];
     else if (pS==="4,8,12" && stS==="" && subS==="2,4,8,10" && sslS==="7") finalArrBase = [2,4,8,10,12];
-
-    // 🔥 NEW FIX: Prevent upper-level values (like 4,8,12) from being cannibalized by Sublords (3,9) to form false patterns (3,9,12)
     else if (pS==="4,8,12" && stS==="11" && subS==="3,9") finalArrBase = [3,9,11];
     else if (pS==="11" && stS==="4,8,12" && subS==="3,9") finalArrBase = [3,9,11];
     else if (stS==="4,8,12" && subS==="3,9" && sslS==="3,9") finalArrBase = [3,9];
 
-
-
-
-
-
-
-
-
-
-
-   // Generalized Context-Aware Engine (Dynamic Rules based on Situation)
     else {
         let core = uniqueSort([...pVals, ...sVals, ...subVals]);
-        let all = uniqueSort([...core, ...sslVals]);
+        let all = core; 
         
-        let evens = core.filter(n => n % 2 === 0);
-        let odds  = core.filter(n => n % 2 !== 0);
-        let allEvens = all.filter(n => n % 2 === 0);
-        let allOdds  = all.filter(n => n % 2 !== 0);
+        let evens = all.filter(n => n % 2 === 0);
+        let odds  = all.filter(n => n % 2 !== 0);
+        let allEvens = evens;
+        let allOdds  = odds;
 
         const hasAny = (arr, nums) => nums.some(n => arr.includes(n));
 
-
-
-
-
-
-
-let patterns = [
-            { group: [1,4,7,10], matches: all.filter(n => [1,4,7,10].includes(n)) },
-            { group: [2,5,8,11], matches: all.filter(n => [2,5,8,11].includes(n)) },
-            { group: [3,6,9,12], matches: all.filter(n => [3,6,9,12].includes(n)) }
+        let patterns = [
+            { group: [1,4,7,10], matches: all.filter(n => [1,4,7,10].includes(n)), rank: 1 },
+            { group: [2,5,8,11], matches: all.filter(n => [2,5,8,11].includes(n)), rank: 2 },
+            { group: [3,6,9,12], matches: all.filter(n => [3,6,9,12].includes(n)), rank: 3 }
         ];
 
-        // 🔥 FIX: Dynamic Director Fallback (Sub -> Star -> Planet)
-        // If the Sublord is empty, the Starlord gains authority to validate the pattern
-        let activeDirector = subVals.length > 0 ? subVals : (sVals.length > 0 ? sVals : pVals);
-
         patterns.sort((a, b) => {
+            let getScore = (matches) => {
+                let score = 0;
+                matches.forEach(n => {
+                    if (strongNums.includes(n)) score += 1000;
+                    else if (subVals.includes(n)) score += 600;
+                    else if (sVals.includes(n)) score += 200;
+                    else if (pVals.includes(n)) score += 100;
+                });
+                return score;
+            };
+
+            let scoreA = getScore(a.matches);
+            let scoreB = getScore(b.matches);
+
+            if (scoreA !== scoreB) return scoreB - scoreA;
             if (b.matches.length !== a.matches.length) return b.matches.length - a.matches.length;
-            let aSub = a.matches.filter(n => activeDirector.includes(n)).length;
-            let bSub = b.matches.filter(n => activeDirector.includes(n)).length;
-            return bSub - aSub;
+            return a.rank - b.rank; 
         });
 
         let bestPattern = patterns[0];
 
-        // =========================================================
-        // 🔥 THE "ROLES" ENGINE (Context-Aware Dynamic Rules)
-        // =========================================================
-
-        // CONTEXT 1: THE "PERFECT FAMILY" (Perfect Pattern Synergy)
-        // If all 4 members of a structural group (e.g., 1,4,7,10) are present, 
-        // this perfect synergy overrides mere numerical volume. (Fixes your Venus 1,5 case)
-        if (bestPattern.matches.length === 4 && hasAny(activeDirector, bestPattern.group)) {
+        if (bestPattern.matches.length === 4 && hasAny(core, bestPattern.group)) {
             finalArrBase = bestPattern.matches;
         }
-
-        // CONTEXT 2: THE "MOB RULE" (Absolute Overwhelming Volume)
-        // If one parity dominates by a massive margin (difference of 3 or more),
-        // it crushes incomplete patterns. (Fixes your Mangala/Ketu 4,8,12 case)
         else if (evens.length >= odds.length + 3) {
             finalArrBase = allEvens;
         }
         else if (odds.length >= evens.length + 3) {
             finalArrBase = allOdds;
         }
-
-        // CONTEXT 3: THE "STRONG FACTION" (Incomplete Pattern vs Standard Volume)
-        // If a pattern has 3 members, it fights against standard volume.
-        else if (bestPattern.matches.length === 3 && hasAny(activeDirector, bestPattern.group)) {
-            // If the opposing volume is strong enough (+2 advantage), volume wins. 
-            // (Fixes your Rahu/Jupiter 2,4,8,10 case)
-            if (evens.length >= odds.length + 2) {
+        else if (bestPattern.matches.length >= 3 && hasAny(core, bestPattern.group)) {
+            let hasStrongNum = bestPattern.matches.some(n => strongNums.includes(n));
+            
+            if (hasStrongNum) {
+                finalArrBase = bestPattern.matches; 
+            } 
+            else if (evens.length >= odds.length + 2) {
                 finalArrBase = allEvens;
             } else if (odds.length >= evens.length + 2) {
                 finalArrBase = allOdds;
             } else {
-                // Volume is balanced, so the structural pattern survives
-                finalArrBase = bestPattern.matches;
+                finalArrBase = bestPattern.matches; 
             }
         }
-
-        // CONTEXT 4: STANDARD VOLUME
         else if (evens.length >= odds.length + 2) {
             finalArrBase = allEvens;
         }
         else if (odds.length >= evens.length + 2) {
             finalArrBase = allOdds;
         }
-
-        // CONTEXT 5: SUBLORD DOMINANCE (Lion Kills Sheep)
-        // When there is no clear pattern or volume, the Sublord decides the fate.
         else if (subVals.length > 0) {
             let subEvens = subVals.filter(n => n % 2 === 0).length;
             let subOdds  = subVals.filter(n => n % 2 !== 0).length;
 
-            if (subEvens > subOdds) {
-                finalArrBase = allEvens;
-            } else if (subOdds > subEvens) {
-                finalArrBase = allOdds;
-            } else {
-                // TIE BREAKER
+            if (subEvens > subOdds) finalArrBase = allEvens;
+            else if (subOdds > subEvens) finalArrBase = allOdds;
+            else {
                 if (odds.length > evens.length) finalArrBase = allOdds;
                 else if (evens.length > odds.length) finalArrBase = allEvens;
                 else {
-                    if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
+                    if (all.includes(1) && all.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
                     else finalArrBase = allEvens;
                 }
             }
         }
-
-        // CONTEXT 6: STARLORD DOMINANCE 
         else if (sVals.length > 0) {
             let sEvens = sVals.filter(n => n % 2 === 0).length;
             let sOdds  = sVals.filter(n => n % 2 !== 0).length;
@@ -5839,16 +5882,14 @@ let patterns = [
                 if (odds.length > evens.length) finalArrBase = allOdds;
                 else if (evens.length > odds.length) finalArrBase = allEvens;
                 else {
-                    if (core.includes(1) && core.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
+                    if (all.includes(1) && all.includes(2) && evens.length === 1 && odds.length === 1) finalArrBase = allOdds;
                     else finalArrBase = allEvens;
                 }
             }
         }
-
-        // CONTEXT 7: DEFAULT FALLBACK
         else {
             if (evens.length === 1 && odds.length === 1 && evens.includes(2) && odds.includes(1)) {
-                finalArrBase = [1, ...sslVals.filter(n => n % 2 !== 0)];
+                finalArrBase = [1];
             } else if (evens.length > odds.length) {
                 finalArrBase = allEvens;
             } else if (odds.length > evens.length) {
@@ -5859,33 +5900,59 @@ let patterns = [
         }
     }
 
-
-
-
-
-
-
-
-
-   // 🔥 ROTATE back to Pivot
+    // ROTATE back to Pivot
     const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
     let finalArrPivot = uniqueSort(rotate(finalArrBase));
     
     let baseResult = finalArrPivot.join(",");
 
+    let additions = [];
 
+    // ==========================================
+    // 🔥 NEW: ANTI-100% SCORE OVERLOAD RULE
+    // ==========================================
+    let baseFullPatterns = [];
+    let standardPatterns = [[1,4,7,10], [2,5,8,11], [3,6,9,12]];
+    
+    // Check if the base result ALREADY contains a full winning pattern
+    for (let pat of standardPatterns) {
+        if (pat.every(n => finalArrPivot.includes(n))) {
+            baseFullPatterns.push(pat);
+        }
+    }
 
+    // Helper to safely add pre-rotated toppings while preventing score overload
+    function addRotatedTopping(rotatedVals) {
+        if (!rotatedVals || rotatedVals.length === 0) return;
+        let vals = uniqueSort(rotatedVals);
+        
+        // If the base result is already strong (has a full pattern), 
+        // strictly REJECT any topping numbers that belong to other patterns.
+        if (baseFullPatterns.length > 0) {
+            vals = vals.filter(n => baseFullPatterns.some(pat => pat.includes(n)));
+        }
 
+        if (vals.length > 0) {
+            let str = vals.join(",");
+            let isSubset = vals.every(n => finalArrPivot.includes(n)); // Prevent redundant visual clutter
+            if (str && !additions.includes(str) && str !== baseResult && !isSubset) {
+                additions.push(str);
+            }
+        }
+    }
 
+    // 🔥 Add Sub-Sublord as an independent topping
+    if (includeSSL && sslVals.length > 0) {
+        if (!window.T10_EXCLUDE_SUBSUB_RULE) { // 🔥 Blocks the + behavior if ON
+            // sslVals is unrotated, so we rotate it before checking
+            addRotatedTopping(rotate(sslVals));
+        }
+    }
 
-
-
-// 🔥 NEW: Append bypassed Star Lord, Sub Lord, OR Sub-Sub Lord values conditionally
-    if (T10_ADD_STARLORD || T10_ADD_SUBSUB || T10_ADD_SUBLORD) {
-        let additions = [];
+    // Append bypassed Star Lord, Sub Lord, OR Sub-Sub Lord values conditionally
+    if (typeof T10_ADD_STARLORD !== 'undefined' || typeof T10_ADD_SUBSUB !== 'undefined' || typeof T10_ADD_SUBLORD !== 'undefined') {
         let T3 = window.__T3_CACHE__;
         
-        // STRICTLY ONLY Planet, Star Lord, and Sub Lord (No Star of Sub or Star of SSL)
         let chain = [p];
         if (kp.star) chain.push(kp.star);
         if (kp.sub)  chain.push(kp.sub);
@@ -5893,63 +5960,42 @@ let patterns = [
         if (T3) {
             chain.forEach(ent => {
                 if (T3[ent]) {
-                    // Rename variables to avoid shadowing the main planet's outer variables
+                    // These values from T3 are already Pivot-Rotated
                     let entSubVals = String(T3[ent].sub || "").split(",").filter(n=>n).map(Number);
                     let entSslVals = String(T3[ent].ssl || "").split(",").filter(n=>n).map(Number);
                     let entStarVals = String(T3[ent].star || "").split(",").filter(n=>n).map(Number);
 
-                    // 1. Independent Sublord Evaluation (ONLY left out/untouched numbers)
-                    if (T10_ADD_SUBLORD && !excludeSublordForGraphs) {
+                    if (typeof T10_ADD_SUBLORD !== 'undefined' && T10_ADD_SUBLORD && !excludeSublordForGraphs) {
                         if (entSubVals.length > 0) {
-                            // strictly filter out numbers that are already in the final Effective Links
                             let leftOut = entSubVals.filter(n => !finalArrPivot.includes(n));
                             if (leftOut.length > 0) {
-                                let sortedSub = [...new Set(leftOut)].sort((a,b)=>a-b).join(",");
-                                if (sortedSub && !additions.includes(sortedSub)) {
-                                    additions.push(sortedSub);
-                                }
+                                addRotatedTopping(leftOut);
                             }
                         }
                     }
 
-                    // 2. Mutually Exclusive Starlord / Sub-Sub Check
-                    if (T10_ADD_STARLORD) {
-                        // Use outer variables (subVals, sslVals, sVals) to check if the main planet's Star Lord was bypassed
+                    if (typeof T10_ADD_STARLORD !== 'undefined' && T10_ADD_STARLORD) {
                         if ((subVals.length > 0 || sslVals.length > 0) && sVals.length > 0) {
-                            let sortedStar = [...new Set(entStarVals)].sort((a,b)=>a-b).join(",");
-                            if (sortedStar && !additions.includes(sortedStar) && sortedStar !== baseResult) {
-                                additions.push(sortedStar);
-                            }
+                            addRotatedTopping(entStarVals);
                         }
-                    } else if (T10_ADD_SUBSUB) {
-                        // Use outer variables to check if the main planet's Sub-Sub Lord was bypassed
-                        if (subVals.length > 0 && sslVals.length > 0) {
-                            let sortedSSL = [...new Set(entSslVals)].sort((a,b)=>a-b).join(",");
-                            if (sortedSSL && !additions.includes(sortedSSL) && sortedSSL !== baseResult) {
-                                additions.push(sortedSSL);
+                    } else if (typeof T10_ADD_SUBSUB !== 'undefined' && T10_ADD_SUBSUB) {
+                        if (!includeSSL && entSslVals.length > 0) {
+                            if (!window.T10_EXCLUDE_SUBSUB_RULE) { // 🔥 Blocks the + behavior if ON
+                                addRotatedTopping(entSslVals);
                             }
                         }
                     }
                 }
             });
         }
-        
-        if (additions.length > 0) {
-            return baseResult + " + " + additions.join(" + ");
-        }
     }
     
-    // 🔥 RETURN AS A SINGLE UNITED STRING SO THE GRAPH SCORES IT PROPERLY
+    if (additions.length > 0) {
+        return baseResult + (baseResult ? " + " : "") + additions.join(" + ");
+    }
+    
     return baseResult;
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -6270,7 +6316,9 @@ function buildTable9(){
 
 /* =========================================================
        🔥🔥🔥 START OF TABLE 34 (Formerly Table 10) 🔥🔥🔥
-       ========================================================= */
+========================================================= */
+
+
     html += `
 	<div id="table10-content" style="margin-top:40px;">
         <h2 class="collapsible-heading ${t10Open ? 'open' : 'collapsed'}" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table10-body', this)" style="user-select: auto;">
@@ -6326,10 +6374,10 @@ function buildTable9(){
             </label>
             
             <label style="font-weight: 800; color: #f472b6; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; box-shadow: 0 0 10px rgba(255,159,28,0.2);">
-                <input type="checkbox" id="t10_ignore_ssl" ${T10_IGNORE_SSL ? "checked" : ""} 
-				   onchange="T10_IGNORE_SSL = this.checked; buildTable9();" 
+                <input type="checkbox" id="t10_include_ssl" ${T10_INCLUDE_SSL ? "checked" : ""} 
+				   onchange="T10_INCLUDE_SSL = this.checked; buildTable9();" 
 				   style="transform: scale(1.2); margin-right: 8px; accent-color: #f472b6;">
-                Ignore Sub-Sub Lord
+                Include Sub-Sub Lord
             </label>
             
             <label style="font-weight: 800; color: #38bdf8; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-left: 15px; box-shadow: 0 0 10px rgba(2,132,199,0.2);">
@@ -6342,6 +6390,8 @@ function buildTable9(){
 				   style="transform: scale(1.2); margin-right: 8px; accent-color: #38bdf8;">
                 ADD STARLORD
             </label>
+			
+			
 
             <label style="font-weight: 800; color: #a855f7; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-left: 15px; box-shadow: 0 0 10px rgba(168,85,247,0.2);">
                 <input type="checkbox" id="t10_add_subsub" ${T10_ADD_SUBSUB ? "checked" : ""} 
@@ -6353,7 +6403,18 @@ function buildTable9(){
 				   style="transform: scale(1.2); margin-right: 8px; accent-color: #a855f7;">
                 ADD SUB-SUBLORD
             </label>
+
+            <label style="font-weight: 800; color: #ef4444; cursor: pointer; background: #120606; padding: 10px 15px; border: 1px solid #a86b17; border-radius: 6px; display: inline-block; margin-left: 15px; box-shadow: 0 0 10px rgba(239,68,68,0.2);">
+                <input type="checkbox" id="t10_exclude_subsub_rule" ${window.T10_EXCLUDE_SUBSUB_RULE ? "checked" : ""} 
+				   onchange="
+                       window.T10_EXCLUDE_SUBSUB_RULE = this.checked; 
+                       buildTable9();
+                   " 
+				   style="transform: scale(1.2); margin-right: 8px; accent-color: #ef4444;">
+                Exclude Sub-Sub Rule
+            </label>
         </div>
+		
     `;
 	
 	
@@ -7394,6 +7455,30 @@ function syncDateTimeTool(){
 
 
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -9522,7 +9607,7 @@ const INNER_SCORE_MAP = {
     "1,4": 60, "1,10": 60, "4,7": 50, "7,10": 50,
     "2,5,8,11": 60, "2,5,8": 40, "2,5,11": 60, "2,8,11": 60, "5,8,11": 60, 
     "2,5": 40, "2,11": 40, "5,8": 30, "8,11": 40,
-    "3,6,9,12": 50, "3,6,9": 50, "3,6,12": 30, "3,9,12": 50, "6,9,12": 30, 
+    "3,6,9,12": 40, "3,6,9": 50, "3,6,12": 30, "3,9,12": 50, "6,9,12": 30, 
     "3,6": 30, "3,12": 40, "6,9": 30, "9,12": 30,
 
     // 2. Trines / Trikonas
@@ -9603,37 +9688,80 @@ function getInnerGraceMarks(groupArray) {
     return count * 10; 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function getCalculatedOuterScore(p) {
     let groups = getSelectedEFFGroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
-    
-    // 🔥 STARLORD / SUB-SUB GRACE MARKS ENGINE (Flat +10 for Even numbers)
-    if ((T10_ADD_STARLORD || T10_ADD_SUBSUB) && CHART_SOURCE_MODE === "short") {
-        let baseGroup = groups[0];
-        let baseScore = calculateOuterScore(baseGroup);
+
+    // 🔥 INDEPENDENT ADDITION ENGINE FOR TABLE 40 (SHORT MODE)
+    if (typeof CHART_SOURCE_MODE !== 'undefined' && CHART_SOURCE_MODE === "short") {
         
-        // Only apply grace marks if the base score is struggling (<= 20)
-        if (baseScore <= 30) {
-            let totalGrace = 0;
-            // Check all appended bypassed groups (they start at index 1)
-            for (let i = 1; i < groups.length; i++) {
-                totalGrace += getOuterGraceMarks(groups[i]);
-            }
-            totalGrace = Math.min(30, totalGrace); // 🔥 CAP MAX GRACE MARKS TO +30
-            return Math.min(100, baseScore + totalGrace); // Cap at 100%
-        } else {
-            return baseScore; // Too high to receive grace marks
+        let tempStar = false;
+        let tempSubSub = false;
+        let tempSub = false;
+
+        // 1. Find the strict BASE groups (Correctly targeting the global variables directly)
+        if (typeof T10_ADD_STARLORD !== 'undefined') { tempStar = T10_ADD_STARLORD; T10_ADD_STARLORD = false; }
+        if (typeof T10_ADD_SUBSUB !== 'undefined') { tempSubSub = T10_ADD_SUBSUB; T10_ADD_SUBSUB = false; }
+        if (typeof T10_ADD_SUBLORD !== 'undefined') { tempSub = T10_ADD_SUBLORD; T10_ADD_SUBLORD = false; }
+        
+        let baseGroups = getSelectedEFFGroupsForCharts(p);
+        
+        // Restore checkboxes safely
+        if (typeof T10_ADD_STARLORD !== 'undefined') T10_ADD_STARLORD = tempStar;
+        if (typeof T10_ADD_SUBSUB !== 'undefined') T10_ADD_SUBSUB = tempSubSub;
+        if (typeof T10_ADD_SUBLORD !== 'undefined') T10_ADD_SUBLORD = tempSub;
+        
+        // 2. Calculate BASE SCORE (Full logic points applied ONLY to Base + Include SSL)
+        let baseScore = 0;
+        for (let i = 0; i < baseGroups.length; i++) {
+            baseScore += calculateOuterScore(baseGroups[i]);
         }
+
+        // 3. STRICT STARLORD / SUB-SUB GRACE MARKS ENGINE
+        if (tempStar || tempSubSub || tempSub) {
+            // ONLY trigger grace marks if the base score is critically low (30 or below)
+            if (baseScore <= 30) {
+                let totalGrace = 0;
+                // Grace groups are the *extra* groups appended exactly after the base groups
+                for (let i = baseGroups.length; i < groups.length; i++) {
+                    totalGrace += getOuterGraceMarks(groups[i]);
+                }
+                
+                totalGrace = Math.min(30, totalGrace); // Max allowed grace boost is 30
+                
+                // Boost the score, but aggressively cap the maximum outcome to 60%
+                return Math.min(60, baseScore + totalGrace); 
+            } else {
+                // If score is 31 or higher, grace marks are locked out completely. 
+                return Math.min(100, baseScore); 
+            }
+        }
+        
+        return Math.min(100, baseScore);
     }
 
     // --- STANDARD LOGIC ---
-    let scoredGroups = groups.map(grp => ({
-        length: grp.length,
-        score: calculateOuterScore(grp)
-    }));
+    let scoredGroups = groups.map(grp => ({ length: grp.length, score: calculateOuterScore(grp) }));
     let validGroups = scoredGroups.filter(g => g.score > 0);
     if (validGroups.length === 0) return 0;
-    
+
     let maxLength = Math.max(...validGroups.map(g => g.length));
     let maxScore = 0;
     validGroups.forEach(g => {
@@ -9641,55 +9769,77 @@ function getCalculatedOuterScore(p) {
             maxScore = g.score;
         }
     });
-    
     return maxScore;
 }
 
 function getCalculatedInnerScore(p) {
     let groups = getSelectedEFFGroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
-    
-    // 🔥 STARLORD / SUB-SUB GRACE MARKS & PENALTY ENGINE 
-    if ((T10_ADD_STARLORD || T10_ADD_SUBSUB) && CHART_SOURCE_MODE === "short") {
-        let baseGroup = groups[0];
-        let baseScore = calculateInnerScore(baseGroup);
+
+    // 🔥 INDEPENDENT ADDITION ENGINE FOR TABLE 40 (SHORT MODE)
+    if (typeof CHART_SOURCE_MODE !== 'undefined' && CHART_SOURCE_MODE === "short") {
         
-        let totalGrace = 0;
-        let totalPenalty = 0;
+        let tempStar = false;
+        let tempSubSub = false;
+        let tempSub = false;
+
+        // 1. Find the strict BASE groups (Correctly targeting the global variables directly)
+        if (typeof T10_ADD_STARLORD !== 'undefined') { tempStar = T10_ADD_STARLORD; T10_ADD_STARLORD = false; }
+        if (typeof T10_ADD_SUBSUB !== 'undefined') { tempSubSub = T10_ADD_SUBSUB; T10_ADD_SUBSUB = false; }
+        if (typeof T10_ADD_SUBLORD !== 'undefined') { tempSub = T10_ADD_SUBLORD; T10_ADD_SUBLORD = false; }
         
-        // Calculate Additions and Penalties from bypassed groups
-        for (let i = 1; i < groups.length; i++) {
-            let bypassedGrp = groups[i];
-            // Addition: +10 for each 1, 3, 5, 7, 9, 11
-            totalGrace += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
-            // Penalty: -10 for each 4, 8, 12
-            totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
+        let baseGroups = getSelectedEFFGroupsForCharts(p);
+        
+        // Restore checkboxes safely
+        if (typeof T10_ADD_STARLORD !== 'undefined') T10_ADD_STARLORD = tempStar;
+        if (typeof T10_ADD_SUBSUB !== 'undefined') T10_ADD_SUBSUB = tempSubSub;
+        if (typeof T10_ADD_SUBLORD !== 'undefined') T10_ADD_SUBLORD = tempSub;
+        
+        // 2. Calculate BASE SCORE (Full logic points applied ONLY to Base + Include SSL)
+        let baseScore = 0;
+        for (let i = 0; i < baseGroups.length; i++) {
+            baseScore += calculateInnerScore(baseGroups[i]);
         }
 
-        totalGrace = Math.min(30, totalGrace); // 🔥 CAP MAX GRACE MARKS TO +30
+        // 3. STRICT STARLORD / SUB-SUB GRACE MARKS & PENALTY ENGINE
+        if (tempStar || tempSubSub || tempSub) {
+            let totalGrace = 0;
+            let totalPenalty = 0;
 
-        // RULE 1: If struggling (<= 30), add grace marks
-        if (baseScore <= 30) {
-            return Math.min(100, baseScore + totalGrace);
-        } 
-        // RULE 2: If score is High (60 to 100), apply the 4,8,12 penalty
-        else if (baseScore >= 60) {
-            return Math.max(0, baseScore - totalPenalty);
-        } 
-        // RULE 3: If score is 40 or 50, do nothing (remains as it is)
-        else {
-            return baseScore; 
+            // Grace groups are the *extra* groups appended exactly after the base groups
+            for (let i = baseGroups.length; i < groups.length; i++) {
+                let bypassedGrp = groups[i];
+                // Addition: +10 for each 1, 3, 5, 7, 9, 11
+                totalGrace += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
+                // Penalty: -10 for each 4, 8, 12
+                totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
+            }
+
+            totalGrace = Math.min(30, totalGrace); // Max allowed grace boost is 30
+
+            // RULE 1: Weak Planet Rescue (Trigger ONLY if 30 or below)
+            if (baseScore <= 30) {
+                // Boost the score, but aggressively cap the maximum outcome to 60%
+                return Math.min(60, baseScore + totalGrace);
+            }
+            // RULE 2: High Score Penalty
+            else if (baseScore >= 60) {
+                return Math.max(0, baseScore - totalPenalty);
+            }
+            // RULE 3: Mid-tier planets (31 to 59) remain completely unaffected by grace marks
+            else {
+                return Math.min(100, baseScore);
+            }
         }
+        
+        return Math.min(100, baseScore);
     }
 
     // --- STANDARD LOGIC ---
-    let scoredGroups = groups.map(grp => ({
-        length: grp.length,
-        score: calculateInnerScore(grp)
-    }));
+    let scoredGroups = groups.map(grp => ({ length: grp.length, score: calculateInnerScore(grp) }));
     let validGroups = scoredGroups.filter(g => g.score > 0);
     if (validGroups.length === 0) return 0;
-    
+
     let maxLength = Math.max(...validGroups.map(g => g.length));
     let maxScore = 0;
     validGroups.forEach(g => {
@@ -9697,9 +9847,18 @@ function getCalculatedInnerScore(p) {
             maxScore = g.score;
         }
     });
-    
     return maxScore;
 }
+
+
+
+
+
+
+
+
+
+
 
 function getFinalOuterScore(p) {
     if (window.OVERRIDE_SCORES[p] && window.OVERRIDE_SCORES[p].outer !== null) {
@@ -10323,6 +10482,31 @@ let labelA = CHART_SOURCE_MODE === "raw" ? "Planet + Star" : "EFF A";
 
 
 </script> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -11531,10 +11715,10 @@ function buildTable45() {
     // 4. INJECT HTML TO THE ABSOLUTE BOTTOM
     // ==========================================
     let html = `
-    <div id="table45-wrapper" style="margin-top: 50px; margin-bottom: 50px; padding: 0 20px;">
-	<h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table45-body', this)" style="user-select: auto;">
-		Table 65 : Cuspal Inter Links Significators
-		</h2>
+    <div id="table45-wrapper" style="margin-top: 50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+        <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table45-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
+            Table 65 : Cuspal Inter Links Significators
+        </h2>
         <div id="table45-body" class="collapsible-body" style="display: none; margin-top: 20px;">
             
             <h3 style="color: #38bdf8; margin-top: 20px; font-size: 22px; text-align: center;">House View</h3>
@@ -11650,19 +11834,18 @@ function buildTable45() {
     let currentTransitDataCache = {};
 
     function initTransitTableShell() {
-        let old = document.getElementById("table50-transit-bhava-container");
-        if (old) old.remove();
+    let old = document.getElementById("table50-transit-bhava-container");
+    if (old) old.remove();
+    let t45 = document.getElementById("table45-wrapper");
 
-        let t45 = document.getElementById("table45-wrapper");
-        
-        let html = `
-<div id="table50-transit-bhava-container" style="margin-top:50px; margin-bottom: 50px; padding: 0 20px;">
-
-    <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table60-body', this)" style="user-select: auto; font-size: 22px; margin-bottom:15px; color:#ff9f1c; font-weight:700; letter-spacing:1px; text-align:left;">
-			TABLE 75 : TRANSIT SIGNIFICATOR TABLE
-			</h2>
-
-    <div id="table60-body" class="collapsible-body" style="display: none;">
+    let html = `
+    <div id="table50-transit-bhava-container" style="margin-top: 50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+        <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table60-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
+            Table 75 : Transit Significator Table
+        </h2>
+        <div id="table60-body" class="collapsible-body" style="display: none; margin-top: 20px;">
+		
+		
 
         <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main); margin-bottom: 30px; box-shadow: 0 0 15px rgba(255,159,28,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-bottom: 15px;">
@@ -13052,19 +13235,64 @@ function renderCuspalPredictions() {
     return html || "<div style='color:#94a3b8; text-align:center;'>No matching combinations found for Cusps.</div>";
 }
 
-// Master HTML Renderer
+
+
+
+
+
+
+
+// =========================================================
+// 🔥 LAZY LOADED MASTER HTML RENDERER (TABLE 80)
+// =========================================================
+let isTable80Loaded = false;
+
+// 1. FAST SHELL BUILDER: This runs automatically but does ZERO math.
+// Master HTML Renderer (NOW LIGHTWEIGHT)
 function buildTable80() {
-    initPredictionEngine();
     let old = document.getElementById("table80-container");
     if (old) old.remove();
+    
     let html = `
-    <div id="table80-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed var(--border-gold); padding-top: 25px;">
-        <h2 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table80-body', this)" style="user-select: auto; font-size: 24px; color: var(--accent-saffron); cursor:pointer;">
-            Table 80 : Prediction Module
-        </h2>
-        <div id="table80-body" class="collapsible-body" style="display: block;">
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+    <div id="table80-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h2 style="user-select: auto; font-size: 24px; color: #ff9f1c; margin: 0; font-weight: bold;">
+                Table 80 : Prediction Module
+            </h2>
+            
+            <button id="t80-generate-btn" onclick="generateTable80Manual()" style="background: linear-gradient(135deg, #ef4444, #991b1b); color: #ffffff; padding: 12px 24px; border: 1px solid #f87171; border-radius: 6px; font-weight: 800; font-size: 16px; cursor: pointer; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); transition: all 0.2s;">
+                🚀 Generate Predictions
+            </button>
+        </div>
+        
+        <div id="table80-content-area" style="display: none;"></div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", html);
+}
+
+// 🚀 THE MANUAL TRIGGER (RUNS HEAVY MATH ONLY ON CLICK)
+function generateTable80Manual() {
+    let btn = document.getElementById("t80-generate-btn");
+    let contentArea = document.getElementById("table80-content-area");
+    
+    if (btn) {
+        btn.innerHTML = "⏳ Calculating...";
+        btn.style.background = "linear-gradient(135deg, #d97706, #92400e)";
+        btn.style.boxShadow = "none";
+        btn.style.cursor = "wait";
+        btn.disabled = true;
+    }
+    
+    // Tiny timeout so the browser updates the button text BEFORE freezing
+    setTimeout(() => {
+        try {
+            // 🔥 RUNS HEAVY MATH
+            initPredictionEngine();
+            
+            let innerHtml = `
+            <div style="display:flex; flex-direction:column; gap:20px; border-top: 1px solid #4a2a1a; padding-top: 20px;">
+                <div style="border:1px solid #a86b17; border-radius:8px; padding:15px; background:linear-gradient(180deg, #1f1410, #0c0505); box-shadow:0 0 10px rgba(255,159,28,0.15);">
                     <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('planets-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
                         PLANETS MATCHER
                     </h3>
@@ -13073,7 +13301,7 @@ function buildTable80() {
                     </div>
                 </div>
 
-                <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+                <div style="border:1px solid #a86b17; border-radius:8px; padding:15px; background:linear-gradient(180deg, #1f1410, #0c0505); box-shadow:0 0 10px rgba(255,159,28,0.15);">
                     <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('cuspal-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
                         CUSPAL MATCHER
                     </h3>
@@ -13082,12 +13310,90 @@ function buildTable80() {
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    `;
-    document.body.insertAdjacentHTML("beforeend", html);
+            `;
+            
+            contentArea.innerHTML = innerHtml;
+            contentArea.style.display = "block";
+            
+            if (btn) {
+                btn.innerHTML = "🔄 Re-Calculate Predictions";
+                btn.style.background = "linear-gradient(135deg, #10b981, #047857)";
+                btn.style.borderColor = "#34d399";
+                btn.style.cursor = "pointer";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error("❌ Prediction Module Failed:", error);
+            if (btn) {
+                btn.innerHTML = "⚠️ Try Again";
+                btn.style.background = "#7f1d1d";
+                btn.style.cursor = "pointer";
+                btn.disabled = false;
+            }
+        }
+    }, 50); 
 }
 
+// 2. HEAVY MATH ENGINE: Runs ONLY when the user clicks the heading.
+function lazyLoadTable80(headingElement) {
+    if(window.getSelection().toString()) return;
+
+    let bodyElement = document.getElementById('table80-body');
+    if (!bodyElement) return;
+
+    let isCurrentlyCollapsed = headingElement.classList.contains('collapsed');
+
+    if (isCurrentlyCollapsed) {
+        // Open visually immediately
+        headingElement.classList.remove('collapsed');
+        headingElement.classList.add('open');
+        bodyElement.style.display = 'block';
+
+        // Run heavy math if not loaded yet
+        if (!isTable80Loaded) {
+            // Tiny timeout ensures the "Loading..." text renders before the UI freezes for calculation
+            setTimeout(() => {
+                console.log("🚀 Executing Heavy Prediction Engine...");
+                
+                // --> THE HEAVY FUNCTIONS START HERE <--
+                initPredictionEngine();
+                
+                let innerHtml = `
+                <div style="display:flex; flex-direction:column; gap:20px; padding-top:20px;">
+                    <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+                        <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('planets-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
+                            PLANETS MATCHER
+                        </h3>
+                        <div id="planets-matcher-body" class="collapsible-body" style="display: block; padding-top:15px;">
+                            ${renderPlanetPredictions()}
+                        </div>
+                    </div>
+
+                    <div style="border:1px solid var(--border-gold); border-radius:8px; padding:15px; background:var(--bg-main);">
+                        <h3 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('cuspal-matcher-body', this)" style="color:#38bdf8; text-align:center; border-bottom:1px solid #38bdf8; padding-bottom:10px; margin-top:0; cursor:pointer;">
+                            CUSPAL MATCHER
+                        </h3>
+                        <div id="cuspal-matcher-body" class="collapsible-body" style="display: block; padding-top:15px;">
+                            ${renderCuspalPredictions()}
+                        </div>
+                    </div>
+                </div>
+                `;
+                
+                // Inject the finished heavy tables, overwriting the loading text
+                bodyElement.innerHTML = innerHtml;
+                isTable80Loaded = true;
+                console.log("✅ Prediction Engine Rendered Successfully!");
+                
+            }, 50); 
+        }
+    } else {
+        // Close the accordion instantly
+        headingElement.classList.remove('open');
+        headingElement.classList.add('collapsed');
+        bodyElement.style.display = 'none';
+    }
+}
 
 
 
@@ -13205,10 +13511,10 @@ window.addEventListener('DOMContentLoaded', () => {
 </style>
 
 <div id="table50-container" style="margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px;">
-    <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table50-body', this)" style="user-select: auto; font-size: 22px;">
+    <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table50-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
         Table 50 : Nadi Significator for Cuspal Interlink
     </h2>
-    <div id="table50-body" class="collapsible-body" style="display: block;">
+    <div id="table50-body" class="collapsible-body" style="display: none;">
         
         <div style="margin-top: 20px; margin-bottom:25px; background:#1f1410; padding:15px; border:1px solid #a86b17; border-radius:8px; display:flex; justify-content:center; align-items:center; gap:25px; flex-wrap:wrap;">
             
@@ -13303,10 +13609,10 @@ function buildTable55() {
     }
 
     let html = `
-    <h2 class="collapsible-heading open" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table55-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
+    <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table55-body', this)" style="user-select: auto; font-size: 24px; font-weight: bold;">
         Table 55 : Planets Agent & Counter
     </h2>
-    <div id="table55-body" class="collapsible-body" style="display: block; margin-top: 20px;">
+    <div id="table55-body" class="collapsible-body" style="display: none; margin-top: 20px;">
         
         <table style="width: 100%; border-collapse: collapse; text-align: center; border: 1px solid #a86b17; background: #120606; table-layout: auto;">
             <thead>
@@ -13768,6 +14074,203 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+let isEffLinksDashaLoaded = false;
+let INITIAL_BIRTH_DASHA_EFF = null; 
+
+// 1. FAST SHELL BUILDER
+function buildEffectiveLinksDashaTable() {
+    let old = document.getElementById("table85-container");
+    if (old) old.remove();
+
+    let html = `
+    <div id="table85-container" style="clear:both; display:block; width:100%; margin-top:50px; border-top: 2px dashed #a86b17; padding-top: 25px; margin-bottom: 100px;">
+        <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table85-body', this); if(!isEffLinksDashaLoaded) { renderEffectiveLinksDashaTable(null); isEffLinksDashaLoaded=true; }" style="user-select: auto; font-size: 24px; color: #ff9f1c; cursor:pointer; font-weight:bold;">
+            Table 60 : Effective Links (Dasha / Bukthi / Antara)
+        </h2>
+        <div id="table85-body" class="collapsible-body" style="display: none; margin-top: 20px;">
+            <div id="t85-buttons" style="display:flex; justify-content:center; gap:10px; margin-bottom:25px; flex-wrap:wrap;"></div>
+            <div id="t85-content" style="display:flex; flex-direction:column; gap:20px;"></div>
+        </div>
+    </div>`;
+    
+    // Always append strictly to the very end of the page
+    document.body.insertAdjacentHTML("beforeend", html);
+    
+    isEffLinksDashaLoaded = false;
+    INITIAL_BIRTH_DASHA_EFF = null; 
+}
+
+// 🔥 NEW: Accurate Current Dasha Calculator
+// (This reads your own Vimshottari math to find out what Dasha is running right now!)
+function getTrueRunningDasha() {
+    try {
+        if (typeof vimDOB !== "function" || typeof vimMoonAbs !== "function") return null;
+        let d = vimDOB();
+        let abs = vimMoonAbs();
+        if (!d || !abs) return null;
+        
+        let startObj = vimStart(abs, d);
+        let curDate = new Date(startObj.start);
+        let rotated = vimRotate(startObj.lord);
+        
+        let now = Date.now();
+        for (let i = 0; i < rotated.length; i++) {
+            let p = rotated[i];
+            let endDate = vimAddYears(curDate, VIM_YEARS[p]);
+            // If right now is between the start and end date, we found the active Dasha!
+            if (now >= curDate.getTime() && now < endDate.getTime()) {
+                return p;
+            }
+            curDate = endDate;
+        }
+    } catch (e) {
+        console.warn("Could not calculate current Dasha automatically.", e);
+    }
+    return null;
+}
+
+// 2. THE RENDER ENGINE
+function renderEffectiveLinksDashaTable(selectedDasha) {
+    const VIM_ORDER = ["Ketu","Venus","Surya","Chandra","Mangala","Rahu","Jupiter","Saturn","Budha"];
+    
+    // 1. Sequence Start: Always Birth Dasha (Moon's Starlord)
+    if (!INITIAL_BIRTH_DASHA_EFF) {
+        let kpMoon = typeof getPlanetKPLords === "function" ? getPlanetKPLords("Chandra") : null;
+        INITIAL_BIRTH_DASHA_EFF = (kpMoon && kpMoon.star && kpMoon.star !== "--") ? kpMoon.star : "Ketu";
+    }
+
+    // 2. Default Selection: Use the precise math to find today's running Dasha
+    let runningDasha = getTrueRunningDasha() || INITIAL_BIRTH_DASHA_EFF;
+    
+    if (!selectedDasha) {
+        selectedDasha = runningDasha; 
+    }
+
+    const rotateVim = (startPlanet) => {
+        let idx = VIM_ORDER.indexOf(startPlanet);
+        if (idx === -1) idx = 0;
+        return [...VIM_ORDER.slice(idx), ...VIM_ORDER.slice(0, idx)];
+    };
+
+    // --- RENDER 9 BUTTONS (Strictly ordered starting from Birth Dasha) ---
+    let btnHtml = "";
+    let buttonSequence = rotateVim(INITIAL_BIRTH_DASHA_EFF); 
+    
+    buttonSequence.forEach(p => {
+        let isActive = p === selectedDasha;
+        let bg = isActive ? "linear-gradient(135deg, #10b981, #047857)" : "linear-gradient(135deg, #ff9f1c, #b11226)";
+        let col = isActive ? "#ffffff" : "#1a0606";
+        let shadow = isActive ? "0 0 15px rgba(16, 185, 129, 0.6)" : "0 0 10px rgba(255,159,28,0.2)";
+        btnHtml += `<button onclick="renderEffectiveLinksDashaTable('${p}')" style="background:${bg}; color:${col}; box-shadow:${shadow}; border:1px solid ${isActive ? '#34d399' : 'transparent'}; padding:8px 18px; border-radius:4px; font-weight:800; cursor:pointer; font-size:16px;">${p}</button>`;
+    });
+    document.getElementById("t85-buttons").innerHTML = btnHtml;
+
+    // --- PRE-COMPUTE EFFECTIVE LINKS (Pulling exactly from Table 35) ---
+    let effCache = {};
+    VIM_ORDER.forEach(p => {
+        effCache[p] = typeof computeTable10Row === "function" ? computeTable10Row(p) : "--";
+    });
+
+    // --- RENDER BUKTHI & ANTARA ROWS ---
+    let contentHtml = "";
+    let bukthis = rotateVim(selectedDasha);
+    
+    bukthis.forEach(bukthi => {
+        let antaras = rotateVim(bukthi);
+        
+        let boxHtml = `
+        <div style="border:1px solid #a86b17; border-radius:8px; padding:15px; background:linear-gradient(180deg, #1f1410, #0c0505); box-shadow:0 0 10px rgba(255,159,28,0.15);">
+            <h3 style="color:#facc15; text-align:center; border-bottom:2px solid #a86b17; padding-bottom:10px; margin-top:0; font-size:22px;">
+                ${selectedDasha} Dasha ➔ ${bukthi} Bukthi
+            </h3>
+            <div style="display:flex; flex-direction:column; gap:8px; padding-top:10px;">
+        `;
+
+        antaras.forEach(antara => {
+            let dEff = effCache[selectedDasha];
+            let bEff = effCache[bukthi];
+            let aEff = effCache[antara];
+
+            boxHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#120606; padding:12px 15px; border:1px solid #4a2a1a; border-radius:6px; font-size:16px;">
+                    <span style="flex:1; text-align:center; color:#38bdf8; font-weight:bold;">${selectedDasha} = <span style="color:#e0f2fe; font-weight:normal;">${dEff}</span></span>
+                    <span style="color:#a86b17; font-weight:bold; margin:0 10px;">|</span>
+                    <span style="flex:1; text-align:center; color:#f472b6; font-weight:bold;">${bukthi} = <span style="color:#fce7f3; font-weight:normal;">${bEff}</span></span>
+                    <span style="color:#a86b17; font-weight:bold; margin:0 10px;">|</span>
+                    <span style="flex:1; text-align:center; color:#22c55e; font-weight:bold;">${antara} = <span style="color:#dcfce7; font-weight:normal;">${aEff}</span></span>
+                </div>
+            `;
+        });
+
+        boxHtml += `</div></div>`;
+        contentHtml += boxHtml;
+    });
+
+    document.getElementById("t85-content").innerHTML = contentHtml;
+}
+
+// 3. AUTO-UPDATE IF SETTINGS CHANGE
+(function(){
+    if (typeof window.buildTable9 === "function") {
+        const _origTable9 = window.buildTable9;
+        window.buildTable9 = function() {
+            if (_origTable9) _origTable9.apply(this, arguments);
+            setTimeout(() => {
+                if(typeof buildEffectiveLinksDashaTable === "function" && !document.getElementById("table85-container")){
+                    buildEffectiveLinksDashaTable();
+                }
+                
+                let t85Element = document.getElementById("table85-body");
+                if (t85Element && t85Element.style.display === "block") {
+                    let activeDasha = document.querySelector("#t85-buttons button[style*='10b981']")?.innerText;
+                    renderEffectiveLinksDashaTable(activeDasha || getTrueRunningDasha() || INITIAL_BIRTH_DASHA_EFF);
+                }
+            }, 800); 
+        };
+    }
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
