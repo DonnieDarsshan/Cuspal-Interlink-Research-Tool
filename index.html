@@ -2349,7 +2349,8 @@ function resetAllTogglesToDefault() {
         "taraSelect": "SSL_CHANDRA",
         "taraSelect_mirror": "SSL_CHANDRA",
         "jumpMode": "sec",
-        "t50PivotMirror": "Lagna"
+        "t50PivotMirror": "Lagna",
+        "miniPivotSelect": "Lagna" // <-- ADDED THIS LINE
     };
 
     for (let id in dropdowns) {
@@ -2520,6 +2521,10 @@ function clearAll(){
     if(document.getElementById("table10-content")) document.getElementById("table10-content").remove();
     if(document.getElementById("table36-content")) document.getElementById("table36-content").remove();
     if(document.getElementById("table8-content")) document.getElementById("table8-content").remove();
+
+    if(document.getElementById("table85-container")) document.getElementById("table85-container").remove();
+    if(typeof isEffLinksDashaLoaded !== "undefined") isEffLinksDashaLoaded = false;
+    if(typeof INITIAL_BIRTH_DASHA_EFF !== "undefined") INITIAL_BIRTH_DASHA_EFF = null;
 
     /* 🔥 WIPE TABLE 50 AND 80 GRIDS SO OLD DATA DOES NOT SURVIVE */
     if(document.getElementById("t50GridContainer")) document.getElementById("t50GridContainer").innerHTML = "";
@@ -9319,12 +9324,12 @@ function enforceTableOrder(){
 
 
 // Global states for Chart Checkboxes & Modes
-let CHART_SOURCE_MODE = "short";  
+let CHART_SOURCE_MODE = "short";
 let CHART_SHOW_EFF_A = true;
-let CHART_SHOW_EFF_B = true;   
+let CHART_SHOW_EFF_B = true;
 let CHART_SHOW_EFF_C = false;
-let CHART_SECTION_OPEN = false; 
-let CHART_REST_OPEN = false; 
+let CHART_SECTION_OPEN = true; 
+let CHART_REST_OPEN = false;
 
 // 🔥 NEW: Global State for Vimshottari Date on Charts
 let CHART_VIM_SOURCE = "chandra_year"; 
@@ -14248,9 +14253,11 @@ function renderEffectiveLinksDashaTable(selectedDasha) {
                 }
                 
                 let t85Element = document.getElementById("table85-body");
-                if (t85Element && t85Element.style.display === "block") {
+                if (t85Element) {
                     let activeDasha = document.querySelector("#t85-buttons button[style*='10b981']")?.innerText;
-                    renderEffectiveLinksDashaTable(activeDasha || getTrueRunningDasha() || INITIAL_BIRTH_DASHA_EFF);
+                    if(typeof renderEffectiveLinksDashaTable === "function"){
+                        renderEffectiveLinksDashaTable(activeDasha || getTrueRunningDasha() || INITIAL_BIRTH_DASHA_EFF);
+                    }
                 }
             }, 800); 
         };
