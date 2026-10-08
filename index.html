@@ -1020,6 +1020,66 @@ input[type="time"] {
     let wakeInterval = null;
     
     /* =========================================================
+       OFFLINE AYANAMSHA SWAPPER
+    ========================================================= */
+    function applyAyanamsha() {
+        const ayaSelect = document.getElementById("ayanamshaSelect");
+        if (!ayaSelect) return;
+        const selected = ayaSelect.value;
+        
+        const data = window.__LAST_SWISS_KP__;
+        if (!data) return; // Prevent any cloud fetching. If no data exists, do nothing.
+        
+        let targetData = data; 
+        let offsetDeg = 0;
+
+        // Extract correct data block based on selection
+        if (data.ayanamshas) {
+            if (selected === "kp_new" && data.ayanamshas["KP New"]) {
+                targetData = data.ayanamshas["KP New"];
+            } else if (selected === "lahiri" && data.ayanamshas["Lahiri"]) {
+                targetData = data.ayanamshas["Lahiri"];
+            } else if (selected === "new_comb" && data.ayanamshas["Lahiri"]) {
+                targetData = data.ayanamshas["Lahiri"];
+                offsetDeg = 41 / 3600; 
+            }
+        } else if (selected === "new_comb") {
+            // Fallback offset if ayanamshas object isn't formatted perfectly
+            offsetDeg = 41 / 3600;
+        }
+
+        if (targetData) {
+            if (typeof targetData.lagna === "number") {
+                writeToInputs("c1", (targetData.lagna + offsetDeg) % 360);
+            }
+            
+            if (targetData.cusps) {
+                for (let i = 1; i <= 12; i++) {
+                    if (typeof targetData.cusps[i] === "number") {
+                        writeToInputs("c" + i, (targetData.cusps[i] + offsetDeg) % 360);
+                    }
+                }
+            }
+            
+            if (targetData.planets) {
+                Object.keys(targetData.planets).forEach(p => {
+                    if (p === "Rahu" || p === "Ketu" || p.endsWith("_true")) return;
+                    if (document.getElementById(p + "_sign") && typeof targetData.planets[p] === "number") {
+                        writeToInputs(p, (targetData.planets[p] + offsetDeg) % 360);
+                    }
+                });
+            }
+            
+            if (typeof applyNodeModeKP === "function") {
+                applyNodeModeKP();
+            } else {
+                buildCuspalChart();
+                drawD1();
+            }
+        }
+    }
+
+    /* =========================================================
        ONLINE CLOUD FETCH ENGINE 
     ========================================================= */
     async function fetchFromCloud() {
@@ -1053,7 +1113,17 @@ input[type="time"] {
             console.warn("Timezone fetch failed. Falling back to IST.", error);
         }
 
-        const useKpNew = document.getElementById("kpAyanamshaMode")?.checked;
+        const ayaSelect = document.getElementById("ayanamshaSelect");
+        let selectedAyanamsha = "lahiri";
+        if (ayaSelect) {
+            selectedAyanamsha = ayaSelect.value;
+        } else {
+            const useKpNew = document.getElementById("kpAyanamshaMode")?.checked;
+            selectedAyanamsha = useKpNew ? "kp_new" : "lahiri";
+        }
+        
+        // If New Comb is selected, we fetch Lahiri from the server and offset it locally
+        const serverAyanamsha = (selectedAyanamsha === "new_comb") ? "lahiri" : selectedAyanamsha;
 
         const requestData = {
             year: parseInt(y),
@@ -1066,7 +1136,7 @@ input[type="time"] {
             lon: parseFloat(lonVal),
             timezone_offset: dynamicOffset, // 🔥 Dynamic offset applied here!
             horary_mode: false,
-            ayanamsha: useKpNew ? "kp_new" : "lahiri"
+            ayanamsha: serverAyanamsha
         };
 
         const btn = document.getElementById("fetchCloudBtn");
@@ -1174,32 +1244,10 @@ input[type="time"] {
                 document.getElementById("manualMode").checked = true;
                 if(typeof manualMode.onchange === "function") manualMode.onchange();
                 
-                if(typeof data.lagna === "number"){
-                    writeToInputs("c1", data.lagna);
-                }
-                
-                if(data.cusps){
-                    for(let i=1; i<=12; i++){
-                        if(typeof data.cusps[i] === "number"){
-                            writeToInputs("c"+i, data.cusps[i]);
-                        }
-                    }
-                }
-                
-                if(data.planets){
-                    Object.keys(data.planets).forEach(p=>{
-                        if(p === "Rahu" || p === "Ketu" || p.endsWith("_true")) return;
-                        if(document.getElementById(p+"_sign") && typeof data.planets[p] === "number"){
-                            writeToInputs(p, data.planets[p]);
-                        }
-                    });
-                    
-                    if(typeof applyNodeModeKP === "function") applyNodeModeKP();
-                }
+                // Delegate all UI writing and offsetting to the offline swapper!
+                applyAyanamsha();
                 
                 if(typeof resetAllTogglesToDefault === "function") resetAllTogglesToDefault();
-                if(typeof buildCuspalChart === "function") buildCuspalChart();
-                if(typeof drawD1 === "function") drawD1();
                 
                 // ✅ CLEAN PARROT GREEN BUTTON
                 btn.innerHTML = "SUCCESS ✓";
@@ -1581,7 +1629,13 @@ function lockBaseDateTime(){
         <label style="font-weight:700;color:#facc15;"><input type="checkbox" id="vedicMode"> Vedic House (±15°)</label>
         <label><input type="checkbox" id="retroMode"> Retro</label>
         <label><input type="checkbox" id="trueNodeModeKP" > True Node</label>
-        <label><input type="checkbox" id="kpAyanamshaMode" checked onchange="if(event && event.isTrusted) fetchFromCloud()"> KP New Ayanamsha</label>
+        <label style="font-weight:800;color:#facc15;">Ayanamsha:
+    <select id="ayanamshaSelect" style="padding:6px; background:#1f1410; color:#facc15; border:1px solid #a86b17; font-weight:bold; border-radius:6px; outline:none;" onchange="applyAyanamsha()">
+        <option value="new_comb" selected>New Comb</option>
+        <option value="kp_new">KP New</option>
+        <option value="lahiri">Lahiri</option>
+    </select>
+</label>
         <label style="font-weight:700;"><input type="checkbox" id="kpLevelTheme" checked> Level Theme</label>
         <label style="font-weight:800;color:#ff9f1c;"><input type="checkbox" id="navToggleMode"> Nav Bar (1-9)</label>
     </div>
@@ -1629,7 +1683,8 @@ function lockBaseDateTime(){
 
 
 
-<div id="table1"></div>
+<div id="table1" style="display:none;"></div>
+<div style="display:none;">
 <h2 class="collapsible-heading" onclick="if(window.getSelection().toString()) return; toggleCollapsible('table1-body', this)" style="margin-top:10px; margin-bottom:10px; text-align:left; color:#ff9f1c; font-weight:700; letter-spacing:1px; font-size:18px;">
     CUSP &amp; PLANET DATA INPUT
 </h2>
@@ -1650,6 +1705,7 @@ function lockBaseDateTime(){
             <th>Bhava / Planet</th><th>Zodiac Sign</th><th>Degree</th><th>Minute</th><th>Second</th>
         </tr>
     </table>
+</div>
 </div>
 
 <div id="output"></div>
@@ -1753,28 +1809,101 @@ function drawD1(){
 
     let buckets={};
 
-    function place(lbl,abs,isPivot=false,isMirror=false){
-        let shifted;
-        if(isPivot){
-            shifted=pivotAbs;
-        }else if(isMirror){
-            shifted=(pivotAbs+180)%360;
-        }else{
-            shifted=(abs-pAbs+pivotAbs+360)%360;
+    
+	
+	
+	
+	
+	
+	function place(lbl, abs, isPivot = false, isMirror = false) {
+        let sign;
+        let sortDeg;
+        let { d, m, s } = splitDMS(abs);
+
+        if (kpModeK.checked && cuspsData && cuspsData.length === 12) {
+            // -------------------------------
+            // KP MODE PLANET PLACEMENT (UNEQUAL CUSPS FIX)
+            // -------------------------------
+            
+            let kpHouseNum = 1;
+            if (lbl !== "Lagna" && !lbl.startsWith("Cusp")) {
+                kpHouseNum = getPlanetHouseKP(lbl);
+            } else if (lbl.startsWith("Cusp")) {
+                kpHouseNum = parseInt(lbl.replace("Cusp ", ""));
+            }
+            
+            let pSignIdx = signs.indexOf(pSign) - 1; 
+            let pivotHouseNum = (pivot === "Lagna") ? 1 : getPlanetHouseKP(pivot);
+            let relativeHouse = (kpHouseNum - pivotHouseNum + 12) % 12;
+            
+            let targetSignIdx = (pSignIdx + relativeHouse) % 12;
+            sign = signs[targetSignIdx + 1];
+
+            let curCusp = cuspsData.find(c => c.bhava === kpHouseNum);
+            let nextCusp = cuspsData.find(c => c.bhava === ((kpHouseNum % 12) + 1));
+            
+            if (curCusp && nextCusp) {
+                let span = nextCusp.absDeg - curCusp.absDeg;
+                if (span < 0) span += 360;
+
+                let relDeg = abs - curCusp.absDeg;
+                if (relDeg < 0) relDeg += 360;
+
+                sortDeg = (relDeg / span) * 30;
+            } else {
+                sortDeg = d; 
+            }
+
+        } else {
+            // -------------------------------
+            // STANDARD / VEDIC CALCULATION (Equal Houses)
+            // -------------------------------
+            let shifted;
+            if (isPivot) {
+                shifted = pivotAbs;
+            } else if (isMirror) {
+                shifted = (pivotAbs + 180) % 360;
+            } else {
+                shifted = (abs - pAbs + pivotAbs + 360) % 360;
+            }
+
+            sign = signs[Math.floor(shifted / 30) + 1];
+            
+            let dms = isPivot && !kpModeK.checked && !vedicModeK.checked
+                ? splitDMS(abs)
+                : splitDMS(shifted);
+            
+            d = dms.d; m = dms.m; s = dms.s;
+            sortDeg = d;
         }
 
-        let sign=signs[Math.floor(shifted/30)+1];
-        let {d,m,s}=isPivot&&!kpModeK.checked&&!vedicModeK.checked
-            ? splitDMS(abs)
-            : splitDMS(shifted);
+        // 🔥 THE FIX: FORCE ASC/PIVOT DEGREES IN KP AND VEDIC MODES 🔥
+        if (kpModeK.checked || vedicModeK.checked) {
+            if (isPivot || isMirror) {
+                d = kpModeK.checked ? 0 : 15;
+                m = 0;
+                s = 0;
+                sortDeg = d; // Forces the correct sort position inside the visual box
+            }
+        }
 
-        buckets[sign]=buckets[sign]||[];
+        buckets[sign] = buckets[sign] || [];
         buckets[sign].push({
-		deg:d,
-		text:`${markPlanet(lbl)} ${d}°${m}'${s}"`
-	});
-
+            deg: sortDeg,
+            text: `${markPlanet(lbl)} ${d}°${m}'${s}"`
+        });
     }
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
     planets.forEach(p=>{
         if(p==="Ketu"&&pivot==="Rahu") place("Ketu",absDeg("Ketu"),false,true);
@@ -9318,9 +9447,6 @@ function loadSwissJSON(){
 
 
 function applyNodeModeKP(){
-
-
-	    /* 🔥 SYNC WITH CHECKBOX STATE */
     const chk = document.getElementById("trueNodeModeKP");
     if(chk){
         USE_TRUE_NODE_KP = chk.checked;
@@ -9329,15 +9455,29 @@ function applyNodeModeKP(){
     const data = window.__LAST_SWISS_KP__;
     if(!data || !data.planets) return;
 
+    const ayaSelect = document.getElementById("ayanamshaSelect");
+    const selected = ayaSelect ? ayaSelect.value : "new_comb";
+    let targetData = data;
+    let offsetDeg = 0;
+
+    if (selected === "kp_new" && data.ayanamshas && data.ayanamshas["KP New"]) {
+        targetData = data.ayanamshas["KP New"];
+    } else if (selected === "lahiri" && data.ayanamshas && data.ayanamshas["Lahiri"]) {
+        targetData = data.ayanamshas["Lahiri"];
+    } else if (selected === "new_comb" && data.ayanamshas && data.ayanamshas["Lahiri"]) {
+        targetData = data.ayanamshas["Lahiri"];
+        offsetDeg = 41 / 3600;
+    }
+
     let rahuKey = USE_TRUE_NODE_KP ? "Rahu_true" : "Rahu";
     let ketuKey = USE_TRUE_NODE_KP ? "Ketu_true" : "Ketu";
 
-    if(typeof data.planets[rahuKey] === "number"){
-        writeToInputs("Rahu", data.planets[rahuKey]);
+    if(typeof targetData.planets[rahuKey] === "number"){
+        writeToInputs("Rahu", (targetData.planets[rahuKey] + offsetDeg) % 360);
     }
 
-    if(typeof data.planets[ketuKey] === "number"){
-        writeToInputs("Ketu", data.planets[ketuKey]);
+    if(typeof targetData.planets[ketuKey] === "number"){
+        writeToInputs("Ketu", (targetData.planets[ketuKey] + offsetDeg) % 360);
     }
 
     buildCuspalChart();
@@ -10865,6 +11005,12 @@ initMiniNavToggle();
 
 
 </script>
+
+
+
+
+
+
 
 
 
@@ -15118,6 +15264,94 @@ function renderEffectiveLinksDashaTable(selectedDasha) {
 
 
 
+<style>
+/* =========================================================
+   TABLE 1 & 2 PLANET HIGHLIGHTING
+   ========================================================= */
+.hover-highlight-planet {
+    background-color: rgba(255, 159, 28, 0.35) !important;
+    color: #fff !important;
+    text-shadow: 0 0 8px rgba(255, 159, 28, 0.9) !important;
+    box-shadow: inset 0 0 12px rgba(255, 159, 28, 0.6) !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.click-highlight-planet {
+    background-color: rgba(34, 197, 94, 0.35) !important; 
+    outline: 2px solid #22c55e !important;
+    outline-offset: -2px;
+    color: #fff !important;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.9) !important;
+    box-shadow: inset 0 0 12px rgba(34, 197, 94, 0.6) !important;
+}
+</style>
+
+<script>
+/* =========================================================
+   HOVER & CLICK HIGHLIGHT ENGINE FOR TABLE 1 & 2
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+    const KNOWN_PLANETS_LIST = ["Surya", "Chandra", "Mangala", "Rahu", "Jupiter", "Saturn", "Budha", "Ketu", "Venus", "Lagna"];
+    
+    // Helper to extract clean planet name ignoring symbols like $ % # (R)
+    function getBasePlanetName(text) {
+        if (!text) return null;
+        // Corrected regex to remove "(R)" safely without deleting the letter 'R' from 'Rahu'
+        let cleanText = text.replace(/\(R\)/g, '').replace(/[\$\%\#]/g, '').trim();
+        for (let p of KNOWN_PLANETS_LIST) {
+            if (cleanText === p) return p;
+        }
+        return null;
+    }
+
+    // Hover Effect: Highlight everywhere in the table
+    document.addEventListener("mouseover", function(e) {
+        let td = e.target.closest("td");
+        if (td) {
+            // Target Table 1 and Table 2
+            let table = td.closest("#table2-body table, #table3-body table");
+            if (!table) return;
+
+            let planetName = getBasePlanetName(td.textContent);
+            if (planetName) {
+                let allTds = table.querySelectorAll("td");
+                allTds.forEach(cell => {
+                    if (getBasePlanetName(cell.textContent) === planetName) {
+                        cell.classList.add("hover-highlight-planet");
+                    }
+                });
+            }
+        }
+    });
+
+    // Remove Hover Effect
+    document.addEventListener("mouseout", function(e) {
+        let td = e.target.closest("td");
+        if (td) {
+            let table = td.closest("#table2-body table, #table3-body table");
+            if (!table) return;
+            
+            let planetName = getBasePlanetName(td.textContent);
+            if(planetName) {
+                let allTds = table.querySelectorAll("td.hover-highlight-planet");
+                allTds.forEach(cell => cell.classList.remove("hover-highlight-planet"));
+            }
+        }
+    });
+
+    // Click Effect: Highlight specific cell securely
+    document.addEventListener("click", function(e) {
+        let td = e.target.closest("td");
+        if (td) {
+            let table = td.closest("#table2-body table, #table3-body table");
+            if (table && getBasePlanetName(td.textContent)) {
+                td.classList.toggle("click-highlight-planet");
+            }
+        }
+    });
+});
+</script>
 </body>
 </html>
 
