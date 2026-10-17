@@ -825,6 +825,741 @@ input[type="time"] {
     </div>
 </div>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- BIRTH TIME RECTIFICATION (BTR) TOOLBOX - RULING PLANETS -->
+
+
+<!-- =========================================================
+     BIRTH TIME RECTIFICATION (BTR) TOOLBOX - RULING PLANETS
+     ========================================================= -->
+<div id="btrWrapper" style="max-width: 1500px; margin: 0 auto 30px auto;">
+    <h2 class="collapsible-heading collapsed" onclick="if(window.getSelection().toString()) return; toggleCollapsible('btrToolBody', this)" style="margin-top: 10px; margin-bottom: 10px; font-size: 18px; background: #120606; padding: 12px 18px; border: 1px solid #a86b17; border-radius: 6px; box-shadow: 0 0 12px rgba(255,159,28,0.25);">
+        &#x23F1; BIRTH TIME RECTIFICATION TOOL (MOON RULING PLANETS)
+    </h2>
+
+    <div id="btrToolBody" class="collapsible-body" style="display: none; background: #0a0a0a; border: 1px solid var(--grid-line); padding: 18px 22px; border-radius: 6px; font-family: 'Segoe UI', Arial, sans-serif;">
+        
+        <!-- TOP CONTROLS: DATE, TIME, NOW, FETCH, LEFT / MATCH / RIGHT, RESET -->
+        <div style="display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px;">
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <span style="color: #facc15; font-size: 13px; font-weight: 800;">&#x1F4C5; RP Date</span>
+                    <input type="date" id="btrDate" style="background: #111; color: #ffcc00; border: 1px solid #a86b17; padding: 6px 10px; font-weight: 800; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <span style="color: #facc15; font-size: 13px; font-weight: 800;">&#x23F1; RP Time (HH:MM:SS)</span>
+                    <input type="time" id="btrTime" step="1" style="background: #111; color: #ffcc00; border: 1px solid #a86b17; padding: 6px 10px; font-weight: 800; border-radius: 4px;">
+                </div>
+
+                <button class="action-btn" onclick="btrSetNow()" style="background: linear-gradient(to bottom, #ca8a04, #713f12); color: #fff; padding: 6px 14px; height: 34px;">
+                    &#x1F504; NOW
+                </button>
+
+                <button id="btrFetchBtn" class="action-btn btn-fetch" onclick="fetchBTRMoonOnline()" style="padding: 6px 16px; height: 34px;">
+                    &#x1F319; Fetch RP Moon
+                </button>
+            </div>
+
+            <!-- WAKE / STATUS INDICATOR & LEFT / MATCH / RIGHT CONTROLS -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                <span id="btrStatusText" style="color: #38bdf8; font-family: monospace; font-size: 14px; font-weight: bold; margin-right: 6px;">[Standby - Manual Wake Only]</span>
+
+                <button id="btrLeftBtn" class="action-btn" onclick="cycleBTRLeft()" title="Cycle backward matches up to -4 minutes" style="background: linear-gradient(to bottom, #0284c7, #0369a1); color: #fff; border-color: #38bdf8; padding: 6px 12px; height: 34px;">
+                    &#x25C0; -4m (0/0)
+                </button>
+
+                <button id="btrMatchBtn" class="action-btn" onclick="cycleBTRMatch()" title="Cycle best priority matches within ±4 minutes" style="background: linear-gradient(to bottom, #9333ea, #4c1d95); color: #facc15; border-color: #c084fc; padding: 6px 16px; height: 34px;">
+                    &#x26A1; MATCH (0/0)
+                </button>
+
+                <button id="btrRightBtn" class="action-btn" onclick="cycleBTRRight()" title="Cycle forward matches up to +4 minutes" style="background: linear-gradient(to bottom, #0284c7, #0369a1); color: #fff; border-color: #38bdf8; padding: 6px 12px; height: 34px;">
+                    +4m &#x25B6; (0/0)
+                </button>
+
+                <button class="action-btn btn-clear" onclick="resetBTRToOriginal()" title="Restore unrectified birth time" style="padding: 6px 12px; height: 34px; margin-left: 4px;">
+                    &#x21BA; Reset Time
+                </button>
+            </div>
+        </div>
+
+        <!-- MATCH INFO BANNER -->
+        <div id="btrMatchBanner" style="display: none; background: #1f1410; border: 1px solid #a86b17; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; color: #fde68a; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <span id="btrMatchDesc">Click "Fetch RP Moon" to load Ruling Planets, then use ◀ -4m, ⚡ MATCH, or +4m ▶.</span>
+            <span id="btrRepetitionBadge" style="color: #39ff14; font-weight: 900;"></span>
+        </div>
+
+        <!-- RULING PLANETS VS 1ST CSL COMPARISON TABLE -->
+        <table id="btrComparisonTable" style="margin-top: 0; background: #160d0a; border: 1px solid #a86b17;">
+            <thead>
+                <tr>
+                    <th style="width: 16%; color: #facc15;">ENTITY</th>
+                    <th style="width: 16.8%; color: #facc15;">RASI</th>
+                    <th style="width: 16.8%; color: #facc15;">STARLORD</th>
+                    <th style="width: 16.8%; color: #facc15;">SUBLORD</th>
+                    <th style="width: 16.8%; color: #facc15;">SUB-SUB</th>
+                    <th style="width: 16.8%; color: #facc15;">SUB-SUB-SUBLORD</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="btrMoonRow">
+                    <td style="font-weight: 900; color: #38bdf8; background: #120606;">MOON</td>
+                    <td id="btr_m_rasi">--</td>
+                    <td id="btr_m_star">--</td>
+                    <td id="btr_m_sub">--</td>
+                    <td id="btr_m_ssl" style="font-weight: 900; color: #ff9f1c;">--</td>
+                    <td id="btr_m_sssl" style="font-weight: 900; color: #ff9f1c;">--</td>
+                </tr>
+                <tr id="btrCslRow">
+                    <td style="font-weight: 900; color: #facc15; background: #120606;">1ST CSL</td>
+                    <td id="btr_c1_rasi">--</td>
+                    <td id="btr_c1_star">--</td>
+                    <td id="btr_c1_sub" style="font-weight: 900;">--</td>
+                    <td id="btr_c1_ssl" style="font-weight: 900; color: #39ff14;">--</td>
+                    <td id="btr_c1_sssl" style="background: #120606;"></td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   BIRTH TIME RECTIFICATION (BTR) ENGINE - MOON RP ONLY
+   ========================================================= */
+let BTR_MOON_DATA = null;
+let BTR_CANDIDATES = [];       // Priority-sorted candidates (within ±4m)
+let BTR_LEFT_CANDIDATES = [];  // Minus cycle candidates (0s down to -240s / -4m)
+let BTR_RIGHT_CANDIDATES = []; // Plus cycle candidates (0s up to +240s / +4m)
+
+let BTR_CURRENT_IDX = -1;
+let BTR_LEFT_IDX = -1;
+let BTR_RIGHT_IDX = -1;
+
+let BTR_ORIGINAL_SHIFT = null;
+let btrWakeTimer = null;
+
+// 1. Set Date & Time inputs to Current Moment ("NOW" Button)
+function btrSetNow() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const mm = pad(now.getMonth() + 1);
+    const dd = pad(now.getDate());
+    const hh = pad(now.getHours());
+    const min = pad(now.getMinutes());
+    const ss = pad(now.getSeconds());
+
+    const dEl = document.getElementById("btrDate");
+    const tEl = document.getElementById("btrTime");
+    if (dEl) dEl.value = `${yyyy}-${mm}-${dd}`;
+    if (tEl) tEl.value = `${hh}:${min}:${ss}`;
+}
+
+// Initialize RP Date/Time on load without fetching anything online
+document.addEventListener("DOMContentLoaded", () => {
+    btrSetNow();
+});
+
+// 2. Compute Full 5-Level KP Lords (Rasi, Star, Sub, Sub-Sub, Sub-Sub-Sub) from Absolute Degree
+function get5LevelKPLords(absDeg) {
+    if (typeof absDeg !== "number" || isNaN(absDeg)) return null;
+    let a = ((absDeg % 360) + 360) % 360;
+
+    let signIdx = Math.floor(a / 30) + 1;
+    let signName = signs[signIdx];
+    let rasiLord = signLords[signName];
+
+    let nakSpan = 13.333333333333334; // 360 / 27
+    let starIdx = Math.floor(a / nakSpan) % 9;
+    let starLord = starCycle[starIdx];
+    let degInStar = a % nakSpan;
+
+    // Sub Lord
+    let subIdx = starIdx;
+    let subStart = 0;
+    let subSpan = 0;
+    for (let i = 0; i < 9; i++) {
+        let idx = (starIdx + i) % 9;
+        let lord = starCycle[idx];
+        let span = (vimYears[lord] / 120) * nakSpan;
+        if (degInStar >= subStart && degInStar < subStart + span || i === 8) {
+            subIdx = idx;
+            subSpan = span;
+            break;
+        }
+        subStart += span;
+    }
+    let subLord = starCycle[subIdx];
+    let degInSub = Math.max(0, degInStar - subStart);
+
+    // Sub-Sub Lord (SSL)
+    let sslIdx = subIdx;
+    let sslStart = 0;
+    let sslSpan = 0;
+    for (let i = 0; i < 9; i++) {
+        let idx = (subIdx + i) % 9;
+        let lord = starCycle[idx];
+        let span = (vimYears[lord] / 120) * subSpan;
+        if (degInSub >= sslStart && degInSub < sslStart + span || i === 8) {
+            sslIdx = idx;
+            sslSpan = span;
+            break;
+        }
+        sslStart += span;
+    }
+    let sslLord = starCycle[sslIdx];
+    let degInSSL = Math.max(0, degInSub - sslStart);
+
+    // Sub-Sub-Sub Lord (SSSL)
+    let ssslIdx = sslIdx;
+    let ssslStart = 0;
+    for (let i = 0; i < 9; i++) {
+        let idx = (sslIdx + i) % 9;
+        let lord = starCycle[idx];
+        let span = (vimYears[lord] / 120) * sslSpan;
+        if (degInSSL >= ssslStart && degInSSL < ssslStart + span || i === 8) {
+            ssslIdx = idx;
+            break;
+        }
+        ssslStart += span;
+    }
+    let ssslLord = starCycle[ssslIdx];
+
+    return {
+        rasi: rasiLord,
+        star: starLord,
+        sub: subLord,
+        ssl: sslLord,
+        sssl: ssslLord
+    };
+}
+
+// 3. Manual Online Fetch for Ruling Planet Moon (With 50s Cold-Wake Counter)
+async function fetchBTRMoonOnline() {
+    const dVal = document.getElementById("btrDate").value;
+    const tVal = document.getElementById("btrTime").value;
+    if (!dVal || !tVal) {
+        alert("Please select RP Date and Time first.");
+        return;
+    }
+
+    const [year, month, day] = dVal.split("-").map(Number);
+    const timeParts = tVal.split(":").map(Number);
+    const hour = timeParts[0] || 0;
+    const minute = timeParts[1] || 0;
+    const second = timeParts[2] || 0;
+
+    const latVal = parseFloat(document.getElementById("onlineLat")?.value) || 13.340077;
+    const lonVal = parseFloat(document.getElementById("onlineLon")?.value) || 77.100621;
+
+    const ayaSelect = document.getElementById("ayanamshaSelect");
+    const selectedAyanamsha = ayaSelect ? ayaSelect.value : "new_comb";
+    const serverAyanamsha = (selectedAyanamsha === "new_comb") ? "lahiri" : selectedAyanamsha;
+
+    const btn = document.getElementById("btrFetchBtn");
+    const statusText = document.getElementById("btrStatusText");
+    const origBtnText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "Waking & Fetching... &#x23F3;";
+
+    let secElapsed = 0;
+    if (btrWakeTimer) clearInterval(btrWakeTimer);
+    statusText.style.color = "#facc15";
+    statusText.innerText = `[Waking Server: 0s / ~50s]`;
+
+    btrWakeTimer = setInterval(() => {
+        secElapsed++;
+        statusText.innerText = `[Waking Render Server: ${secElapsed}s / ~50s]`;
+    }, 1000);
+
+    try {
+        let dynamicOffset = 330;
+        try {
+            const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latVal}&longitude=${lonVal}&timezone=auto`);
+            const tzJson = await tzRes.json();
+            if (tzJson && tzJson.utc_offset_seconds !== undefined) {
+                dynamicOffset = tzJson.utc_offset_seconds / 60;
+            }
+        } catch (e) {}
+
+        const reqBody = {
+            year, month, day, hour, minute, second,
+            lat: latVal, lon: lonVal,
+            timezone_offset: dynamicOffset,
+            horary_mode: false,
+            ayanamsha: serverAyanamsha
+        };
+
+        const response = await fetch('https://donnie-astro-engine.onrender.com/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reqBody)
+        });
+
+        const resJson = await response.json();
+        if (btrWakeTimer) clearInterval(btrWakeTimer);
+
+        if (resJson.status === "success" && resJson.data) {
+            const rData = resJson.data;
+            let targetBlock = rData;
+            let offsetDeg = 0;
+
+            if (rData.ayanamshas) {
+                if (selectedAyanamsha === "kp_new" && rData.ayanamshas["KP New"]) {
+                    targetBlock = rData.ayanamshas["KP New"];
+                } else if (selectedAyanamsha === "lahiri" && rData.ayanamshas["Lahiri"]) {
+                    targetBlock = rData.ayanamshas["Lahiri"];
+                } else if (selectedAyanamsha === "new_comb" && rData.ayanamshas["Lahiri"]) {
+                    targetBlock = rData.ayanamshas["Lahiri"];
+                    offsetDeg = 41 / 3600;
+                }
+            } else if (selectedAyanamsha === "new_comb") {
+                offsetDeg = 41 / 3600;
+            }
+
+            let moonDeg = targetBlock.planets?.Chandra;
+            if (typeof moonDeg === "number") {
+                moonDeg = (moonDeg + offsetDeg) % 360;
+                BTR_MOON_DATA = get5LevelKPLords(moonDeg);
+                
+                // Reset candidate cycles when new Moon RP is fetched
+                BTR_ORIGINAL_SHIFT = null;
+                BTR_CANDIDATES = [];
+                BTR_LEFT_CANDIDATES = [];
+                BTR_RIGHT_CANDIDATES = [];
+                BTR_CURRENT_IDX = -1;
+                BTR_LEFT_IDX = -1;
+                BTR_RIGHT_IDX = -1;
+
+                updateBTRTableUI();
+                computeBTRCandidates();
+
+                statusText.style.color = "#39ff14";
+                statusText.innerText = `[RP Moon Loaded (${dVal} ${tVal})]`;
+            } else {
+                statusText.style.color = "#ef4444";
+                statusText.innerText = `[Error: Moon data missing]`;
+            }
+        } else {
+            statusText.style.color = "#ef4444";
+            statusText.innerText = `[Server Error]`;
+        }
+    } catch (err) {
+        if (btrWakeTimer) clearInterval(btrWakeTimer);
+        statusText.style.color = "#ef4444";
+        statusText.innerText = `[Connection Failed]`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origBtnText;
+    }
+}
+
+// 4. Update the Comparison Table (MOON Row & 1ST CSL Row - 1st Cusp SSSL is kept BLANK)
+function updateBTRTableUI() {
+    if (BTR_MOON_DATA) {
+        const counts = {};
+        [BTR_MOON_DATA.rasi, BTR_MOON_DATA.star, BTR_MOON_DATA.sub, BTR_MOON_DATA.ssl, BTR_MOON_DATA.sssl].forEach(p => {
+            counts[p] = (counts[p] || 0) + 1;
+        });
+
+        const fmtMoonCell = (p) => {
+            if (!p) return "--";
+            return counts[p] > 1 ? `${p} <span style="color:#39ff14; font-size:12px;">(${counts[p]}x)</span>` : p;
+        };
+
+        document.getElementById("btr_m_rasi").innerHTML = fmtMoonCell(BTR_MOON_DATA.rasi);
+        document.getElementById("btr_m_star").innerHTML = fmtMoonCell(BTR_MOON_DATA.star);
+        document.getElementById("btr_m_sub").innerHTML  = fmtMoonCell(BTR_MOON_DATA.sub);
+        document.getElementById("btr_m_ssl").innerHTML  = fmtMoonCell(BTR_MOON_DATA.ssl);
+        document.getElementById("btr_m_sssl").innerHTML = fmtMoonCell(BTR_MOON_DATA.sssl);
+
+        let reps = Object.keys(counts).filter(k => counts[k] > 1).map(k => `${k} (${counts[k]}x)`);
+        const badge = document.getElementById("btrRepetitionBadge");
+        if (badge) {
+            badge.innerText = reps.length ? `Repeated RP: ${reps.join(", ")}` : `No Repeated RP Planets`;
+        }
+    }
+
+    // Populate 1ST CSL Row (Rasi, Star, Sub, Sub-Sub ONLY — SUB-SUB-SUBLORD stays BLANK)
+    const c1SignEl = document.getElementById("c1_sign");
+    if (c1SignEl && c1SignEl.selectedIndex > 0) {
+        let c1Abs = absFromInput("c1_sign", "c1_deg", "c1_min", "c1_sec");
+        if (c1Abs !== null) {
+            let c1Lords = get5LevelKPLords(c1Abs);
+            if (c1Lords) {
+                document.getElementById("btr_c1_rasi").innerText = c1Lords.rasi;
+                document.getElementById("btr_c1_star").innerText = c1Lords.star;
+                document.getElementById("btr_c1_sub").innerText  = c1Lords.sub;
+                document.getElementById("btr_c1_ssl").innerText  = c1Lords.ssl;
+                document.getElementById("btr_c1_sssl").innerText = ""; // Strictly BLANK as requested
+            }
+        }
+    }
+}
+
+// 5. Build All Valid BTR Rectification Candidates within ±4 Minutes (-240s to +240s)
+//    - Only matches 1st Cusp SSL (no 1st Cusp SSSL)
+//    - Only touches 1st Cusp Sublord (SL) if original time is on the border (within ±45s) AND new SL is in Moon RP!
+function computeBTRCandidates() {
+    BTR_CANDIDATES = [];
+    BTR_LEFT_CANDIDATES = [];
+    BTR_RIGHT_CANDIDATES = [];
+    BTR_CURRENT_IDX = -1;
+    BTR_LEFT_IDX = -1;
+    BTR_RIGHT_IDX = -1;
+
+    if (!BTR_MOON_DATA) return;
+    let currentC1Abs = absFromInput("c1_sign", "c1_deg", "c1_min", "c1_sec");
+    if (currentC1Abs === null) return;
+
+    // Lock the starting reference point so ±4 minutes is strictly around original given time
+    if (BTR_ORIGINAL_SHIFT === null) {
+        BTR_ORIGINAL_SHIFT = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+    }
+
+    let currentDeltaFromOrig = ((typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0) - BTR_ORIGINAL_SHIFT;
+    let baseC1Abs = ((currentC1Abs - (RATE_SEC.Lagna * currentDeltaFromOrig)) % 360 + 360) % 360;
+    let origLords = get5LevelKPLords(baseC1Abs);
+
+    // Count repetitions across ALL 5 Moon Ruling Planet levels (Rasi, Star, Sub, SSL, SSSL)
+    const rpList = [
+        BTR_MOON_DATA.rasi,
+        BTR_MOON_DATA.star,
+        BTR_MOON_DATA.sub,
+        BTR_MOON_DATA.ssl,
+        BTR_MOON_DATA.sssl
+    ];
+    const counts = {};
+    rpList.forEach(p => {
+        if (p) counts[p] = (counts[p] || 0) + 1;
+    });
+
+    const mRasi = BTR_MOON_DATA.rasi;
+    const mStar = BTR_MOON_DATA.star;
+    const mSub  = BTR_MOON_DATA.sub;
+    const mSSL  = BTR_MOON_DATA.ssl;
+    const mSSSL = BTR_MOON_DATA.sssl;
+
+    // Scan every second from -240s (-4 min) to +240s (+4 min) and group by (Sub | SSL)
+    let sslWindows = [];
+    let curWin = null;
+
+    for (let dt = -240; dt <= 240; dt++) {
+        let testDeg = ((baseC1Abs + RATE_SEC.Lagna * dt) % 360 + 360) % 360;
+        let lords = get5LevelKPLords(testDeg);
+        let key = `${lords.sub}|${lords.ssl}`;
+
+        if (!curWin || curWin.key !== key) {
+            if (curWin) sslWindows.push(curWin);
+            curWin = {
+                key: key,
+                rasi: lords.rasi,
+                star: lords.star,
+                sub: lords.sub,
+                ssl: lords.ssl,
+                startDt: dt,
+                endDt: dt
+            };
+        } else {
+            curWin.endDt = dt;
+        }
+    }
+    if (curWin) sslWindows.push(curWin);
+
+    // Border threshold for changing Sublord: 45 seconds
+    const SUBLORD_BORDER_LIMIT_SEC = 45;
+
+    sslWindows.forEach(win => {
+        // 🔒 RULE 1: 1st Cusp SSL MUST be in Moon's Ruling Planets
+        if (!rpList.includes(win.ssl)) return;
+
+        // Closest second inside this window to 0s (given birth time)
+        let nearestDt = 0;
+        if (win.startDt <= 0 && win.endDt >= 0) {
+            nearestDt = 0;
+        } else if (Math.abs(win.startDt) < Math.abs(win.endDt)) {
+            nearestDt = Math.min(win.endDt, win.startDt + 2);
+        } else {
+            nearestDt = Math.max(win.startDt, win.endDt - 2);
+        }
+
+        let isOrigSub = (origLords && win.sub === origLords.sub);
+        let isSubInRP = rpList.includes(win.sub);
+
+        // 🔒 RULE 2: Do NOT touch 1st Cusp Sublord unless it is on the border (within ±45s of given time) AND new Sublord is in RP!
+        if (!isOrigSub) {
+            if (!isSubInRP || Math.abs(nearestDt) > SUBLORD_BORDER_LIMIT_SEC) {
+                return;
+            }
+        }
+
+        let sslRep = counts[win.ssl] || 0;
+        let subRep = counts[win.sub] || 0;
+        let isDirectSSL_or_SSSL = (win.ssl === mSSL || win.ssl === mSSSL);
+        let isRepeatedSSL = (sslRep >= 2);
+        let isBorderSubSwap = (!isOrigSub && (win.sub === mSSL || win.sub === mSSSL || subRep >= 2));
+
+        let matchedLevels = [];
+        if (win.ssl === mSSL)  matchedLevels.push("Moon SUB-SUB");
+        if (win.ssl === mSSSL) matchedLevels.push("Moon SSSL");
+        if (win.ssl === mSub)  matchedLevels.push("Moon SUB");
+        if (win.ssl === mStar) matchedLevels.push("Moon STAR");
+        if (win.ssl === mRasi) matchedLevels.push("Moon RASI");
+
+        let tier = 10;
+        let priorityLabel = "";
+
+        if (isOrigSub && isDirectSSL_or_SSSL && isRepeatedSSL) {
+            tier = 1;
+            priorityLabel = `★ TOP PRIORITY: Same SL (${win.sub}) + Repeated ${matchedLevels.join("/")} &rarr; 1st SSL = ${win.ssl} (${sslRep}x)`;
+        } else if (isOrigSub && isDirectSSL_or_SSSL) {
+            tier = 2;
+            priorityLabel = `★ PRIORITY 1: Same SL (${win.sub}) + Direct ${matchedLevels.join("/")} &rarr; 1st SSL = ${win.ssl}`;
+        } else if (isOrigSub && isRepeatedSSL) {
+            tier = 3;
+            priorityLabel = `★ PRIORITY 2: Same SL (${win.sub}) + Repeated RP (${matchedLevels.join("/")}) &rarr; 1st SSL = ${win.ssl} (${sslRep}x)`;
+        } else if (isBorderSubSwap && isDirectSSL_or_SSSL) {
+            tier = 4;
+            priorityLabel = `★ BORDER SL SWAP: Near RP SL (${win.sub}) + ${matchedLevels.join("/")} &rarr; 1st SSL = ${win.ssl}`;
+        } else if (isOrigSub) {
+            tier = 5;
+            priorityLabel = `Same SL (${win.sub}) + RP (${matchedLevels.join("/")}) &rarr; 1st SSL = ${win.ssl}`;
+        } else {
+            tier = 6;
+            priorityLabel = `Border RP SL (${win.sub}) + RP (${matchedLevels.join("/")}) &rarr; 1st SSL = ${win.ssl}`;
+        }
+
+        let candObj = {
+            dt: nearestDt,
+            absDist: Math.abs(nearestDt),
+            sub: win.sub,
+            ssl: win.ssl,
+            tier: tier,
+            sslRep: sslRep,
+            reason: priorityLabel,
+            startDt: win.startDt,
+            endDt: win.endDt,
+            spanText: `${win.startDt >= 0 ? '+' : ''}${win.startDt}s to ${win.endDt >= 0 ? '+' : ''}${win.endDt}s`
+        };
+
+        BTR_CANDIDATES.push(candObj);
+
+        // If window extends into Minus range (< 0s), add to Left (-4m) cycle list
+        if (win.startDt < 0) {
+            let leftDt = (win.endDt < 0) ? Math.max(win.startDt, win.endDt - 2) : -2;
+            BTR_LEFT_CANDIDATES.push({
+                ...candObj,
+                dt: leftDt,
+                absDist: Math.abs(leftDt)
+            });
+        }
+
+        // If window extends into Plus range (> 0s), add to Right (+4m) cycle list
+        if (win.endDt > 0) {
+            let rightDt = (win.startDt > 0) ? Math.min(win.endDt, win.startDt + 2) : 2;
+            BTR_RIGHT_CANDIDATES.push({
+                ...candObj,
+                dt: rightDt,
+                absDist: Math.abs(rightDt)
+            });
+        }
+    });
+
+    // 1. Sort MATCH candidates by Priority Tier -> Repetition Count -> Nearest Time
+    BTR_CANDIDATES.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        if (b.sslRep !== a.sslRep) return b.sslRep - a.sslRep;
+        return a.absDist - b.absDist;
+    });
+
+    // 2. Sort LEFT (-4m) candidates chronologically going backwards from 0s down to -240s (-4m)
+    BTR_LEFT_CANDIDATES.sort((a, b) => b.dt - a.dt);
+
+    // 3. Sort RIGHT (+4m) candidates chronologically going forwards from 0s up to +240s (+4m)
+    BTR_RIGHT_CANDIDATES.sort((a, b) => a.dt - b.dt);
+
+    updateBTRButtonsUI();
+
+    const banner = document.getElementById("btrMatchBanner");
+    const desc = document.getElementById("btrMatchDesc");
+    if (banner && desc) {
+        banner.style.display = "flex";
+        desc.innerHTML = BTR_CANDIDATES.length > 0
+            ? `Ready! <b>${BTR_LEFT_CANDIDATES.length}</b> Left (-4m) matches | <b>${BTR_CANDIDATES.length}</b> Priority matches | <b>${BTR_RIGHT_CANDIDATES.length}</b> Right (+4m) matches.`
+            : `No RP matches found within ±4 minutes.`;
+    }
+}
+
+// Helper to refresh button counters
+function updateBTRButtonsUI() {
+    const leftBtn  = document.getElementById("btrLeftBtn");
+    const matchBtn = document.getElementById("btrMatchBtn");
+    const rightBtn = document.getElementById("btrRightBtn");
+
+    if (leftBtn) {
+        leftBtn.innerHTML = `&#x25C0; -4m (${BTR_LEFT_IDX + 1}/${BTR_LEFT_CANDIDATES.length})`;
+    }
+    if (matchBtn) {
+        matchBtn.innerHTML = `&#x26A1; MATCH (${BTR_CURRENT_IDX + 1}/${BTR_CANDIDATES.length})`;
+    }
+    if (rightBtn) {
+        rightBtn.innerHTML = `+4m &#x25B6; (${BTR_RIGHT_IDX + 1}/${BTR_RIGHT_CANDIDATES.length})`;
+    }
+}
+
+// Shared helper to apply a candidate's shift to the chart
+function applyBTRCandidate(cand, modeLabel, idx, total) {
+    const targetShift = BTR_ORIGINAL_SHIFT + cand.dt;
+    const currentShift = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+    const deltaToApply = targetShift - currentShift;
+
+    if (deltaToApply !== 0 && typeof applyShift === "function") {
+        applyShift(deltaToApply);
+    }
+
+    // Sync Base Time Lock & Cloud Fetcher Time inputs so saving profile saves the rectified time
+    if (BASE_MASTER_DATETIME) {
+        const rectDate = new Date(BASE_MASTER_DATETIME.getTime() + SHIFT_SECONDS * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        const newTimeStr = `${pad(rectDate.getHours())}:${pad(rectDate.getMinutes())}:${pad(rectDate.getSeconds())}`;
+        const baseTimeEl = document.getElementById("baseTimeLock");
+        if (baseTimeEl) baseTimeEl.value = newTimeStr;
+    }
+
+    updateBTRTableUI();
+    updateBTRButtonsUI();
+
+    const banner = document.getElementById("btrMatchBanner");
+    const desc = document.getElementById("btrMatchDesc");
+    if (banner && desc) {
+        banner.style.display = "flex";
+        let signStr = cand.dt >= 0 ? `+${cand.dt}s` : `${cand.dt}s`;
+        let minSec = `${cand.dt >= 0 ? '+' : '-'}${Math.floor(Math.abs(cand.dt)/60)}m ${Math.abs(cand.dt)%60}s`;
+        desc.innerHTML = `<b>${modeLabel} #${idx + 1}/${total}</b>: Shift <b>${minSec}</b> (${signStr}) &rarr; ${cand.reason} <span style="color:#aaa; font-size:12px;">[Window: ${cand.spanText}]</span>`;
+    }
+}
+
+// 6A. Cycle LEFT (Minus cycle from given time down to -4 minutes)
+function cycleBTRLeft() {
+    if (!BTR_MOON_DATA) {
+        alert("Please click 'Fetch RP Moon' first to load Moon Ruling Planets.");
+        return;
+    }
+    if (absFromInput("c1_sign", "c1_deg", "c1_min", "c1_sec") === null) {
+        alert("Please load or fetch a birth chart first.");
+        return;
+    }
+    if (BTR_CANDIDATES.length === 0) computeBTRCandidates();
+    if (BTR_LEFT_CANDIDATES.length === 0) return;
+
+    BTR_LEFT_IDX = (BTR_LEFT_IDX + 1) % BTR_LEFT_CANDIDATES.length;
+    const cand = BTR_LEFT_CANDIDATES[BTR_LEFT_IDX];
+    applyBTRCandidate(cand, "◀ LEFT (-4m)", BTR_LEFT_IDX, BTR_LEFT_CANDIDATES.length);
+}
+
+// 6B. Cycle MATCH (Best Priority order within ±4 minutes)
+function cycleBTRMatch() {
+    if (!BTR_MOON_DATA) {
+        alert("Please click 'Fetch RP Moon' first to load Moon Ruling Planets.");
+        return;
+    }
+    if (absFromInput("c1_sign", "c1_deg", "c1_min", "c1_sec") === null) {
+        alert("Please load or fetch a birth chart first.");
+        return;
+    }
+    if (BTR_CANDIDATES.length === 0) computeBTRCandidates();
+    if (BTR_CANDIDATES.length === 0) return;
+
+    BTR_CURRENT_IDX = (BTR_CURRENT_IDX + 1) % BTR_CANDIDATES.length;
+    const cand = BTR_CANDIDATES[BTR_CURRENT_IDX];
+    applyBTRCandidate(cand, "⚡ PRIORITY MATCH", BTR_CURRENT_IDX, BTR_CANDIDATES.length);
+}
+
+// 6C. Cycle RIGHT (Plus cycle from given time up to +4 minutes)
+function cycleBTRRight() {
+    if (!BTR_MOON_DATA) {
+        alert("Please click 'Fetch RP Moon' first to load Moon Ruling Planets.");
+        return;
+    }
+    if (absFromInput("c1_sign", "c1_deg", "c1_min", "c1_sec") === null) {
+        alert("Please load or fetch a birth chart first.");
+        return;
+    }
+    if (BTR_CANDIDATES.length === 0) computeBTRCandidates();
+    if (BTR_RIGHT_CANDIDATES.length === 0) return;
+
+    BTR_RIGHT_IDX = (BTR_RIGHT_IDX + 1) % BTR_RIGHT_CANDIDATES.length;
+    const cand = BTR_RIGHT_CANDIDATES[BTR_RIGHT_IDX];
+    applyBTRCandidate(cand, "RIGHT (+4m) ▶", BTR_RIGHT_IDX, BTR_RIGHT_CANDIDATES.length);
+}
+
+// 7. Reset Back to Unrectified Original Birth Time
+function resetBTRToOriginal() {
+    if (BTR_ORIGINAL_SHIFT === null) return;
+    const currentShift = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+    const delta = BTR_ORIGINAL_SHIFT - currentShift;
+    if (delta !== 0 && typeof applyShift === "function") {
+        applyShift(delta);
+    }
+    BTR_CURRENT_IDX = -1;
+    BTR_LEFT_IDX = -1;
+    BTR_RIGHT_IDX = -1;
+    updateBTRTableUI();
+    updateBTRButtonsUI();
+
+    const desc = document.getElementById("btrMatchDesc");
+    if (desc) {
+        desc.innerHTML = `Restored original birth time (0s shift).`;
+    }
+}
+
+// Auto-update the 1ST CSL row whenever the chart rebuilds
+(function() {
+    const _origBuild = buildCuspalChart;
+    buildCuspalChart = function() {
+        _origBuild.apply(this, arguments);
+        if (typeof updateBTRTableUI === "function") {
+            updateBTRTableUI();
+        }
+    };
+})();
+</script>
+
+
+<!-- BIRTH TIME RECTIFICATION (BTR) TOOLBOX - RULING PLANETS -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
     let raw = null;
     let moonStarLord = "Sy";
