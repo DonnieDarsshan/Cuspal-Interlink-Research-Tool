@@ -876,15 +876,29 @@ input[type="time"] {
                 </button>
             </div>
 
-            <!-- WAKE / STATUS INDICATOR & SHOW MATCH / RESET CONTROLS -->
+            <!-- WAKE / STATUS INDICATOR, RANGE (3/6/9m), MODE (SUB-SUB / SUBLORD) & SHOW MATCH -->
             <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-                <span id="btrStatusText" style="color: #38bdf8; font-family: monospace; font-size: 14px; font-weight: bold; margin-right: 6px;">[Standby - Manual Wake Only]</span>
+                <span id="btrStatusText" style="color: #38bdf8; font-family: monospace; font-size: 13px; font-weight: bold; margin-right: 4px;">[Standby - Manual Wake Only]</span>
 
-                <button id="btrShowMatchBtn" class="action-btn" onclick="toggleBTRMatchList()" title="Display all available RP matches within ±4 minutes" style="background: linear-gradient(to bottom, #9333ea, #4c1d95); color: #facc15; border-color: #c084fc; padding: 6px 18px; height: 34px; font-weight: 900;">
+                <!-- RANGE SELECTOR: ±3m (Default), ±6m, ±9m -->
+                <div style="display: inline-flex; background: #141414; border: 1px solid #a86b17; border-radius: 5px; overflow: hidden; height: 34px; align-items: center;">
+                    <span style="color: #facc15; font-size: 11px; font-weight: 900; padding: 0 7px; background: #1f1209; height: 100%; display: flex; align-items: center; border-right: 1px solid #a86b17;">RANGE</span>
+                    <button id="btrRange3" type="button" onclick="setBTRRange(3)" style="background: #ca8a04; color: #000; border: none; padding: 0 10px; height: 100%; font-weight: 900; cursor: pointer; font-size: 12.5px;">±3m</button>
+                    <button id="btrRange6" type="button" onclick="setBTRRange(6)" style="background: transparent; color: #fde68a; border: none; border-left: 1px solid #333; padding: 0 10px; height: 100%; font-weight: 800; cursor: pointer; font-size: 12.5px;">±6m</button>
+                    <button id="btrRange9" type="button" onclick="setBTRRange(9)" style="background: transparent; color: #fde68a; border: none; border-left: 1px solid #333; padding: 0 10px; height: 100%; font-weight: 800; cursor: pointer; font-size: 12.5px;">±9m</button>
+                </div>
+
+                <!-- LEVEL SELECTOR: SUB-SUB (Default) vs SUBLORD -->
+                <div style="display: inline-flex; background: #141414; border: 1px solid #a86b17; border-radius: 5px; overflow: hidden; height: 34px; align-items: center;">
+                    <button id="btrModeSSL" type="button" onclick="setBTRMode('SSL')" title="Match ONLY Sub-Sublord (Keep Original Sublord Locked)" style="background: #16a34a; color: #fff; border: none; padding: 0 11px; height: 100%; font-weight: 900; cursor: pointer; font-size: 12.5px;">SUB-SUB</button>
+                    <button id="btrModeSL" type="button" onclick="setBTRMode('SL')" title="Allow changing both Sublord & Sub-Sublord based on Ruling Planets" style="background: transparent; color: #fde68a; border: none; border-left: 1px solid #333; padding: 0 11px; height: 100%; font-weight: 800; cursor: pointer; font-size: 12.5px;">SUBLORD</button>
+                </div>
+
+                <button id="btrShowMatchBtn" class="action-btn" onclick="toggleBTRMatchList()" title="Display all available RP matches in selected range" style="background: linear-gradient(to bottom, #9333ea, #4c1d95); color: #facc15; border-color: #c084fc; padding: 6px 16px; height: 34px; font-weight: 900;">
                     &#x26A1; SHOW MATCH (0)
                 </button>
 
-                <button class="action-btn btn-clear" onclick="resetBTRToOriginal()" title="Restore unrectified birth time" style="padding: 6px 12px; height: 34px; margin-left: 4px;">
+                <button class="action-btn btn-clear" onclick="resetBTRToOriginal()" title="Restore unrectified birth time" style="padding: 6px 12px; height: 34px;">
                     &#x21BA; Reset Time
                 </button>
             </div>
@@ -927,6 +941,40 @@ input[type="time"] {
                 </tr>
             </tbody>
         </table>
+
+        <!-- =========================================================
+             INTERACTIVE 12-CUSP REVERSE RECTIFICATION TABLE INSIDE BTR
+             Click any RASI / STAR / SUB / SSL planet box -> Pick Planet
+             ========================================================= -->
+        <div style="margin-top: 16px; background: #120906; border: 1px solid #a86b17; border-radius: 6px; padding: 10px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <span style="color: #facc15; font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px;">
+                    &#x1F3AF; INTERACTIVE 12-CUSP REVERSE RECTIFICATION TABLE (CLICK ANY PLANET TO SHIFT TIME)
+                </span>
+                <span id="btrLiveBirthTimeBadge" style="color: #39ff14; font-family: monospace; font-size: 13.5px; font-weight: 900; background: #1f1209; padding: 4px 10px; border: 1px solid #a86b17; border-radius: 4px;">
+                    Current Time: --:--:--
+                </span>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table id="btrFullCuspalTable" style="width: 100%; border-collapse: collapse; margin-top: 0; background: #160d0a; border: 1px solid #a86b17; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #1f1209; border-bottom: 2px solid #a86b17;">
+                            <th style="width: 10%; color: #facc15; padding: 8px; text-align: center;">CUSP</th>
+                            <th style="width: 16%; color: #facc15; padding: 8px; text-align: center;">SIGN</th>
+                            <th style="width: 18%; color: #facc15; padding: 8px; text-align: center;">DEG : MIN : SEC</th>
+                            <th style="width: 14%; color: #facc15; padding: 8px; text-align: center;">RASI LORD &#x270E;</th>
+                            <th style="width: 14%; color: #facc15; padding: 8px; text-align: center;">STAR LORD &#x270E;</th>
+                            <th style="width: 14%; color: #facc15; padding: 8px; text-align: center;">SUB LORD &#x270E;</th>
+                            <th style="width: 14%; color: #facc15; padding: 8px; text-align: center;">SUB-SUB (SSL) &#x270E;</th>
+                        </tr>
+                    </thead>
+                    <tbody id="btrFullCuspalBody">
+                        <!-- 12 Cusp Rows dynamically rendered & bound here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <!-- CLICKABLE 3-COLUMN MATCH LIST WINDOW UNDER TOOL -->
         <div id="btrMatchListWindow" style="display: none; margin-top: 15px; background: #0d0806; border: 1px solid #a86b17; border-radius: 6px; max-height: 360px; overflow-y: auto; box-shadow: inset 0 0 12px rgba(0,0,0,0.85);">
@@ -1263,7 +1311,61 @@ function updateBTRTableUI() {
     }
 }
 
-// 5. Build All Valid BTR Rectification Combinations within ±4 Minutes (-240s to +240s)
+// Range & Mode Globals (Defaults: ±3 Minutes, SUB-SUB Mode)
+let BTR_SEARCH_RANGE_MIN = 3; // 3, 6, or 9 minutes
+let BTR_MATCH_MODE = 'SSL';   // 'SSL' = Only match Sub-Sublord (lock original Sublord) | 'SL' = Match both Sublord & Sub-Sublord in RP
+
+function setBTRRange(mins) {
+    BTR_SEARCH_RANGE_MIN = mins;
+    [3, 6, 9].forEach(m => {
+        const btn = document.getElementById(`btrRange${m}`);
+        if (btn) {
+            if (m === mins) {
+                btn.style.background = "#ca8a04";
+                btn.style.color = "#000";
+                btn.style.fontWeight = "900";
+            } else {
+                btn.style.background = "transparent";
+                btn.style.color = "#fde68a";
+                btn.style.fontWeight = "800";
+            }
+        }
+    });
+    if (BTR_MOON_DATA) {
+        computeBTRCandidates();
+        renderBTRMatchList();
+    }
+}
+
+function setBTRMode(mode) {
+    BTR_MATCH_MODE = mode;
+    const sslBtn = document.getElementById("btrModeSSL");
+    const slBtn  = document.getElementById("btrModeSL");
+
+    if (sslBtn && slBtn) {
+        if (mode === 'SSL') {
+            sslBtn.style.background = "#16a34a";
+            sslBtn.style.color = "#fff";
+            sslBtn.style.fontWeight = "900";
+            slBtn.style.background = "transparent";
+            slBtn.style.color = "#fde68a";
+            slBtn.style.fontWeight = "800";
+        } else {
+            slBtn.style.background = "#e11d48";
+            slBtn.style.color = "#fff";
+            slBtn.style.fontWeight = "900";
+            sslBtn.style.background = "transparent";
+            sslBtn.style.color = "#fde68a";
+            sslBtn.style.fontWeight = "800";
+        }
+    }
+    if (BTR_MOON_DATA) {
+        computeBTRCandidates();
+        renderBTRMatchList();
+    }
+}
+
+// 5. Build All Valid BTR Rectification Combinations within ±Range Minutes (3m / 6m / 9m)
 function computeBTRCandidates() {
     BTR_CANDIDATES = [];
     BTR_SELECTED_IDX = -1;
@@ -1302,11 +1404,13 @@ function computeBTRCandidates() {
     const mSSL  = BTR_MOON_DATA.ssl;
     const mSSSL = BTR_MOON_DATA.sssl;
 
-    // Scan every second from -240s (-4 min) to +240s (+4 min) and group by (Rasi | Star | Sub | SSL)
+    const maxSec = (BTR_SEARCH_RANGE_MIN || 3) * 60; // 180s (±3m), 360s (±6m), or 540s (±9m)
+
+    // Scan every second from -maxSec to +maxSec and group contiguous (Rasi | Star | Sub | SSL) windows
     let sslWindows = [];
     let curWin = null;
 
-    for (let dt = -240; dt <= 240; dt++) {
+    for (let dt = -maxSec; dt <= maxSec; dt++) {
         let testDeg = ((baseC1Abs + RATE_SEC.Lagna * dt) % 360 + 360) % 360;
         let lords = get5LevelKPLords(testDeg);
         let key = `${lords.rasi}|${lords.star}|${lords.sub}|${lords.ssl}`;
@@ -1328,12 +1432,27 @@ function computeBTRCandidates() {
     }
     if (curWin) sslWindows.push(curWin);
 
-    const SUBLORD_BORDER_LIMIT_SEC = 45;
-
     sslWindows.forEach(win => {
-        // RULE 1: 1st Cusp SSL MUST be in Moon's Ruling Planets
-        if (!rpList.includes(win.ssl)) return;
+        let isOrigSub = (origLords && win.sub === origLords.sub);
+        let isSubInRP = rpList.includes(win.sub);
+        let isSslInRP = rpList.includes(win.ssl);
 
+        // 1) Does this window qualify under SUB-SUB mode? (Original SL kept + SSL in RP)
+        let validForSubSubMode = (isOrigSub && isSslInRP);
+
+        // 2) Does this window qualify as an extra SUBLORD permutation?
+        //    - Both SL and SSL are in RP (any RP planet pair permutation in range)
+        //    - OR SL changed to an RP planet and SSL is in RP
+        let validForSublordMode = validForSubSubMode || (isSubInRP && isSslInRP);
+
+        if (BTR_MATCH_MODE === 'SSL') {
+            if (!validForSubSubMode) return;
+        } else {
+            // SUBLORD mode ALWAYS includes ALL SUB-SUB results + ALL RP Sublord/Sub-Sub permutations!
+            if (!validForSublordMode) return;
+        }
+
+        // Representative time shift inside this window (2s inside border so degree is safely inside the lord)
         let nearestDt = 0;
         if (win.startDt <= 0 && win.endDt >= 0) {
             nearestDt = 0;
@@ -1343,17 +1462,9 @@ function computeBTRCandidates() {
             nearestDt = Math.max(win.startDt, win.endDt - 2);
         }
 
-        let isOrigSub = (origLords && win.sub === origLords.sub);
-        let isSubInRP = rpList.includes(win.sub);
-
-        // RULE 2: Do NOT touch 1st Cusp Sublord unless within ±45s border AND new Sublord is in RP
-        if (!isOrigSub) {
-            if (!isSubInRP || Math.abs(nearestDt) > SUBLORD_BORDER_LIMIT_SEC) {
-                return;
-            }
-        }
-
         let sslRep = counts[win.ssl] || 0;
+        let subRep = counts[win.sub] || 0;
+
         let matchedLevels = [];
         if (win.ssl === mSSL)  matchedLevels.push("Moon SUB-SUB");
         if (win.ssl === mSSSL) matchedLevels.push("Moon SSSL");
@@ -1361,19 +1472,34 @@ function computeBTRCandidates() {
         if (win.ssl === mStar) matchedLevels.push("Moon STAR");
         if (win.ssl === mRasi) matchedLevels.push("Moon RASI");
 
+        let subMatchedLevels = [];
+        if (win.sub === mSSL)  subMatchedLevels.push("Moon SUB-SUB");
+        if (win.sub === mSSSL) subMatchedLevels.push("Moon SSSL");
+        if (win.sub === mSub)  subMatchedLevels.push("Moon SUB");
+        if (win.sub === mStar) subMatchedLevels.push("Moon STAR");
+        if (win.sub === mRasi) subMatchedLevels.push("Moon RASI");
+
         let isDirectSSL_or_SSSL = (win.ssl === mSSL || win.ssl === mSSSL);
         let isRepeatedSSL = (sslRep >= 2);
 
         let badgeHtml = "";
-        if (isOrigSub && isDirectSSL_or_SSSL && isRepeatedSSL) {
-            badgeHtml = `<span style="background:#39ff14; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">★ TOP MATCH (${sslRep}x)</span>`;
-        } else if (isOrigSub && isDirectSSL_or_SSSL) {
-            badgeHtml = `<span style="background:#facc15; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">★ DIRECT SSL/SSSL</span>`;
-        } else if (isRepeatedSSL) {
-            badgeHtml = `<span style="background:#38bdf8; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">REPEATED (${sslRep}x)</span>`;
-        } else if (!isOrigSub) {
-            badgeHtml = `<span style="background:#f97316; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">BORDER SL</span>`;
+        if (!isOrigSub) {
+            badgeHtml += `<span style="background:#e11d48; color:#fff; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">NEW SL: ${win.sub} (${subRep}x)</span>`;
+        } else {
+            badgeHtml += `<span style="background:#15803d; color:#fff; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:6px;">SAME SL</span>`;
         }
+
+        if (isDirectSSL_or_SSSL && isRepeatedSSL) {
+            badgeHtml += `<span style="background:#39ff14; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:5px;">★ TOP SSL (${sslRep}x)</span>`;
+        } else if (isDirectSSL_or_SSSL) {
+            badgeHtml += `<span style="background:#facc15; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:5px;">★ DIRECT SSL/SSSL</span>`;
+        } else if (isRepeatedSSL) {
+            badgeHtml += `<span style="background:#38bdf8; color:#000; padding:1px 6px; border-radius:3px; font-size:11px; font-weight:900; margin-left:5px;">REPEATED SSL (${sslRep}x)</span>`;
+        }
+
+        let matchDescStr = isSubInRP
+            ? `SL (${win.sub}): ${subMatchedLevels.join("/")} &nbsp;|&nbsp; SSL (${win.ssl}): ${matchedLevels.join("/")}`
+            : `SSL (${win.ssl}): ${matchedLevels.join(" / ")}`;
 
         BTR_CANDIDATES.push({
             dt: nearestDt,
@@ -1382,7 +1508,7 @@ function computeBTRCandidates() {
             sub: win.sub,
             ssl: win.ssl,
             sslRep: sslRep,
-            matchedLevels: matchedLevels.join(" / "),
+            matchedLevels: matchDescStr,
             badgeHtml: badgeHtml,
             startDt: win.startDt,
             endDt: win.endDt,
@@ -1390,7 +1516,7 @@ function computeBTRCandidates() {
         });
     });
 
-    // Sort chronologically from -4m (-240s) to +4m (+240s) so the list reads cleanly line by line
+    // Sort chronologically from -Range to +Range so every combination appears line-by-line in time order
     BTR_CANDIDATES.sort((a, b) => a.dt - b.dt);
 
     const showBtn = document.getElementById("btrShowMatchBtn");
@@ -1402,9 +1528,10 @@ function computeBTRCandidates() {
     const desc = document.getElementById("btrMatchDesc");
     if (banner && desc) {
         banner.style.display = "flex";
+        let modeText = (BTR_MATCH_MODE === 'SSL') ? "SUB-SUB Only (Original SL Locked)" : "ALL (SUB-SUB + SUBLORD Permutations)";
         desc.innerHTML = BTR_CANDIDATES.length > 0
-            ? `Found <b>${BTR_CANDIDATES.length}</b> matching combinations within ±4m. Click <b>SHOW MATCH</b> or select any row below to apply.`
-            : `No RP matches found within ±4 minutes.`;
+            ? `Found <b>${BTR_CANDIDATES.length}</b> combinations in <b>±${BTR_SEARCH_RANGE_MIN}m</b> [${modeText}]. Click any row below to set Birth Time.`
+            : `No RP matches found within ±${BTR_SEARCH_RANGE_MIN}m for [${modeText}]. Try increasing range (±6m / ±9m).`;
     }
 }
 
@@ -1415,7 +1542,10 @@ function renderBTRMatchList() {
     tbody.innerHTML = "";
 
     if (BTR_CANDIDATES.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">No matching combinations available. Click "Fetch RP Moon" first.</td></tr>`;
+        const msg = !BTR_MOON_DATA
+            ? `No matching combinations available. Click "Fetch RP Moon" first.`
+            : `No RP combinations found in ±${BTR_SEARCH_RANGE_MIN}m range. Try selecting ±6m or ±9m.`;
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:16px; color:#ef4444; font-weight:bold;">${msg}</td></tr>`;
         return;
     }
 
@@ -1555,16 +1685,618 @@ function resetBTRToOriginal() {
     }
 }
 
-// Auto-update the 1ST CSL row whenever the chart rebuilds
-(function() {
-    const _origBuild = buildCuspalChart;
-    buildCuspalChart = function() {
-        _origBuild.apply(this, arguments);
+/* =========================================================
+   10. REVERSE CUSPAL RECTIFICATION (CLICK ANY PLANET POPUP)
+   Click any Cusp (1-12) Rasi / Star / Sub / SSL cell in the
+   Cuspal Table (or 1ST CSL row) -> Pick any of the 9 Planets
+   -> Automatically shifts Birth Time & updates entire chart!
+   ========================================================= */
+
+let BTR_ACTIVE_CELL_CTX = null; // Stores { cuspNum, level, currentLord, cellEl }
+
+// Create the 9-Planet Floating Popup Menu in DOM once
+function ensureBTRPlanetPopupDOM() {
+    let pop = document.getElementById("btrPlanetPickerPopup");
+    if (pop) return pop;
+
+    pop = document.createElement("div");
+    pop.id = "btrPlanetPickerPopup";
+    pop.style.cssText = `
+        display: none;
+        position: absolute;
+        z-index: 99999;
+        background: #120906;
+        border: 2px solid #facc15;
+        border-radius: 8px;
+        padding: 10px 12px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.95), 0 0 15px rgba(250,204,21,0.35);
+        min-width: 280px;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        user-select: none;
+    `;
+
+    pop.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #442a14; padding-bottom:6px; margin-bottom:8px;">
+            <span id="btrPopupTitle" style="color:#facc15; font-size:12.5px; font-weight:900; letter-spacing:0.4px;">SELECT PLANET</span>
+            <button type="button" onclick="closeBTRPlanetPopup()" style="background:transparent; border:none; color:#ef4444; font-weight:900; font-size:15px; cursor:pointer; padding:0 4px;">&#x2715;</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:6px; margin-bottom:8px;">
+            <button type="button" id="btrPopupPrevBtn" style="flex:1; background:#1f1209; color:#38bdf8; border:1px solid #38bdf8; border-radius:4px; padding:4px 6px; font-size:11.5px; font-weight:900; cursor:pointer;" title="Step to previous occurrence of current planet">&#x25C0; Earlier Same</button>
+            <button type="button" id="btrPopupNextBtn" style="flex:1; background:#1f1209; color:#39ff14; border:1px solid #39ff14; border-radius:4px; padding:4px 6px; font-size:11.5px; font-weight:900; cursor:pointer;" title="Step to next occurrence of current planet">Later Same &#x25B6;</button>
+        </div>
+        <div id="btrPopupGrid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;"></div>
+        <div id="btrPopupFooter" style="margin-top:8px; padding-top:6px; border-top:1px solid #2b1a0e; color:#9ca3af; font-size:11px; text-align:center;">
+            Click any planet to auto-adjust Birth Time & Chart
+        </div>
+    `;
+
+    document.body.appendChild(pop);
+
+    // Close popup when clicking outside
+    document.addEventListener("mousedown", (e) => {
+        if (pop.style.display === "block" && !pop.contains(e.target) && !e.target.closest("[data-btr-clickable='1']")) {
+            closeBTRPlanetPopup();
+        }
+    });
+
+    return pop;
+}
+
+function closeBTRPlanetPopup() {
+    const pop = document.getElementById("btrPlanetPickerPopup");
+    if (pop) pop.style.display = "none";
+    BTR_ACTIVE_CELL_CTX = null;
+}
+
+// Read current absolute degree of any Cusp (1 to 12)
+function getCuspCurrentAbsDeg(cuspNum) {
+    if (typeof absFromInput === "function") {
+        const d = absFromInput(`c${cuspNum}_sign`, `c${cuspNum}_deg`, `c${cuspNum}_min`, `c${cuspNum}_sec`);
+        if (d !== null && !isNaN(d)) return d;
+    }
+    return null;
+}
+
+// Helper: Simulate integer-second rounding of `writeToInputs` so fast SSLs (Ketu/Surya) NEVER revert due to 1-arcsec rounding!
+function simulateInputRoundedAbs(rawDeg) {
+    let a = ((rawDeg % 360) + 360) % 360;
+    let signIdx = Math.floor(a / 30) + 1;
+    let within = a % 30;
+    let d = Math.floor(within + 1e-9);
+    let mf = (within - d) * 60;
+    let m = Math.floor(mf + 1e-9);
+    let s = Math.floor(((mf - m) * 60) + 1e-9);
+    if (s >= 60) { s = 0; m += 1; }
+    if (m >= 60) { m = 0; d += 1; }
+    return (signIdx - 1) * 30 + d + (m / 60) + (s / 3600);
+}
+
+// Helper: Force-nudge a specific Cusp's input fields by ±1 arc-second if rounding caused it to miss targetPlanet
+function guaranteeCuspInputMatchesTarget(cuspNum, level, targetPlanet, idealAbsDeg) {
+    let curInputAbs = getCuspCurrentAbsDeg(cuspNum);
+    if (curInputAbs === null) return;
+
+    let curLords = get5LevelKPLords(curInputAbs);
+    if (curLords && curLords[level] === targetPlanet) return; // Already exact!
+
+    // Scan tiny arc-second nudges (-3" to +3") around idealAbsDeg to find the exact integer DMS that locks in targetPlanet
+    for (let arcSecDelta of [1, -1, 2, -2, 3, -3]) {
+        let candidateDeg = ((idealAbsDeg + (arcSecDelta / 3600)) % 360 + 360) % 360;
+        let roundedAbs = simulateInputRoundedAbs(candidateDeg);
+        let testLords = get5LevelKPLords(roundedAbs);
+        if (testLords && testLords[level] === targetPlanet) {
+            if (typeof writeToInputs === "function") {
+                writeToInputs("c" + cuspNum, candidateDeg);
+            }
+            if (typeof buildCuspalChart === "function") {
+                buildCuspalChart();
+            }
+            if (typeof drawD1 === "function") {
+                drawD1();
+            }
+            return;
+        }
+    }
+}
+
+// Sync all Date/Time inputs AND update `window.__LAST_SWISS_KP__` so "Save Profile" & "Save JSON" keep all rectified changes permanently!
+function syncRectifiedChartToCloudAndInputs(totalDtFromOrig) {
+    const baseMs = (BTR_ORIGINAL_BASE_MS !== null) ? BTR_ORIGINAL_BASE_MS : getOriginalBirthTimeMs();
+    if (baseMs !== null) {
+        const rectDate = new Date(baseMs + (totalDtFromOrig * 1000));
+        const pad = (n) => String(n).padStart(2, '0');
+
+        const yyyy = rectDate.getFullYear();
+        const mm   = pad(rectDate.getMonth() + 1);
+        const dd   = pad(rectDate.getDate());
+        const hh   = pad(rectDate.getHours());
+        const min  = pad(rectDate.getMinutes());
+        const ss   = pad(rectDate.getSeconds());
+
+        const newTimeStr = `${hh}:${min}:${ss}`;
+        const newDateStr = `${yyyy}-${mm}-${dd}`;
+
+        // 1. Update Base Date & Base Time Lock
+        const baseDateEl = document.getElementById("baseDate");
+        if (baseDateEl) baseDateEl.value = newDateStr;
+
+        const baseTimeEl = document.getElementById("baseTimeLock");
+        if (baseTimeEl) baseTimeEl.value = newTimeStr;
+
+        // 2. Update Cloud Fetcher Date & Time boxes (used by Save Profile!)
+        const onDayEl   = document.getElementById("onDay");
+        const onMonthEl = document.getElementById("onMonth");
+        const onYearEl  = document.getElementById("onYear");
+        const onHourEl  = document.getElementById("onHour");
+        const onMinEl   = document.getElementById("onMin");
+        const onSecEl   = document.getElementById("onSec");
+
+        if (onDayEl)   onDayEl.value   = dd;
+        if (onMonthEl) onMonthEl.value = mm;
+        if (onYearEl)  onYearEl.value  = String(yyyy);
+        if (onHourEl)  onHourEl.value  = hh;
+        if (onMinEl)   onMinEl.value   = min;
+        if (onSecEl)   onSecEl.value   = ss;
+
+        // 3. Update Synthetic Time Shift & Top-Right Mini Time inputs
+        const dateCtrlEl = document.getElementById("dateCtrl");
+        const timeCtrlEl = document.getElementById("timeCtrl");
+        const miniTimeEl = document.getElementById("miniTimeInput");
+        if (dateCtrlEl) dateCtrlEl.value = newDateStr;
+        if (timeCtrlEl) timeCtrlEl.value = newTimeStr;
+        if (miniTimeEl) miniTimeEl.value = newTimeStr;
+    }
+
+    // 4. Write current rectified Cusp & Planet degrees back into `window.__LAST_SWISS_KP__` (and `raw`)
+    // so clicking "Save Profile" saves the exact rectified chart!
+    const kpObj = window.__LAST_SWISS_KP__ || (typeof raw !== "undefined" ? raw : null);
+    if (kpObj) {
+        const ayaSelect = document.getElementById("ayanamshaSelect");
+        const selectedAya = ayaSelect ? ayaSelect.value : "new_comb";
+        const offsetDeg = (selectedAya === "new_comb") ? (41 / 3600) : 0;
+
+        const updateDataBlock = (block, subtractOffset) => {
+            if (!block) return;
+            const adj = (degVal) => (((degVal - (subtractOffset ? offsetDeg : 0)) % 360) + 360) % 360;
+
+            const c1Deg = getCuspCurrentAbsDeg(1);
+            if (c1Deg !== null) block.lagna = adj(c1Deg);
+
+            if (!block.cusps) block.cusps = {};
+            for (let i = 1; i <= 12; i++) {
+                const cDeg = getCuspCurrentAbsDeg(i);
+                if (cDeg !== null) block.cusps[i] = adj(cDeg);
+            }
+
+            if (block.planets && typeof planets !== "undefined") {
+                planets.forEach(p => {
+                    if (typeof absFromInput === "function") {
+                        const pDeg = absFromInput(p + "_sign", p + "_deg", p + "_min", p + "_sec");
+                        if (pDeg !== null) {
+                            block.planets[p] = adj(pDeg);
+                            if (block.planets[p + "_true"] !== undefined) {
+                                block.planets[p + "_true"] = adj(pDeg);
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // Update root block & active Ayanamsha sub-blocks
+        updateDataBlock(kpObj, selectedAya === "new_comb");
+        if (kpObj.ayanamshas) {
+            if (selectedAya === "kp_new" && kpObj.ayanamshas["KP New"]) {
+                updateDataBlock(kpObj.ayanamshas["KP New"], false);
+            }
+            if ((selectedAya === "lahiri" || selectedAya === "new_comb") && kpObj.ayanamshas["Lahiri"]) {
+                updateDataBlock(kpObj.ayanamshas["Lahiri"], selectedAya === "new_comb");
+            }
+        }
+    }
+}
+
+// Exact Mathematical Solver: Find the nearest time shift (in seconds) where `cuspNum` has `targetPlanet` at `level` ('rasi' | 'star' | 'sub' | 'ssl')
+// direction: 0 = absolute nearest, -1 = strictly earlier (< 0), +1 = strictly later (> 0)
+function findShiftSecondsForCuspPlanet(cuspNum, level, targetPlanet, direction = 0) {
+    const curAbs = getCuspCurrentAbsDeg(cuspNum);
+    if (curAbs === null) return null;
+
+    const lagnaRate = (typeof RATE_SEC !== "undefined" && RATE_SEC.Lagna) ? RATE_SEC.Lagna : (360 / 86164.0905);
+
+    // Maximum search window in seconds depending on KP level
+    let maxSec = 10800; // ±3 hours for SSL / Sub
+    if (level === "star") maxSec = 28800; // ±8 hours for Star
+    if (level === "rasi") maxSec = 86400; // ±24 hours for Rasi
+
+    let stepSec = (level === "ssl" || level === "sub") ? 1 : 10;
+
+    // Check both exact degree AND integer-input-rounded degree so it never reverts after writeToInputs!
+    const matchesAt = (dt) => {
+        const rawDeg = ((curAbs + lagnaRate * dt) % 360 + 360) % 360;
+        const roundedDeg = simulateInputRoundedAbs(rawDeg);
+        const lords = get5LevelKPLords(roundedDeg);
+        return lords && lords[level] === targetPlanet;
+    };
+
+    const resolveWindowCenter = (hitDt) => {
+        let startDt = hitDt;
+        let endDt = hitDt;
+        const expandStep = (level === "ssl" || level === "sub") ? 1 : 5;
+
+        while (startDt - expandStep >= -maxSec && matchesAt(startDt - expandStep)) {
+            startDt -= expandStep;
+        }
+        while (endDt + expandStep <= maxSec && matchesAt(endDt + expandStep)) {
+            endDt += expandStep;
+        }
+        if (expandStep > 1) {
+            while (matchesAt(startDt - 1)) startDt--;
+            while (matchesAt(endDt + 1)) endDt++;
+        }
+        let midDt = Math.round((startDt + endDt) / 2);
+        // Ensure midDt itself passes integer rounding check; otherwise pick a second inside [startDt, endDt] that does
+        if (!matchesAt(midDt)) {
+            for (let t = startDt; t <= endDt; t++) {
+                if (matchesAt(t)) { midDt = t; break; }
+            }
+        }
+        return { dt: midDt, startDt, endDt };
+    };
+
+    if (direction === 0 && matchesAt(0)) {
+        const curWin = resolveWindowCenter(0);
+        return { dt: 0, startDt: curWin.startDt, endDt: curWin.endDt, alreadyActive: true };
+    }
+
+    let minOffset = 1;
+    if (direction !== 0 && matchesAt(0)) {
+        const curWin = resolveWindowCenter(0);
+        minOffset = (direction > 0) ? (curWin.endDt + 2) : (Math.abs(curWin.startDt) + 2);
+    }
+
+    let bestWin = null;
+
+    for (let offset = minOffset; offset <= maxSec; offset += stepSec) {
+        if (direction >= 0) {
+            if (matchesAt(offset)) {
+                bestWin = resolveWindowCenter(offset);
+                break;
+            }
+        }
+        if (direction <= 0) {
+            if (matchesAt(-offset)) {
+                const pastWin = resolveWindowCenter(-offset);
+                if (bestWin && Math.abs(bestWin.dt) <= Math.abs(pastWin.dt)) {
+                    break;
+                }
+                bestWin = pastWin;
+                break;
+            }
+        }
+    }
+
+    return bestWin;
+}
+
+// Apply the Reverse Cuspal Shift to the entire chart & sync Birth Time + Cloud Save Data
+function applyReverseCuspPlanetSelection(cuspNum, level, targetPlanet, direction = 0) {
+    if (BTR_ORIGINAL_SHIFT === null) {
+        BTR_ORIGINAL_SHIFT = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+    }
+    if (BTR_ORIGINAL_BASE_MS === null) {
+        BTR_ORIGINAL_BASE_MS = getOriginalBirthTimeMs();
+    }
+
+    const startCuspAbs = getCuspCurrentAbsDeg(cuspNum);
+    const res = findShiftSecondsForCuspPlanet(cuspNum, level, targetPlanet, direction);
+    if (!res) {
+        alert(`Could not find ${targetPlanet} for Cusp ${cuspNum} (${level.toUpperCase()}) within range.`);
+        return;
+    }
+
+    let finalRes = res;
+    if (res.alreadyActive && direction === 0) {
+        const nextLater = findShiftSecondsForCuspPlanet(cuspNum, level, targetPlanet, 1);
+        const nextEarlier = findShiftSecondsForCuspPlanet(cuspNum, level, targetPlanet, -1);
+        if (nextLater && nextEarlier) {
+            finalRes = (Math.abs(nextLater.dt) <= Math.abs(nextEarlier.dt)) ? nextLater : nextEarlier;
+        } else {
+            finalRes = nextLater || nextEarlier || res;
+        }
+    }
+
+    const deltaSeconds = finalRes.dt;
+    const lagnaRate = (typeof RATE_SEC !== "undefined" && RATE_SEC.Lagna) ? RATE_SEC.Lagna : (360 / 86164.0905);
+    const idealTargetDeg = ((startCuspAbs + lagnaRate * deltaSeconds) % 360 + 360) % 360;
+
+    if (deltaSeconds !== 0 && typeof applyShift === "function") {
+        applyShift(deltaSeconds);
+    }
+
+    // Lock in the exact target planet on `cuspNum` even if integer arc-second rounding in `writeToInputs` was off by 1"
+    guaranteeCuspInputMatchesTarget(cuspNum, level, targetPlanet, idealTargetDeg);
+
+    const currentShift = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+    const totalDtFromOrig = currentShift - BTR_ORIGINAL_SHIFT;
+
+    // Sync rectified Birth Time & Cusp/Planet degrees to all inputs AND Cloud Save Profile data!
+    syncRectifiedChartToCloudAndInputs(totalDtFromOrig);
+
+    updateBTRTableUI();
+    if (BTR_MOON_DATA) {
+        computeBTRCandidates();
+        renderBTRMatchList();
+    }
+
+    const banner = document.getElementById("btrMatchBanner");
+    const desc = document.getElementById("btrMatchDesc");
+    const levelNames = { rasi: "RASI LORD", star: "STAR LORD", sub: "SUBLORD", ssl: "SUB-SUBLORD (SSL)" };
+    if (banner && desc) {
+        banner.style.display = "flex";
+        desc.innerHTML = `&#x1F3AF; Manual Cusp Shift: Set <b>Cusp ${cuspNum} ${levelNames[level] || level.toUpperCase()} &#x2794; ${targetPlanet}</b> &nbsp;|&nbsp; Step: ${formatDurationChange(deltaSeconds)} &nbsp;|&nbsp; Total Shift: ${formatDurationChange(totalDtFromOrig)} &nbsp;|&nbsp; Birth Time: <b>${formatBirthTimeAtShift(totalDtFromOrig)}</b>`;
+    }
+
+    closeBTRPlanetPopup();
+}
+
+// Open the 9-Planet Popup next to the clicked cell
+function openBTRPlanetPopup(cellEl, cuspNum, level, currentLord, ev) {
+    if (ev) ev.stopPropagation();
+    const pop = ensureBTRPlanetPopupDOM();
+    BTR_ACTIVE_CELL_CTX = { cuspNum, level, currentLord, cellEl };
+
+    const levelLabels = { rasi: "RASI LORD", star: "STAR LORD", sub: "SUBLORD", ssl: "SUB-SUB (SSL)" };
+    const titleEl = document.getElementById("btrPopupTitle");
+    if (titleEl) {
+        titleEl.innerHTML = `CUSP ${cuspNum} &bull; ${levelLabels[level] || level.toUpperCase()} <span style="color:#39ff14;">[${currentLord}]</span>`;
+    }
+
+    const prevBtn = document.getElementById("btrPopupPrevBtn");
+    const nextBtn = document.getElementById("btrPopupNextBtn");
+    if (prevBtn) {
+        prevBtn.onclick = () => applyReverseCuspPlanetSelection(cuspNum, level, currentLord, -1);
+    }
+    if (nextBtn) {
+        nextBtn.onclick = () => applyReverseCuspPlanetSelection(cuspNum, level, currentLord, 1);
+    }
+
+    const grid = document.getElementById("btrPopupGrid");
+    grid.innerHTML = "";
+
+    const planets9 = (typeof starCycle !== "undefined" && Array.isArray(starCycle) && starCycle.length === 9)
+        ? starCycle
+        : ["Ketu", "Venus", "Surya", "Chandra", "Mangala", "Rahu", "Jupiter", "Saturn", "Budha"];
+
+    const fmtShortShift = (sec) => {
+        if (sec === 0) return "NOW (0s)";
+        const sign = sec > 0 ? "+" : "-";
+        const a = Math.abs(sec);
+        if (a < 60) return `${sign}${a}s`;
+        const m = Math.floor(a / 60);
+        const s = a % 60;
+        return `${sign}${m}m ${s}s`;
+    };
+
+    planets9.forEach(pName => {
+        const isCurrent = (pName === currentLord);
+        const shiftInfo = findShiftSecondsForCuspPlanet(cuspNum, level, pName, 0);
+        const shiftLabel = shiftInfo
+            ? (shiftInfo.alreadyActive ? "Current (Click=Next)" : fmtShortShift(shiftInfo.dt))
+            : "N/A";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.cssText = `
+            background: ${isCurrent ? "linear-gradient(to bottom, #16a34a, #14532d)" : "#1c100b"};
+            color: ${isCurrent ? "#fff" : "#fde68a"};
+            border: 1px solid ${isCurrent ? "#39ff14" : "#a86b17"};
+            border-radius: 5px;
+            padding: 6px 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: transform 0.1s, background 0.15s;
+        `;
+        btn.onmouseenter = () => {
+            if (!isCurrent) btn.style.background = "#361e12";
+        };
+        btn.onmouseleave = () => {
+            if (!isCurrent) btn.style.background = "#1c100b";
+        };
+
+        const shiftColor = isCurrent ? "#bbf7d0" : (shiftInfo && shiftInfo.dt > 0 ? "#39ff14" : "#38bdf8");
+        btn.innerHTML = `
+            <span style="font-weight:900; font-size:13px;">${pName}</span>
+            <span style="font-size:10.5px; font-family:monospace; color:${shiftColor}; font-weight:700;">${shiftLabel}</span>
+        `;
+
+        btn.onclick = () => applyReverseCuspPlanetSelection(cuspNum, level, pName, 0);
+        grid.appendChild(btn);
+    });
+
+    pop.style.display = "block";
+    const rect = cellEl.getBoundingClientRect();
+    let topPos = rect.bottom + window.scrollY + 6;
+    let leftPos = rect.left + window.scrollX;
+
+    if (leftPos + 300 > window.scrollX + window.innerWidth) {
+        leftPos = Math.max(10, window.scrollX + window.innerWidth - 310);
+    }
+    pop.style.top = `${topPos}px`;
+    pop.style.left = `${leftPos}px`;
+}
+
+// Helper: Make a TD cell interactive for Reverse Cuspal Rectification
+function bindReverseCuspCell(td, cuspNum, level, lordName) {
+    if (!td || !lordName || lordName === "--") return;
+    td.setAttribute("data-btr-clickable", "1");
+    td.style.cursor = "pointer";
+    td.title = `Click to change Cusp ${cuspNum} ${level.toUpperCase()} (${lordName}) & auto-adjust Birth Time`;
+
+    td.onclick = (ev) => {
+        openBTRPlanetPopup(td, cuspNum, level, lordName, ev);
+    };
+}
+
+// Render the 12-Cusp Interactive Table directly inside the BTR Module + Bind Click Popups
+function renderBTRFullCuspalTable() {
+    const tbody = document.getElementById("btrFullCuspalBody");
+    if (!tbody) return;
+
+    const liveBadge = document.getElementById("btrLiveBirthTimeBadge");
+    if (liveBadge) {
+        const curShift = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+        const origShift = (BTR_ORIGINAL_SHIFT !== null) ? BTR_ORIGINAL_SHIFT : curShift;
+        const dtFromOrig = curShift - origShift;
+        const timeHtml = formatBirthTimeAtShift(dtFromOrig);
+        const durHtml = (dtFromOrig === 0) ? "0s (Original)" : `${dtFromOrig > 0 ? '+' : ''}${dtFromOrig}s`;
+        liveBadge.innerHTML = `Birth Time: ${timeHtml} &nbsp;|&nbsp; Shift: <span style="color:#facc15;">${durHtml}</span>`;
+    }
+
+    const romanLabels = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+    const pad2 = (n) => String(Math.floor(Math.abs(n || 0))).padStart(2, '0');
+
+    const c1Check = getCuspCurrentAbsDeg(1);
+    if (c1Check === null) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 14px; color:#9ca3af; font-weight:bold;">Load or Fetch a Chart first to view & adjust all 12 Cusps here.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    for (let c = 1; c <= 12; c++) {
+        const absDeg = getCuspCurrentAbsDeg(c);
+        if (absDeg === null) continue;
+
+        const lords = get5LevelKPLords(absDeg);
+        if (!lords) continue;
+
+        let norm = ((absDeg % 360) + 360) % 360;
+        let signIdx = Math.floor(norm / 30) + 1;
+        let signName = (typeof signs !== "undefined" && signs[signIdx]) ? signs[signIdx] : `Sign ${signIdx}`;
+        let degInSign = norm % 30;
+        let d = Math.floor(degInSign);
+        let mFloat = (degInSign - d) * 60;
+        let m = Math.floor(mFloat);
+        let s = Math.round((mFloat - m) * 60);
+        if (s === 60) { s = 0; m += 1; }
+        if (m === 60) { m = 0; d += 1; }
+        const dmsStr = `${pad2(d)}° ${pad2(m)}' ${pad2(s)}"`;
+
+        const tr = document.createElement("tr");
+        tr.style.background = (c % 2 === 1) ? "#140b08" : "#1b0f0b";
+        tr.style.borderBottom = "1px solid #2b1a10";
+
+        const cellStyle = (bg, col) => `
+            padding: 7px 8px;
+            text-align: center;
+            font-weight: 900;
+            color: ${col};
+            background: ${bg};
+            border-left: 1px solid #332014;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        `;
+
+        tr.innerHTML = `
+            <td style="padding: 7px 8px; text-align: center; font-weight: 900; color: #facc15; background: #120606;">
+                CUSP ${c} <span style="color:#9ca3af; font-size:11px;">(${romanLabels[c - 1]})</span>
+            </td>
+            <td style="padding: 7px 8px; text-align: center; font-weight: 800; color: #fde68a; border-left: 1px solid #332014;">
+                ${signName}
+            </td>
+            <td style="padding: 7px 8px; text-align: center; font-family: monospace; font-weight: 800; color: #38bdf8; border-left: 1px solid #332014;">
+                ${dmsStr}
+            </td>
+            <td id="btr_fc_${c}_rasi" style="${cellStyle('#180e0a', '#fde68a')}">${lords.rasi} <span style="font-size:10px; color:#a86b17;">&#x25BE;</span></td>
+            <td id="btr_fc_${c}_star" style="${cellStyle('#1c110c', '#fde68a')}">${lords.star} <span style="font-size:10px; color:#a86b17;">&#x25BE;</span></td>
+            <td id="btr_fc_${c}_sub"  style="${cellStyle('#21130d', '#38bdf8')}">${lords.sub} <span style="font-size:10px; color:#38bdf8;">&#x25BE;</span></td>
+            <td id="btr_fc_${c}_ssl"  style="${cellStyle('#26160f', '#39ff14')}">${lords.ssl} <span style="font-size:10px; color:#39ff14;">&#x25BE;</span></td>
+        `;
+
+        tbody.appendChild(tr);
+
+        bindReverseCuspCell(tr.querySelector(`#btr_fc_${c}_rasi`), c, "rasi", lords.rasi);
+        bindReverseCuspCell(tr.querySelector(`#btr_fc_${c}_star`), c, "star", lords.star);
+        bindReverseCuspCell(tr.querySelector(`#btr_fc_${c}_sub`),  c, "sub",  lords.sub);
+        bindReverseCuspCell(tr.querySelector(`#btr_fc_${c}_ssl`),  c, "ssl",  lords.ssl);
+    }
+}
+
+// Bind both the 1ST CSL row AND render the full 12-Cusp Interactive Table inside BTR
+function attachReverseCuspalClickHandlers() {
+    const c1Abs = getCuspCurrentAbsDeg(1);
+    if (c1Abs !== null) {
+        const c1Lords = get5LevelKPLords(c1Abs);
+        if (c1Lords) {
+            bindReverseCuspCell(document.getElementById("btr_c1_rasi"), 1, "rasi", c1Lords.rasi);
+            bindReverseCuspCell(document.getElementById("btr_c1_star"), 1, "star", c1Lords.star);
+            bindReverseCuspCell(document.getElementById("btr_c1_sub"),  1, "sub",  c1Lords.sub);
+            bindReverseCuspCell(document.getElementById("btr_c1_ssl"),  1, "ssl",  c1Lords.ssl);
+        }
+    }
+    renderBTRFullCuspalTable();
+}
+
+// Ensure updateBTRTableUI also refreshes the 12-Cusp table inside BTR
+const _origUpdateBTRTableUI = updateBTRTableUI;
+updateBTRTableUI = function() {
+    _origUpdateBTRTableUI.apply(this, arguments);
+    if (typeof attachReverseCuspalClickHandlers === "function") {
+        attachReverseCuspalClickHandlers();
+    }
+};
+
+// Also ensure selectBTRCandidateFromList & resetBTRToOriginal sync with Cloud Save Profile
+const _origSelectBTRCand = selectBTRCandidateFromList;
+selectBTRCandidateFromList = function(idx) {
+    _origSelectBTRCand.apply(this, arguments);
+    if (idx >= 0 && idx < BTR_CANDIDATES.length) {
+        syncRectifiedChartToCloudAndInputs(BTR_CANDIDATES[idx].dt);
+    }
+};
+
+const _origResetBTR = resetBTRToOriginal;
+resetBTRToOriginal = function() {
+    _origResetBTR.apply(this, arguments);
+    syncRectifiedChartToCloudAndInputs(0);
+};
+
+// Hook `buildCuspalChart` AND `saveCloudProfile` AFTER the entire DOM and all bottom scripts have loaded!
+window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+        if (typeof buildCuspalChart === "function" && !buildCuspalChart.__btrWrapped) {
+            const _origBuild = buildCuspalChart;
+            buildCuspalChart = function() {
+                _origBuild.apply(this, arguments);
+                if (typeof updateBTRTableUI === "function") {
+                    updateBTRTableUI();
+                }
+            };
+            buildCuspalChart.__btrWrapped = true;
+        }
+
+        // Wrap saveCloudProfile so it ALWAYS syncs the latest rectified degrees & time right before downloading the JSON!
+        if (typeof saveCloudProfile === "function" && !saveCloudProfile.__btrWrapped) {
+            const _origSaveCloud = saveCloudProfile;
+            saveCloudProfile = function() {
+                const curShift = (typeof SHIFT_SECONDS === "number") ? SHIFT_SECONDS : 0;
+                const origShift = (BTR_ORIGINAL_SHIFT !== null) ? BTR_ORIGINAL_SHIFT : curShift;
+                syncRectifiedChartToCloudAndInputs(curShift - origShift);
+                return _origSaveCloud.apply(this, arguments);
+            };
+            saveCloudProfile.__btrWrapped = true;
+        }
+
         if (typeof updateBTRTableUI === "function") {
             updateBTRTableUI();
         }
-    };
-})();
+    }, 300);
+});
 </script>
 
 
