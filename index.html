@@ -3332,7 +3332,7 @@ function resetAllTogglesToDefault() {
     window.HB_USE_PLACEMENT = true;
     window.HB_SHOW_LEGENDS = false;
 
-    window.HB_EVENODD = false;
+    window.HB_EVENODD = true;
     window.HB_PATTERN = true;
     window.HB_MIXED = false;
     window.HB_ATTRACTION_MODE = false;
@@ -3352,8 +3352,8 @@ function resetAllTogglesToDefault() {
         { id: "t10_add_subsub", val: false },
         { id: "t10_exclude_subsub_rule", val: false },
         { id: "t10_include_ssl", val: false },
-        { id: "hbPlacementToggle", val: false },
-        { id: "hb_evenodd", val: false },
+        { id: "hbPlacementToggle", val: true },
+        { id: "hb_evenodd", val: true },
         { id: "hb_pattern", val: true },
         { id: "hb_mixed", val: false },
         { id: "hbAttractToggle", val: false },
@@ -4663,11 +4663,11 @@ document.addEventListener("DOMContentLoaded", resetToolDatesToday);
 <script>
 /* =========================================================
    EFFECTIVE LINKS AS PER HOUSE BREAKING THEORY ENGINE
-   100% Exact Math + Clean 3-Pod Control Bar Layout
+   100% Exact Old Code Table-30 Rules & Dominance Logic
    ========================================================= */
 
-/* Global State Variables (Preserved for all downstream modules) */
-var HB_EVENODD         = false;
+/* Global State Variables (Exact match with Old Code Table 30 defaults) */
+var HB_EVENODD         = true;
 var HB_PATTERN         = true;
 var HB_MIXED           = false;
 
@@ -4683,6 +4683,18 @@ var HB_UNTENANTED_RULE = false;
 var HB_EXCEPTION_RULE  = false;
 var HB_SUPERIOR_RULE   = false;
 
+/* Primary & Secondary House Breaking Groups (From Old Code) */
+const HB_PRIMARY = [
+    [1, 4, 7, 10],
+    [2, 5, 8, 11],
+    [3, 6, 9, 12]
+];
+
+const HB_SECONDARY = [
+    [1, 3, 5, 7, 9, 11],   // Odd
+    [2, 4, 6, 8, 10, 12]   // Even
+];
+
 /* Shared Utilities */
 function nums(str) {
     if (!str || str === "") return [];
@@ -4693,9 +4705,76 @@ function uniqueSorted(arr) {
     return [...new Set(arr.map(Number))].sort((a, b) => a - b);
 }
 
+function detectBaseGroup(set) {
+    set = uniqueSorted(set);
+    const GROUPS = [
+        [1, 4, 7, 10],
+        [2, 5, 8, 11],
+        [3, 6, 9, 12],
+        [1, 3, 5, 7, 9, 11],
+        [2, 4, 6, 8, 10, 12]
+    ];
+    let bestGroup = [];
+    let maxCount = 0;
+
+    GROUPS.forEach(group => {
+        let matches = set.filter(x => group.includes(x));
+        if (matches.length > maxCount) {
+            maxCount = matches.length;
+            bestGroup = group;
+        }
+    });
+    return bestGroup;
+}
+
+function extendWithMatching(base, extension, group) {
+    if (!extension.length) return base;
+    let allowed = extension.filter(x => group.includes(x));
+    return uniqueSorted(base.concat(allowed));
+}
+
+function getHouseFromPlanet(p) {
+    let abs = getPlanetAbsDeg(p);
+    if (abs == null) return 1;
+    let lagna = absoluteDeg(
+        signs.indexOf(document.getElementById("c1_sign").value),
+        document.getElementById("c1_deg").value,
+        document.getElementById("c1_min").value,
+        document.getElementById("c1_sec").value
+    );
+    let diff = (abs - lagna + 360) % 360;
+    return Math.floor(diff / 30) + 1;
+}
+
 function getPivotShift() {
     const pivotHouse = getPivotHouse();
     return (pivotHouse - 1 + 12) % 12;
+}
+
+function rotateHouseList(values, shift) {
+    if (!values) return "";
+    return String(values)
+        .split(">")
+        .map(group => {
+            let nList = group.split(/[, ]+/)
+                .map(v => Number(v.trim()))
+                .filter(v => !isNaN(v) && v !== 0)
+                .map(v => ((v - shift - 1) % 12 + 12) % 12 + 1)
+                .sort((a, b) => a - b);
+            return nList.join(",");
+        })
+        .filter(str => str.length > 0)
+        .join(" > ");
+}
+
+function mergeLionSheep(sheepVals, lionVals) {
+    if (!sheepVals || sheepVals.length === 0) return lionVals || [];
+    if (!lionVals || lionVals.length === 0) return sheepVals;
+    let pool = uniqueSorted([...sheepVals, ...lionVals]);
+    if (pool.includes(6) && pool.includes(8) && pool.includes(12)) {
+        return uniqueSorted(pool);
+    }
+    return pool;
 }
 
 /* Mode Switcher (At least one mode must remain active) */
@@ -4751,12 +4830,14 @@ function computeHBFinal(p) {
     let star   = raw.star   || [];
     let placed = raw.placed || [];
 
+    /* STRICT INDEPENDENT IGNORE RULES */
     if (HB_IGNORE_SSL)     ssl    = [];
     if (HB_IGNORE_STAR)    star   = [];
     if (!HB_USE_PLACEMENT) placed = [];
 
     let anchor = [];
 
+    /* 1. STRICT ANCHOR SELECTION */
     if (sub.length) {
         anchor = sub.slice();
     } else if (ssl.length) {
@@ -4769,6 +4850,7 @@ function computeHBFinal(p) {
 
     anchor = uniqueSorted(anchor);
 
+    /* 2. IF STILL EMPTY -> TRUE FALLBACK */
     if (!anchor.length) {
         if (HB_USE_PLACEMENT) {
             return uniqueSorted(placed);
@@ -4776,17 +4858,21 @@ function computeHBFinal(p) {
         return [];
     }
 
+    /* 3. IF ATTRACTION MODE OFF -> RETURN ANCHOR */
     if (!HB_ATTRACTION_MODE) {
         return anchor;
     }
 
+    /* 4. CHECK EVEN / ODD PURITY */
     let evenCount = anchor.filter(x => x % 2 === 0).length;
     let oddCount  = anchor.filter(x => x % 2 !== 0).length;
 
+    /* Mixed -> no expansion */
     if (evenCount > 0 && oddCount > 0) {
         return anchor;
     }
 
+    /* 5. ATTRACTION POOL (NO PLACEMENT) */
     let pool = [...anchor];
     if (sub.length) {
         pool.push(...ssl);
@@ -4797,6 +4883,7 @@ function computeHBFinal(p) {
 
     pool = uniqueSorted(pool);
 
+    /* 6. FILTER BY FAMILY */
     if (evenCount === anchor.length) {
         return pool.filter(x => x % 2 === 0);
     }
@@ -4859,15 +4946,18 @@ function evenOddDominance(values) {
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
+    // 1 & 2 Exception
     if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
         return [1];
     }
 
+    // Majority Wins
     if (odd.length > even.length) {
         return uniqueSorted(odd);
     } else if (even.length > odd.length) {
         return uniqueSorted(even);
     } else {
+        // Dead Tie -> Even wins
         return uniqueSorted(even);
     }
 }
@@ -4937,6 +5027,7 @@ function mixedStructural(values) {
     if (!values.length) return [];
     values = uniqueSorted(values);
 
+    /* STEP 1 : SAMASAPTHAKA SPOILING */
     const AXIS = [
         { axis: [1, 7],  spoil: [6, 12] },
         { axis: [2, 8],  spoil: [1, 7]  },
@@ -4959,9 +5050,11 @@ function mixedStructural(values) {
     remaining = uniqueSorted(remaining);
     if (remaining.length === 0) remaining = [...values];
 
+    /* STEP 2 : FETCH RESULTS FROM BOTH ENGINES */
     let pOut = patternDominance(remaining);
     let eOut = evenOddDominance(remaining);
 
+    /* STEP 3 : RETURN BOTH GROUPS (E.g. 5,8,11 + 6,8,12) */
     if (pOut.length === 0) return [eOut];
     if (eOut.length === 0) return [pOut];
 
@@ -5043,7 +5136,7 @@ function splitBySourceLevel(planetsList, effValues) {
     return groups.join(" > ");
 }
 
-/* Main Effective Links Row Calculator (EFF A, EFF B, EFF C) */
+/* Main Effective Links Row Calculator (EFF A, EFF B, EFF C) — Exact Old Code Table-30 Logic */
 function computeEffectiveLinksRow(p) {
     let kp = getPlanetKPLords(p);
     if (!kp) return { A: "", B: "", C: "" };
@@ -5051,10 +5144,12 @@ function computeEffectiveLinksRow(p) {
     let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
     let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
 
+    /* UNTENANTED CHECK PER LEVEL */
     let planetUntenanted = typeof formatHBPlanet === "function" && formatHBPlanet(p)?.includes("$");
     let subUntenanted    = typeof formatHBPlanet === "function" && formatHBPlanet(kp.sub)?.includes("$");
     let sslUntenanted    = typeof formatHBPlanet === "function" && formatHBPlanet(kp.ssl)?.includes("$");
 
+    /* 1. GET RAW ARRAYS FIRST */
     let valsA1 = getHBValuesRaw(p) || [];
     let valsA2 = kp.star ? (getHBValuesRaw(kp.star) || []) : [];
 
@@ -5068,13 +5163,15 @@ function computeEffectiveLinksRow(p) {
     let srcB = [kp.sub];
     let srcC = [kp.ssl];
 
-    if (HB_UNTENANTED_RULE) {
+    // Handle Optional Untenanted Exclusions
+    if (typeof HB_UNTENANTED_RULE !== "undefined" && HB_UNTENANTED_RULE) {
         if (!planetUntenanted) { valsA1 = []; srcA = []; }
         if (!subUntenanted)    { valsB1 = []; srcB = []; }
         if (!sslUntenanted)    { valsC1 = []; srcC = []; }
     }
 
-    if (HB_EXCEPTION_RULE) {
+    // Apply Hard Exception Overrides First (1 VS 1 ONLY)
+    if (typeof HB_EXCEPTION_RULE !== "undefined" && HB_EXCEPTION_RULE) {
         const badMap = {
             1: [8, 12], 2: [9, 1], 3: [10, 2], 4: [11, 3],
             5: [12, 4], 6: [1, 5], 7: [2, 6], 8: [3, 7],
@@ -5101,6 +5198,7 @@ function computeEffectiveLinksRow(p) {
         valsC1 = resC.a1; valsC2 = resC.a2;
     }
 
+    /* THE REFINED DOMINANCE ENGINE (100% IDENTICAL TO OLD CODE TABLE 30) */
     function resolveLionSheep(lionVals, sheepVals, isLionStrong) {
         if (!lionVals || lionVals.length === 0) return sheepVals || [];
         if (!sheepVals || sheepVals.length === 0) return lionVals || [];
@@ -5112,7 +5210,7 @@ function computeEffectiveLinksRow(p) {
         const isAllEven = arr => arr.length > 0 && arr.every(n => n % 2 === 0);
         const isAllOdd  = arr => arr.length > 0 && arr.every(n => n % 2 !== 0);
 
-        // RULE 1: SAME PARITY MERGING
+        // RULE 1: SAME PARITY MERGING (Both Even or Both Odd)
         if ((isAllEven(L) && isAllEven(S)) || (isAllOdd(L) && isAllOdd(S))) {
             return combined;
         }
@@ -5162,7 +5260,9 @@ function computeEffectiveLinksRow(p) {
                     let evensCount = combined.filter(n => n % 2 === 0).length;
                     let isAKillerMinority = (numA % 2 !== 0 && oddsCount < evensCount) || (numA % 2 === 0 && evensCount < oddsCount);
 
-                    if (isAKillerMinority) continue;
+                    if (isAKillerMinority) {
+                        continue;
+                    }
 
                     if (isLionStrong) {
                         if (aIsLion && !bIsLion) {
@@ -5182,23 +5282,15 @@ function computeEffectiveLinksRow(p) {
             combined = survived;
         }
 
-        // RULE 6: FALLBACK TO SELECTED MODE ENGINE
-        if (HB_MIXED) {
+        // RULE 6: FALLBACK TO STANDARD PATTERN DOMINANCE (EXACT OLD CODE LOGIC)
+        if (typeof HB_MIXED !== "undefined" && HB_MIXED) {
             let mixedRes = mixedStructural(combined);
             if (mixedRes.length > 1) return mixedRes;
             return mixedRes[0] || combined;
         }
 
-        if (HB_EVENODD && !HB_PATTERN) {
-            return evenOddDominance(combined);
-        }
-
         let pOut = patternDominance(combined);
         let eOut = evenOddDominance(combined);
-
-        if (HB_PATTERN && !HB_EVENODD) {
-            return pOut;
-        }
 
         if (isLionStrong) {
             let pHasL = pOut.some(n => L.includes(n));
@@ -5239,7 +5331,7 @@ function computeEffectiveLinksRow(p) {
 
 function toggleStarColumnsVisibility() {
     const show = HB_SHOW_STARS;
-    document.querySelectorAll("#table9-body .col-star-sub, #table9-body .col-star-ssl").forEach(el => {
+    document.querySelectorAll(".col-star-sub, .col-star-ssl").forEach(el => {
         el.style.display = show ? "" : "none";
     });
 }
@@ -5248,6 +5340,11 @@ function toggleStarColumnsVisibility() {
 function buildTable9() {
     const container = document.getElementById("table9-content");
     if (!container) return;
+
+    /* Ensure __T3_CACHE__ is always fresh before computing House Breaking */
+    if (typeof updateT3CacheGlobal === "function") {
+        updateT3CacheGlobal();
+    }
 
     const existingBody = document.getElementById("table9-body");
     const isOpen = existingBody ? (existingBody.style.display === "block") : false;
@@ -5304,9 +5401,9 @@ function buildTable9() {
 
     container.innerHTML = `
         <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
-			onclick="toggleCollapsible('table9-body', this)">
-			&#x26A1; EFFECTIVE LINKS AS PER { House Breaking Theory }
-		</h2>
+            onclick="toggleCollapsible('table9-body', this)">
+            &#x26A1; EFFECTIVE LINKS AS PER { House Breaking Theory }
+        </h2>
 
         <div id="table9-body" class="collapsible-body" style="display: ${isOpen ? 'block' : 'none'};">
 
@@ -5448,9 +5545,13 @@ function buildTable9() {
 
     toggleStarColumnsVisibility();
 
-    /* Refresh downstream modules that depend on House Breaking outputs */
-    if (typeof buildCollapsedVim === "function") setTimeout(buildCollapsedVim, 0);
+    /* Refresh ALL downstream modules that depend on House Breaking outputs (Table 33, Table 35, Table 37, Bar Charts, Vimshottari, DBA) */
+    if (typeof buildHouseBreakingInnerOuterDivider === "function") buildHouseBreakingInnerOuterDivider();
+    if (typeof buildTable10 === "function") buildTable10();
+    if (typeof buildShortenedEffDivider === "function") buildShortenedEffDivider();
+    if (typeof buildEffectiveLinksDBA === "function") buildEffectiveLinksDBA();
     if (typeof buildBarCharts === "function") buildBarCharts();
+    if (typeof buildCollapsedVim === "function") setTimeout(buildCollapsedVim, 0);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -6105,35 +6206,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div id="vimshottari-body" class="collapsible-body">
 
-        <div id="vimDateFinder" class="kp-control-bar" style="justify-content: space-between; gap: 14px;">
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
-                <button type="button" class="action-btn" onclick="vimUseToday()" style="background: linear-gradient(to bottom, #059669, #022c22); color: #fff;">
+        <div id="vimDateFinder" class="kp-control-bar" style="display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; overflow-x: auto;">
+            <div style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; white-space: nowrap;">
+                <button type="button" class="action-btn" onclick="vimUseToday()" style="background: linear-gradient(to bottom, #059669, #022c22); color: #fff; padding: 5px 9px; font-size: 12px;">
                     &#x1F4C5; Current Transit
                 </button>
-                <input type="date" id="vimSearchDate">
-                <button type="button" class="action-btn" onclick="vimFindDate()" style="background: linear-gradient(to bottom, #ca8a04, #713f12); color: #fff;">
+                <input type="date" id="vimSearchDate" style="padding: 4px 6px; font-size: 12.5px;">
+                <button type="button" class="action-btn" onclick="vimFindDate()" style="background: linear-gradient(to bottom, #ca8a04, #713f12); color: #fff; padding: 5px 9px; font-size: 12px;">
                     &#x1F50D; Find
                 </button>
-                <button type="button" class="action-btn btn-clear" onclick="vimCollapseAll()">
+                <button type="button" class="action-btn btn-clear" onclick="vimCollapseAll()" style="padding: 5px 9px; font-size: 12px;">
                     Collapse All
                 </button>
             </div>
 
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
-                <label class="mcp-toggle-pill">
+            <div style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; white-space: nowrap;">
+                <label class="mcp-toggle-pill" style="padding: 4px 8px; font-size: 12px;">
                     <input type="checkbox" id="vimHideDate" checked>
                     <span>Hide Date</span>
                 </label>
 
-                <label class="mcp-toggle-pill">
+                <label class="mcp-toggle-pill" style="padding: 4px 8px; font-size: 12px;">
                     <input type="checkbox" id="vimHideAge">
                     <span>Hide Age</span>
                 </label>
+
+                <button type="button" id="vimAntaraToggleBtn" class="action-btn" onclick="toggleVimAntaraMode()" style="background: #1e293b; color: #facc15; border: 1px solid var(--border-gold); padding: 4px 8px; font-size: 11.5px; margin: 0; box-shadow: none;">
+                    Antara
+                </button>
             </div>
 
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
-                <button type="button" class="action-btn" onclick="vimShift(-1)" style="padding: 5px 10px;">◀</button>
-                <select id="vimShiftAmount">
+            <div style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; white-space: nowrap;">
+                <button type="button" class="action-btn" onclick="vimShift(-1)" style="padding: 4px 8px; font-size: 12px;">◀</button>
+                <select id="vimShiftAmount" style="padding: 4px 6px; font-size: 12.5px;">
                     <option value="90">3 months</option>
                     <option value="60">2 months</option>
                     <option value="45">1.5 months</option>
@@ -6143,8 +6248,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <option value="5">5 days</option>
                     <option value="1">1 day</option>
                 </select>
-                <button type="button" class="action-btn" onclick="vimShift(1)" style="padding: 5px 10px;">▶</button>
-                <button type="button" class="action-btn btn-clear" onclick="vimResetShift()">Reset Offset</button>
+                <button type="button" class="action-btn" onclick="vimShift(1)" style="padding: 4px 8px; font-size: 12px;">▶</button>
+                <button type="button" class="action-btn btn-clear" onclick="vimResetShift()" style="padding: 5px 9px; font-size: 12px;">Reset Offset</button>
             </div>
         </div>
 
@@ -6167,6 +6272,24 @@ const MS_YEAR   = 365.25 * 24 * 60 * 60 * 1000;
 const NAK_SIZE  = 360 / 27;
 
 let VIM_VISUAL_OFFSET = 0;
+let VIM_ENABLE_ANTARA = false; // Default OFF: Expands only Dasha & Bukthi (Level 2)
+
+function toggleVimAntaraMode() {
+    VIM_ENABLE_ANTARA = !VIM_ENABLE_ANTARA;
+    const btn = document.getElementById("vimAntaraToggleBtn");
+    if (btn) {
+        if (VIM_ENABLE_ANTARA) {
+            btn.style.background  = "#16a34a";
+            btn.style.borderColor = "#39ff14";
+            btn.style.color       = "#fff";
+        } else {
+            btn.style.background  = "#1e293b";
+            btn.style.borderColor = "var(--border-gold)";
+            btn.style.color       = "#facc15";
+        }
+    }
+    buildCollapsedVim();
+}
 
 function toggleVimshottari() {
     const head = document.getElementById("vimMainHeading");
@@ -6381,11 +6504,14 @@ function vimFindDate() {
 
     document.querySelectorAll(".vimChildren").forEach(c => c.style.display = "none");
 
+    const maxAllowedLevel = VIM_ENABLE_ANTARA ? 3 : 2;
+
     const matches = [...document.querySelectorAll(".vimRow")]
         .filter(r => {
             const s = Number(r.dataset.start);
             const e = Number(r.dataset.end);
-            return target >= s && target < e;
+            const lvl = Number(r.dataset.level);
+            return lvl <= maxAllowedLevel && target >= s && target < e;
         })
         .sort((a, b) => a.dataset.level - b.dataset.level);
 
@@ -6398,9 +6524,11 @@ function vimFindDate() {
         if (level === 3) r.classList.add("activeLevel3");
         r.classList.add("vimHit");
 
-        const node = r.closest(".vimNode");
-        const children = node?.querySelector(".vimChildren");
-        if (children) children.style.display = "block";
+        if (level < maxAllowedLevel) {
+            const node = r.closest(".vimNode");
+            const children = node?.querySelector(".vimChildren");
+            if (children) children.style.display = "block";
+        }
     });
 }
 
@@ -6463,6 +6591,12 @@ function renderNode(node, level, parent) {
                 row.classList.remove("activeLevel1", "activeLevel2", "activeLevel3");
             }
         };
+    } else {
+        /* When Antara is OFF, Bukthi (Level 2) has no child Antara nodes, but can still be clicked to highlight */
+        row.style.cursor = "pointer";
+        row.onclick = (e) => {
+            row.selectColor(e);
+        };
     }
 }
 
@@ -6497,6 +6631,7 @@ function vimRender(boxId, abs) {
     `;
 
     let cur = new Date(start.start);
+    const maxTreeDepth = VIM_ENABLE_ANTARA ? 3 : 2;
 
     vimRotate(start.lord).forEach((p, index) => {
         let end = vimAddYears(cur, VIM_YEARS[p]);
@@ -6506,7 +6641,7 @@ function vimRender(boxId, abs) {
             end: new Date(end),
             active: index === 0,
             isFirstMahadasha: index === 0,
-            children: vimBuildTree(2, cur, p, VIM_YEARS[p], 3)
+            children: vimBuildTree(2, cur, p, VIM_YEARS[p], maxTreeDepth)
         };
         renderNode(node, 1, box);
         cur = end;
@@ -9976,9 +10111,12 @@ document.addEventListener("DOMContentLoaded", () => {
 /* =========================================================
    ALL LEVEL INNER & OUTER DIVIDER — ENGINE
    ========================================================= */
-window.T11_INC_PL_STAR  = (window.T11_INC_PL_STAR  !== undefined) ? window.T11_INC_PL_STAR  : true;
-window.T11_INC_SUB_SOS  = (window.T11_INC_SUB_SOS  !== undefined) ? window.T11_INC_SUB_SOS  : true;
-window.T11_INC_SSL_SOSS = (window.T11_INC_SSL_SOSS !== undefined) ? window.T11_INC_SSL_SOSS : false;
+window.T11_INC_PLANET = (window.T11_INC_PLANET !== undefined) ? window.T11_INC_PLANET : true;
+window.T11_INC_STARLORD = (window.T11_INC_STARLORD !== undefined) ? window.T11_INC_STARLORD : true;
+window.T11_INC_SUBLORD = (window.T11_INC_SUBLORD !== undefined) ? window.T11_INC_SUBLORD : true;
+window.T11_INC_STAR_OF_SUB = (window.T11_INC_STAR_OF_SUB !== undefined) ? window.T11_INC_STAR_OF_SUB : false;
+window.T11_INC_SUBSUB = (window.T11_INC_SUBSUB !== undefined) ? window.T11_INC_SUBSUB : false;
+window.T11_INC_STAR_OF_SUBSUB = (window.T11_INC_STAR_OF_SUBSUB !== undefined) ? window.T11_INC_STAR_OF_SUBSUB : false;
 
 window.T11_COL_SUB  = (window.T11_COL_SUB  !== undefined) ? window.T11_COL_SUB  : true;
 window.T11_COL_SSL  = (window.T11_COL_SSL  !== undefined) ? window.T11_COL_SSL  : false;
@@ -10090,18 +10228,12 @@ function computeAllLevelDividerMatrixRow(planetName) {
 
     const entitiesToScan = [];
 
-    if (window.T11_INC_PL_STAR) {
-        if (planetName) entitiesToScan.push(planetName);
-        if (kp.star)    entitiesToScan.push(kp.star);
-    }
-    if (window.T11_INC_SUB_SOS) {
-        if (kp.sub)     entitiesToScan.push(kp.sub);
-        if (starOfSub)  entitiesToScan.push(starOfSub);
-    }
-    if (window.T11_INC_SSL_SOSS) {
-        if (kp.ssl)     entitiesToScan.push(kp.ssl);
-        if (starOfSSL)  entitiesToScan.push(starOfSSL);
-    }
+    if (window.T11_INC_PLANET && planetName) entitiesToScan.push(planetName);
+    if (window.T11_INC_STARLORD && kp.star) entitiesToScan.push(kp.star);
+    if (window.T11_INC_SUBLORD && kp.sub) entitiesToScan.push(kp.sub);
+    if (window.T11_INC_STAR_OF_SUB && starOfSub) entitiesToScan.push(starOfSub);
+    if (window.T11_INC_SUBSUB && kp.ssl) entitiesToScan.push(kp.ssl);
+    if (window.T11_INC_STAR_OF_SUBSUB && starOfSSL) entitiesToScan.push(starOfSSL);
 
     const combinedArr = [];
 
@@ -10114,6 +10246,36 @@ function computeAllLevelDividerMatrixRow(planetName) {
     });
 
     return [...new Set(combinedArr)].sort((a, b) => a - b).join(",");
+}
+
+function handleAllLevelEntityToggle(level, isChecked) {
+    /* Cascading levels: 1=Planet, 2=Star Lord, 3=Sub Lord, 4=Sub-Sub */
+    if (isChecked) {
+        if (level >= 1) window.T11_INC_PLANET = true;
+        if (level >= 2) window.T11_INC_STARLORD = true;
+        if (level >= 3) window.T11_INC_SUBLORD = true;
+        if (level >= 4) window.T11_INC_SUBSUB = true;
+    } else {
+        if (level <= 1) window.T11_INC_PLANET = false;
+        if (level <= 2) window.T11_INC_STARLORD = false;
+        if (level <= 3) {
+            window.T11_INC_SUBLORD = false;
+            window.T11_INC_STAR_OF_SUB = false; // Turns off Star of Sub if Sublord/Planet is unchecked
+        }
+        if (level <= 4) {
+            window.T11_INC_SUBSUB = false;
+            window.T11_INC_STAR_OF_SUBSUB = false; // Turns off Star of Sub-Sub if Sub-Sub/Planet is unchecked
+        }
+    }
+
+    if (document.getElementById('t11_chk_1')) document.getElementById('t11_chk_1').checked = window.T11_INC_PLANET;
+    if (document.getElementById('t11_chk_2')) document.getElementById('t11_chk_2').checked = window.T11_INC_STARLORD;
+    if (document.getElementById('t11_chk_3')) document.getElementById('t11_chk_3').checked = window.T11_INC_SUBLORD;
+    if (document.getElementById('t11_chk_4')) document.getElementById('t11_chk_4').checked = window.T11_INC_SUBSUB;
+    if (document.getElementById('t11_chk_opt_1')) document.getElementById('t11_chk_opt_1').checked = window.T11_INC_STAR_OF_SUB;
+    if (document.getElementById('t11_chk_opt_2')) document.getElementById('t11_chk_opt_2').checked = window.T11_INC_STAR_OF_SUBSUB;
+
+    refreshAllLevelDividerBodiesOnly();
 }
 
 function refreshAllLevelDividerBodiesOnly() {
@@ -10191,19 +10353,34 @@ function renderAllLevelInnerOuterDividerModule() {
                     <div class="all-level-divider-cardTitle">1. Select Source Levels (Entities)</div>
                     <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                         <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_INC_PL_STAR ? "checked" : ""}
-                                onchange="window.T11_INC_PL_STAR = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Planet + Star</span>
+                            <input type="checkbox" id="t11_chk_1" ${window.T11_INC_PLANET ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(1, this.checked)">
+                            <span>Planet</span>
                         </label>
                         <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_INC_SUB_SOS ? "checked" : ""}
-                                onchange="window.T11_INC_SUB_SOS = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Sublord + Star of Sub</span>
+                            <input type="checkbox" id="t11_chk_2" ${window.T11_INC_STARLORD ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(2, this.checked)">
+                            <span>Star Lord</span>
                         </label>
                         <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_INC_SSL_SOSS ? "checked" : ""}
-                                onchange="window.T11_INC_SSL_SOSS = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Sub-Sub + Star of Sub-Sub</span>
+                            <input type="checkbox" id="t11_chk_3" ${window.T11_INC_SUBLORD ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(3, this.checked)">
+                            <span>Sub Lord</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" id="t11_chk_4" ${window.T11_INC_SUBSUB ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(4, this.checked)">
+                            <span>Sub-Sub</span>
+                        </label>
+                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
+                            <input type="checkbox" id="t11_chk_opt_1" ${window.T11_INC_STAR_OF_SUB ? "checked" : ""}
+                                onchange="window.T11_INC_STAR_OF_SUB = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span style="color: #fbbf24;">Star of Sub (Opt)</span>
+                        </label>
+                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
+                            <input type="checkbox" id="t11_chk_opt_2" ${window.T11_INC_STAR_OF_SUBSUB ? "checked" : ""}
+                                onchange="window.T11_INC_STAR_OF_SUBSUB = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span style="color: #fbbf24;">Star of Sub-Sub (Opt)</span>
                         </label>
                     </div>
                 </div>
@@ -10266,12 +10443,15 @@ function renderAllLevelInnerOuterDividerModule() {
         const _origReset = window.resetAllTogglesToDefault;
         window.resetAllTogglesToDefault = function() {
             _origReset.apply(this, arguments);
-            window.T11_INC_PL_STAR  = true;
-            window.T11_INC_SUB_SOS  = true;
-            window.T11_INC_SSL_SOSS = false;
-            window.T11_COL_SUB      = true;
-            window.T11_COL_SSL      = false;
-            window.T11_COL_STAR     = true;
+            window.T11_INC_PLANET         = true;
+            window.T11_INC_STARLORD       = true;
+            window.T11_INC_SUBLORD        = true;
+            window.T11_INC_STAR_OF_SUB    = false;
+            window.T11_INC_SUBSUB         = false;
+            window.T11_INC_STAR_OF_SUBSUB = false;
+            window.T11_COL_SUB            = true;
+            window.T11_COL_SSL            = false;
+            window.T11_COL_STAR           = true;
         };
         window.resetAllTogglesToDefault.__allLevelHooked = true;
     }
@@ -10286,7 +10466,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 <!-- PLANETS & 12 CUSPAL ALL LEVEL INNER & OUTER DIVIDER -->
-
 
 
 
@@ -10922,13 +11101,13 @@ function getCalculatedOuterScore(p) {
         }
 
         if (tempStar || tempSubSub || tempSub) {
-            if (baseScore <= 20) {
+            if (baseScore <= 30) {
                 let totalGrace = 0;
                 for (let i = baseGroups.length; i < groups.length; i++) {
                     totalGrace += getOuterGraceMarks(groups[i]);
                 }
                 totalGrace = Math.min(30, totalGrace);
-                return Math.min(30, baseScore + totalGrace);
+                return Math.min(60, baseScore + totalGrace);
             } else {
                 return Math.min(100, baseScore);
             }
@@ -10984,8 +11163,8 @@ function getCalculatedInnerScore(p) {
 
             totalGrace = Math.min(30, totalGrace);
 
-            if (baseScore <= 20) {
-                return Math.min(30, baseScore + totalGrace);
+            if (baseScore <= 30) {
+                return Math.min(60, baseScore + totalGrace);
             } else if (baseScore >= 60) {
                 return Math.max(0, baseScore - totalPenalty);
             } else {
@@ -14692,6 +14871,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
