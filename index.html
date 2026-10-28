@@ -945,6 +945,54 @@ function lockBaseDateTime() {
     return true;
 }
 
+/* Helper: Compute Sign Lordships using 15°-29°59' Pivot Sign Shift when [ ] Shift is Checked */
+function getSignLordHousesWithShift(planetName, pivotHouse) {
+    const shiftActive = document.getElementById("shiftSignModeD1")?.checked;
+
+    if (!shiftActive) {
+        let signHouses = [];
+        cuspsData.forEach(c => {
+            if (c.signLord === planetName) {
+                signHouses.push(rotateHouse(c.bhava, pivotHouse));
+            }
+        });
+        return [...new Set(signHouses.map(Number))].sort((a, b) => a - b);
+    }
+
+    let pivot = document.getElementById("pivotSelect")?.value || "Lagna";
+    let pivotAbs = null;
+
+    if (pivot === "Lagna") {
+        let c1 = cuspsData.find(c => c.bhava === 1);
+        pivotAbs = c1 ? c1.absDeg : null;
+    } else if (pivot.startsWith("CSL")) {
+        let cNum = Number(pivot.replace("CSL", ""));
+        let cObj = cuspsData.find(c => c.bhava === cNum);
+        pivotAbs = cObj ? cObj.absDeg : null;
+    } else {
+        pivotAbs = getPlanetAbsDeg(pivot);
+    }
+
+    if (pivotAbs === null || isNaN(pivotAbs)) return [];
+
+    let pivotSignIdx0 = Math.floor((((pivotAbs % 360) + 360) % 360) / 30);
+    let degInSign = (((pivotAbs % 360) + 360) % 360) % 30;
+
+    /* 15° to 29°59' Rule from Parashari-Jaimini-KP: Shift Pivot Sign 1 Sign Forward (Non-CSL Pivots) */
+    if (!pivot.startsWith("CSL") && degInSign >= 15) {
+        pivotSignIdx0 = (pivotSignIdx0 + 1) % 12;
+    }
+
+    let houses = [];
+    for (let i = 0; i < 12; i++) {
+        let signName = signs[((pivotSignIdx0 + i) % 12) + 1];
+        if (signLords[signName] === planetName) {
+            houses.push(i + 1);
+        }
+    }
+    return houses;
+}
+
 /* Pre-compute Planetary House Significations Cache (__T3_CACHE__) so ALL tables in #1-#5 have instant data */
 function updateT3CacheGlobal() {
     window.__T3_CACHE__ = {};
@@ -952,24 +1000,21 @@ function updateT3CacheGlobal() {
     let pivotHouse = getPivotHouse();
 
     planets.forEach(p => {
-        let sub = [], ssl = [], star = [], sign = [];
+        let sub = [], ssl = [], star = [];
         cuspsData.forEach(c => {
             let h = rotateHouse(c.bhava, pivotHouse);
             if (c.subLord === p) sub.push(h);
             if (c.sslLord === p) ssl.push(h);
             if (c.starLord === p) star.push(h);
-            if (c.signLord === p) sign.push(h);
         });
+
+        let sign = getSignLordHousesWithShift(p, pivotHouse);
 
         if (p === "Rahu" || p === "Ketu") {
             let signPlaced = document.getElementById(p + "_sign")?.value;
             let dispositor = signLords[signPlaced];
             if (dispositor) {
-                cuspsData.forEach(c => {
-                    if (c.signLord === dispositor) {
-                        sign.push(rotateHouse(c.bhava, pivotHouse));
-                    }
-                });
+                sign.push(...getSignLordHousesWithShift(dispositor, pivotHouse));
                 let dispPlacement = rotateHouse(getPlanetHouse(dispositor), pivotHouse);
                 if (document.getElementById("retroMode")?.checked) {
                     dispPlacement = applyRetroPlacement(dispPlacement);
@@ -3346,6 +3391,10 @@ function resetAllTogglesToDefault() {
     window.DIVIDER_INC_B = true;
     window.DIVIDER_INC_C = false;
 
+    window.HB_CHART_INC_A = true;
+    window.HB_CHART_INC_B = true;
+    window.HB_CHART_INC_C = true;
+
     const toggles = [
         { id: "t10_add_starlord", val: true },
         { id: "t10_add_sublord", val: false },
@@ -3363,6 +3412,7 @@ function resetAllTogglesToDefault() {
         { id: "vedicModeK", val: false },
         { id: "retroModeK", val: false },
         { id: "showCuspsD1", val: false },
+        { id: "shiftSignModeD1", val: false },
         { id: "vedicMode", val: false },
         { id: "retroMode", val: false },
         { id: "trueNodeModeKP", val: false },
@@ -3877,6 +3927,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <label><input type="checkbox" id="vedicModeK"> Vedic (15°)</label>
             <label><input type="checkbox" id="retroModeK"> Retro</label>
             <label><input type="checkbox" id="showCuspsD1"> Show Cusps (2–12)</label>
+            <label title="When Pivot/ASC is between 15° and 29°59', shifts Pivot Sign 1 sign forward (Updates Sign Lordships Only)">
+                <input type="checkbox" id="shiftSignModeD1"> Shift
+            </label>
         </div>
 
         <div id="kundaliZone">
@@ -4076,21 +4129,12 @@ function drawD1() {
     const kpChk    = document.getElementById("kpModeK");
     const vedicChk = document.getElementById("vedicModeK");
     const retroChk = document.getElementById("retroModeK");
+    const shiftChk = document.getElementById("shiftSignModeD1");
     if (!kPivotEl) return;
 
     let pivot    = kPivotEl.value;
-    let showNums = kpChk.checked || vedicChk.checked;
+    let showNums = kpChk.checked || vedicChk.checked || (shiftChk && shiftChk.checked);
     let retro    = retroChk.checked;
-
-    const profEl = document.getElementById("kSanctumProfile");
-    const statEl = document.getElementById("kSanctumStatus");
-    const activeName = document.getElementById("onName")?.value.trim() || document.getElementById("personName")?.value.trim() || "";
-    if (profEl) profEl.textContent = activeName;
-    if (statEl) {
-        let modeLbl = kpChk.checked ? "KP (0°)" : (vedicChk.checked ? "VEDIC (15°)" : "TRUE DEGREE");
-        if (retro) modeLbl += " • RETRO";
-        statEl.textContent = `PIVOT : ${pivot.toUpperCase()}  |  ${modeLbl}`;
-    }
 
     let pSign = (pivot === "Lagna")
         ? document.getElementById("c1_sign")?.value
@@ -4103,20 +4147,47 @@ function drawD1() {
         return;
     }
 
-    document.querySelector(`#D1Chart [data-sign='${pSign}']`)?.classList.add("is-pivot-cell");
-
-    let pivotAbs;
-    if (kpChk.checked) {
-        pivotAbs = (signs.indexOf(pSign) - 1) * 30;
-    } else if (vedicChk.checked) {
-        pivotAbs = (signs.indexOf(pSign) - 1) * 30 + 15;
-    } else {
-        pivotAbs = pAbs;
+    /* Apply 15° to 29°59' Sign Shift ONLY in KP (0°) Mode when [ ] Shift is Checked (Matches Parashari-Jaimini-KP) */
+    let displayPivotSign = pSign;
+    let degInSign = (((pAbs % 360) + 360) % 360) % 30;
+    let isShifted = false;
+    if (kpChk.checked && shiftChk && shiftChk.checked && degInSign >= 15) {
+        let curSignIdx0 = signs.indexOf(pSign) - 1;
+        if (curSignIdx0 >= 0) {
+            displayPivotSign = signs[((curSignIdx0 + 1) % 12) + 1];
+            isShifted = true;
+        }
     }
+
+    const profEl = document.getElementById("kSanctumProfile");
+    const statEl = document.getElementById("kSanctumStatus");
+    const activeName = document.getElementById("onName")?.value.trim() || document.getElementById("personName")?.value.trim() || "";
+    if (profEl) profEl.textContent = activeName;
+    if (statEl) {
+        let modeLbl = kpChk.checked ? "KP (0°)" : (vedicChk.checked ? "VEDIC (15°)" : "SIGN MODE");
+        if (retro) modeLbl += " • RETRO";
+        if (kpChk.checked && shiftChk && shiftChk.checked) {
+            modeLbl += isShifted ? ` • SHIFTED (${displayPivotSign.toUpperCase()})` : " • SHIFT ON (<15°)";
+        }
+        statEl.textContent = `PIVOT : ${pivot.toUpperCase()}  |  ${modeLbl}`;
+    }
+
+    document.querySelector(`#D1Chart [data-sign='${displayPivotSign}']`)?.classList.add("is-pivot-cell");
+
+    /* Exact Global Offset Calculation from Parashari-Jaimini-KP */
+    let globalOffset = 0;
+    if (kpChk.checked) {
+        let targetDeg = (shiftChk && shiftChk.checked && degInSign >= 15) ? 30 : 0;
+        globalOffset = targetDeg - degInSign;
+    } else if (vedicChk.checked) {
+        globalOffset = 15 - degInSign;
+    }
+
+    let baseSignIndex = signs.indexOf(displayPivotSign) - 1;
 
     if (showNums) {
         let lagIdx = [...document.querySelectorAll("#D1Chart [data-sign]")]
-            .find(c => c.dataset.sign === pSign)?.dataset.idx;
+            .find(c => c.dataset.sign === displayPivotSign)?.dataset.idx;
         document.querySelectorAll("#D1Chart [data-sign]").forEach(c => {
             let b = HOUSE_FLOW[c.dataset.idx];
             if (b) {
@@ -4130,61 +4201,36 @@ function drawD1() {
 
     function place(lbl, abs, isPivot = false, isMirror = false) {
         if (abs === null || isNaN(abs)) return;
+
+        let shiftedAbs = parseFloat(((((abs + globalOffset) % 360) + 360) % 360).toFixed(6));
         let sign;
         let sortDeg;
-        let { d, m, s } = splitDMS(abs);
 
-        if (kpChk.checked && cuspsData && cuspsData.length === 12) {
-            let kpHouseNum = 1;
+        /* Parashari-Jaimini-KP Placement Logic:
+           - If KP Mode + Lagna Pivot: bin into true KP Bhava starting from shifted baseSignIndex
+           - Otherwise (Planet Pivot in KP, Vedic Mode, or Sign Mode): bin directly by shiftedAbs / 30 */
+        if (kpChk.checked && pivot === "Lagna" && cuspsData && cuspsData.length === 12) {
+            let trueHouse = 1;
             if (lbl !== "Lagna" && !lbl.startsWith("Cusp")) {
-                kpHouseNum = getPlanetHouseKP(lbl);
+                trueHouse = getPlanetHouseKP(lbl);
             } else if (lbl.startsWith("Cusp")) {
-                kpHouseNum = parseInt(lbl.replace("Cusp ", ""));
+                trueHouse = parseInt(lbl.replace("Cusp ", ""), 10);
             }
-
-            let pSignIdx = signs.indexOf(pSign) - 1;
-            let pivotHouseNum = (pivot === "Lagna") ? 1 : getPlanetHouseKP(pivot);
-            let relativeHouse = (kpHouseNum - pivotHouseNum + 12) % 12;
-            let targetSignIdx = (pSignIdx + relativeHouse) % 12;
+            let targetSignIdx = (baseSignIndex + trueHouse - 1) % 12;
             sign = signs[targetSignIdx + 1];
-
-            let curCusp = cuspsData.find(c => c.bhava === kpHouseNum);
-            let nextCusp = cuspsData.find(c => c.bhava === ((kpHouseNum % 12) + 1));
-
-            if (curCusp && nextCusp) {
-                let span = nextCusp.absDeg - curCusp.absDeg;
-                if (span < 0) span += 360;
-                let relDeg = abs - curCusp.absDeg;
-                if (relDeg < 0) relDeg += 360;
-                sortDeg = (relDeg / span) * 30;
-            } else {
-                sortDeg = d;
-            }
+            sortDeg = shiftedAbs;
         } else {
-            let shifted;
-            if (isPivot) {
-                shifted = pivotAbs;
-            } else if (isMirror) {
-                shifted = (pivotAbs + 180) % 360;
-            } else {
-                shifted = (abs - pAbs + pivotAbs + 360) % 360;
-            }
-
-            sign = signs[Math.floor(shifted / 30) + 1];
-
-            let dms = (isPivot && !kpChk.checked && !vedicChk.checked)
-                ? splitDMS(abs)
-                : splitDMS(shifted);
-
-            d = dms.d; m = dms.m; s = dms.s;
-            sortDeg = d + (m / 60) + (s / 3600);
+            let targetSignIdx = Math.floor(shiftedAbs / 30);
+            sign = signs[targetSignIdx + 1];
+            sortDeg = shiftedAbs;
         }
+
+        let { d, m, s } = splitDMS(shiftedAbs);
 
         if ((kpChk.checked || vedicChk.checked) && (isPivot || isMirror)) {
             d = kpChk.checked ? 0 : 15;
             m = 0;
             s = 0;
-            sortDeg = d;
         }
 
         if (!sign) return;
@@ -4208,20 +4254,10 @@ function drawD1() {
     if (pivot === "Lagna") place("Lagna", absDeg("c1"), true);
 
     if (document.getElementById("showCuspsD1")?.checked) {
-        const pad2 = n => String(n).padStart(2, "0");
         for (let i = 2; i <= 12; i++) {
             let abs = absDeg("c" + i);
             if (abs === null) continue;
-            let sign = signs[Math.floor((((abs % 360) + 360) % 360) / 30) + 1];
-            if (!sign) continue;
-            let { d, m, s } = splitDMS(abs);
-            buckets[sign] = buckets[sign] || [];
-            buckets[sign].push({
-                deg: d + (m / 60) + (s / 3600),
-                cls: "p-Cusp",
-                name: `Cusp ${i}`,
-                dms: `${pad2(d)}°${pad2(m)}'${pad2(s)}"`
-            });
+            place(`Cusp ${i}`, abs, false, false);
         }
     }
 
@@ -4248,12 +4284,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const vedicChk = document.getElementById("vedicModeK");
     const retroChk = document.getElementById("retroModeK");
     const cuspsChk = document.getElementById("showCuspsD1");
+    const shiftChk = document.getElementById("shiftSignModeD1");
 
-    [kPivotEl, kpChk, vedicChk, retroChk, cuspsChk].forEach(el => {
+    [kPivotEl, kpChk, vedicChk, retroChk, cuspsChk, shiftChk].forEach(el => {
         if (!el) return;
         el.addEventListener("change", () => {
             if (el === kpChk && kpChk.checked) vedicChk.checked = false;
             if (el === vedicChk && vedicChk.checked) kpChk.checked = false;
+            if (el === shiftChk) {
+                buildCuspalChart();
+                return;
+            }
             drawD1();
             if ((el === kpChk || el === vedicChk || el === retroChk) && typeof buildTable6 === "function") {
                 buildTable6();
@@ -4616,38 +4657,35 @@ document.addEventListener("DOMContentLoaded", resetToolDatesToday);
 
 
 
-
-
-
 <!-- EFFECTIVE LINKS AS PER HOUSE BREAKING THEORY -->
 <style>
 #table9-body .hb-controls-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 14px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
 #table9-body .hb-legend-bar {
-    margin-top: 14px;
-    padding: 10px 18px;
+    margin-top: 12px;
+    padding: 8px 16px;
     background: linear-gradient(180deg, #1d080d 0%, #110407 100%);
     border: 1px solid var(--border-gold);
     border-radius: 6px;
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
     color: var(--text-gold);
     font-weight: 800;
-    font-size: 13.5px;
+    font-size: 13px;
     box-shadow: var(--glow-gold);
 }
 
 #table9-body .hb-legend-badge {
     background: #120508;
     border: 1px solid var(--border-soft);
-    padding: 3px 10px;
+    padding: 2px 9px;
     border-radius: 4px;
     color: var(--text-main);
 }
@@ -4655,6 +4693,313 @@ document.addEventListener("DOMContentLoaded", resetToolDatesToday);
 #table9-body .hb-legend-badge b {
     color: var(--accent-saffron);
     margin-right: 4px;
+}
+
+/* =========================================================
+   SLIM & POLISHED HOUSE BREAKING MAIN TABLE
+   ========================================================= */
+.hb-slim-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0 !important;
+    border: 1.5px solid var(--border-gold) !important;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+}
+
+.hb-slim-table th {
+    padding: 8px 8px !important;
+    font-size: 12.5px !important;
+    letter-spacing: 0.7px;
+    background: linear-gradient(180deg, #3b1119 0%, #160408 100%) !important;
+    border-bottom: 2px solid var(--border-gold) !important;
+}
+
+.hb-slim-table td {
+    padding: 6px 9px !important;
+    font-size: 13.5px !important;
+    vertical-align: middle;
+    border-top: 1.5px solid rgba(0, 0, 0, 0.85) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.hb-slim-table tr:hover td {
+    filter: brightness(1.16);
+}
+
+.hb-cell-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+}
+
+.hb-p-label {
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    font-size: 13.5px;
+}
+
+.hb-p-label.is-primary {
+    color: var(--text-gold);
+    font-weight: 900;
+}
+
+.hb-p-nums {
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    font-size: 13px;
+    font-weight: 900;
+    color: #fef08a;
+    background: rgba(0, 0, 0, 0.48);
+    border: 1px solid rgba(250, 204, 21, 0.32);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.hb-src-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 900;
+    color: #000;
+    background: var(--accent-saffron);
+    padding: 0 4px;
+    border-radius: 3px;
+    margin-left: 3px;
+}
+
+.hb-eff-col {
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    font-size: 14.5px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.3px;
+    text-align: center !important;
+}
+
+.hb-eff-pill-a {
+    display: inline-block;
+    color: #5eead4;
+    background: rgba(20, 184, 166, 0.16);
+    border: 1px solid rgba(45, 212, 191, 0.45);
+    padding: 2px 9px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(45, 212, 191, 0.15);
+}
+
+.hb-eff-pill-b {
+    display: inline-block;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    padding: 2px 9px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.15);
+}
+
+.hb-eff-pill-c {
+    display: inline-block;
+    color: #fde047;
+    background: rgba(234, 179, 8, 0.16);
+    border: 1px solid rgba(250, 204, 21, 0.45);
+    padding: 2px 9px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.15);
+}
+
+/* =========================================================
+   HOUSE BREAKING 3-PILLAR BAR CHART (MATCHES SHORTENED LINKS)
+   ========================================================= */
+.hb-psbc-toolbar {
+    background: linear-gradient(180deg, #1d080d 0%, #110407 100%);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin: 18px 0 18px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    box-shadow: var(--shadow-card), var(--glow-gold);
+}
+
+.hb-psbc-chart-card {
+    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-card), var(--glow-gold);
+}
+
+.hb-psbc-chart-card:last-child {
+    margin-bottom: 4px;
+}
+
+.hb-psbc-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.hb-psbc-bars-stage {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 315px;
+    border-bottom: 2.5px solid var(--border-gold);
+    padding: 34px 10px 0 10px;
+    background: radial-gradient(circle at 50% 95%, rgba(250, 204, 21, 0.06), transparent 70%);
+}
+
+.hb-psbc-labels-stage {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    margin-top: 10px;
+    padding: 0 10px;
+}
+
+/* Slim 8.2% Planet Group with 3 Attached Pillars (EFF A | EFF B | EFF C) */
+.hb-psbc-tri-group {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 8.2%;
+    height: 100%;
+    gap: 0;
+}
+
+.hb-psbc-pillar-slot {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+}
+
+.hb-psbc-bar {
+    width: 100%;
+    flex-shrink: 0;
+    border-bottom: none !important;
+    transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+}
+
+/* Seamless Attached Pillar Edges & Rounded Top Corners */
+.hb-psbc-pillar-slot:first-child:last-child .hb-psbc-bar {
+    border-radius: 6px 6px 0 0;
+}
+
+.hb-psbc-pillar-slot:first-child:not(:last-child) .hb-psbc-bar {
+    border-radius: 6px 0 0 0;
+    border-right: 1.5px solid rgba(0, 0, 0, 0.82) !important;
+}
+
+.hb-psbc-pillar-slot:last-child:not(:first-child) .hb-psbc-bar {
+    border-radius: 0 6px 0 0;
+    border-left: 1px solid rgba(0, 0, 0, 0.82) !important;
+}
+
+.hb-psbc-pillar-slot:not(:first-child):not(:last-child) .hb-psbc-bar {
+    border-radius: 0;
+    border-left: 1px solid rgba(0, 0, 0, 0.82) !important;
+    border-right: 1.5px solid rgba(0, 0, 0, 0.82) !important;
+}
+
+.hb-psbc-val {
+    font-weight: 900;
+    color: #ffffff;
+    font-size: 13px !important;
+    margin-bottom: 5px;
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.85);
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+    z-index: 6;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.hb-psbc-tags {
+    display: flex;
+    width: 100%;
+    background: #100306;
+    border: 1px solid rgba(200, 138, 43, 0.55);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+
+.hb-psbc-tag-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    border-right: 1.5px solid rgba(0, 0, 0, 0.82);
+}
+
+.hb-psbc-tag-cell:last-child {
+    border-right: none;
+}
+
+.hb-psbc-tag-badge {
+    border: 1px solid #facc15;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12px;
+    background: #000000;
+    color: #facc15;
+    font-family: monospace;
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+.hb-psbc-planet-pill {
+    background: linear-gradient(145deg, #2b0810 0%, #100306 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 6px;
+    padding: 6px 4px;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.65);
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hb-psbc-span-badge {
+    font-size: 13.5px !important;
+    color: var(--text-gold);
+    font-weight: 900;
+    font-family: monospace;
+    background: #120407;
+    padding: 4px 4px;
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    text-align: center;
+    margin-top: 6px;
+    white-space: nowrap;
+    width: 100%;
 }
 </style>
 
@@ -4666,7 +5011,7 @@ document.addEventListener("DOMContentLoaded", resetToolDatesToday);
    100% Exact Old Code Table-30 Rules & Dominance Logic
    ========================================================= */
 
-/* Global State Variables (Exact match with Old Code Table 30 defaults) */
+/* Global State Variables */
 var HB_EVENODD         = true;
 var HB_PATTERN         = true;
 var HB_MIXED           = false;
@@ -4683,7 +5028,7 @@ var HB_UNTENANTED_RULE = false;
 var HB_EXCEPTION_RULE  = false;
 var HB_SUPERIOR_RULE   = false;
 
-/* Primary & Secondary House Breaking Groups (From Old Code) */
+/* Primary & Secondary House Breaking Groups */
 const HB_PRIMARY = [
     [1, 4, 7, 10],
     [2, 5, 8, 11],
@@ -4939,6 +5284,44 @@ function formatHBPlanetWithSource(p) {
     return `${name} ${vals.join(",")}${tag}`;
 }
 
+/* Rich Cell Formatter for Main House Breaking Table (Separates Planet Label & House Pill) */
+function formatHBCellRich(p, isPrimary = false) {
+    if (!p) return "";
+    let vals = computeHBFinal(p);
+    let name = markPlanet(p)
+        .replace(/\(R\)/g, "")
+        .replace(/%/g, "")
+        .replace(/#/g, "")
+        .trim();
+
+    let tagChip = "";
+    if (HB_SHOW_LEGENDS && vals && vals.length) {
+        let T3 = window.__T3_CACHE__;
+        if (T3 && T3[p]) {
+            let sub  = nums(T3[p].sub);
+            let ssl  = HB_IGNORE_SSL  ? [] : nums(T3[p].ssl);
+            let star = HB_IGNORE_STAR ? [] : nums(T3[p].star);
+            let plc  = HB_USE_PLACEMENT ? nums(T3[p].place) : [];
+
+            if (sub.length > 0 && vals.some(v => sub.includes(v)))        tagChip = `<span class="hb-src-chip">X</span>`;
+            else if (ssl.length > 0 && vals.some(v => ssl.includes(v)))   tagChip = `<span class="hb-src-chip">H</span>`;
+            else if (star.length > 0 && vals.some(v => star.includes(v))) tagChip = `<span class="hb-src-chip">F</span>`;
+            else if (plc.length > 0 && vals.some(v => plc.includes(v)))   tagChip = `<span class="hb-src-chip">P</span>`;
+        }
+    }
+
+    let numsHtml = (vals && vals.length)
+        ? `<span class="hb-p-nums">${vals.join(",")}${tagChip}</span>`
+        : ``;
+
+    return `
+        <div class="hb-cell-flex">
+            <span class="hb-p-label ${isPrimary ? 'is-primary' : ''}">${name}</span>
+            ${numsHtml}
+        </div>
+    `;
+}
+
 /* Parity Dominance (Even-Odd Mode) */
 function evenOddDominance(values) {
     if (!values.length) return [];
@@ -4946,18 +5329,15 @@ function evenOddDominance(values) {
     let even = values.filter(v => v % 2 === 0);
     let odd  = values.filter(v => v % 2 !== 0);
 
-    // 1 & 2 Exception
     if (values.includes(1) && values.includes(2) && even.length === 1 && odd.length === 1) {
         return [1];
     }
 
-    // Majority Wins
     if (odd.length > even.length) {
         return uniqueSorted(odd);
     } else if (even.length > odd.length) {
         return uniqueSorted(even);
     } else {
-        // Dead Tie -> Even wins
         return uniqueSorted(even);
     }
 }
@@ -5027,7 +5407,6 @@ function mixedStructural(values) {
     if (!values.length) return [];
     values = uniqueSorted(values);
 
-    /* STEP 1 : SAMASAPTHAKA SPOILING */
     const AXIS = [
         { axis: [1, 7],  spoil: [6, 12] },
         { axis: [2, 8],  spoil: [1, 7]  },
@@ -5050,11 +5429,9 @@ function mixedStructural(values) {
     remaining = uniqueSorted(remaining);
     if (remaining.length === 0) remaining = [...values];
 
-    /* STEP 2 : FETCH RESULTS FROM BOTH ENGINES */
     let pOut = patternDominance(remaining);
     let eOut = evenOddDominance(remaining);
 
-    /* STEP 3 : RETURN BOTH GROUPS (E.g. 5,8,11 + 6,8,12) */
     if (pOut.length === 0) return [eOut];
     if (eOut.length === 0) return [pOut];
 
@@ -5144,12 +5521,10 @@ function computeEffectiveLinksRow(p) {
     let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
     let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
 
-    /* UNTENANTED CHECK PER LEVEL */
     let planetUntenanted = typeof formatHBPlanet === "function" && formatHBPlanet(p)?.includes("$");
     let subUntenanted    = typeof formatHBPlanet === "function" && formatHBPlanet(kp.sub)?.includes("$");
     let sslUntenanted    = typeof formatHBPlanet === "function" && formatHBPlanet(kp.ssl)?.includes("$");
 
-    /* 1. GET RAW ARRAYS FIRST */
     let valsA1 = getHBValuesRaw(p) || [];
     let valsA2 = kp.star ? (getHBValuesRaw(kp.star) || []) : [];
 
@@ -5163,14 +5538,12 @@ function computeEffectiveLinksRow(p) {
     let srcB = [kp.sub];
     let srcC = [kp.ssl];
 
-    // Handle Optional Untenanted Exclusions
     if (typeof HB_UNTENANTED_RULE !== "undefined" && HB_UNTENANTED_RULE) {
         if (!planetUntenanted) { valsA1 = []; srcA = []; }
         if (!subUntenanted)    { valsB1 = []; srcB = []; }
         if (!sslUntenanted)    { valsC1 = []; srcC = []; }
     }
 
-    // Apply Hard Exception Overrides First (1 VS 1 ONLY)
     if (typeof HB_EXCEPTION_RULE !== "undefined" && HB_EXCEPTION_RULE) {
         const badMap = {
             1: [8, 12], 2: [9, 1], 3: [10, 2], 4: [11, 3],
@@ -5198,7 +5571,6 @@ function computeEffectiveLinksRow(p) {
         valsC1 = resC.a1; valsC2 = resC.a2;
     }
 
-    /* THE REFINED DOMINANCE ENGINE (100% IDENTICAL TO OLD CODE TABLE 30) */
     function resolveLionSheep(lionVals, sheepVals, isLionStrong) {
         if (!lionVals || lionVals.length === 0) return sheepVals || [];
         if (!sheepVals || sheepVals.length === 0) return lionVals || [];
@@ -5210,12 +5582,10 @@ function computeEffectiveLinksRow(p) {
         const isAllEven = arr => arr.length > 0 && arr.every(n => n % 2 === 0);
         const isAllOdd  = arr => arr.length > 0 && arr.every(n => n % 2 !== 0);
 
-        // RULE 1: SAME PARITY MERGING (Both Even or Both Odd)
         if ((isAllEven(L) && isAllEven(S)) || (isAllOdd(L) && isAllOdd(S))) {
             return combined;
         }
 
-        // RULE 2: PARITY QUANTITY DOMINANCE + STRENGTH ($)
         if (isLionStrong) {
             if ((isAllEven(L) && isAllOdd(S)) || (isAllOdd(L) && isAllEven(S))) {
                 if (L.length >= S.length || L.length >= 3) {
@@ -5224,14 +5594,12 @@ function computeEffectiveLinksRow(p) {
             }
         }
 
-        // RULE 3: DUSTHANA ATTRACTION HARD RULE (6,8,12)
         if (combined.includes(6) && combined.includes(8) && combined.includes(12)) {
             if ((L.includes(5) || S.includes(5)) && (L.includes(11) || S.includes(11))) {
                 return [6, 8, 12];
             }
         }
 
-        // RULE 4: EQUAL PARITY PATTERN FORMATION (2 vs 2)
         if (L.length === 2 && S.length === 2) {
             if ((isAllEven(L) && isAllOdd(S)) || (isAllOdd(L) && isAllEven(S))) {
                 const patterns = [[1, 4, 7, 10], [2, 5, 8, 11], [3, 6, 9, 12]];
@@ -5241,7 +5609,6 @@ function computeEffectiveLinksRow(p) {
             }
         }
 
-        // RULE 5: 12TH HOUSE SPOILING / ELIMINATION
         let finalSet = [...combined];
         const eliminates = (killer, victim) => (killer === 12 ? 1 : killer + 1) === victim;
 
@@ -5254,7 +5621,7 @@ function computeEffectiveLinksRow(p) {
 
                 if (eliminates(numA, numB)) {
                     let aIsLion = L.includes(numA);
-                    let bIsLion = L.includes(numB);
+                    let bIsLion = S.includes(numB) && !L.includes(numB);
 
                     let oddsCount = combined.filter(n => n % 2 !== 0).length;
                     let evensCount = combined.filter(n => n % 2 === 0).length;
@@ -5265,9 +5632,9 @@ function computeEffectiveLinksRow(p) {
                     }
 
                     if (isLionStrong) {
-                        if (aIsLion && !bIsLion) {
+                        if (aIsLion && bIsLion) {
                             toRemove.add(numB);
-                        } else if (!aIsLion && bIsLion) {
+                        } else if (!aIsLion && !bIsLion) {
                             toRemove.add(numA);
                         }
                     } else {
@@ -5282,7 +5649,6 @@ function computeEffectiveLinksRow(p) {
             combined = survived;
         }
 
-        // RULE 6: FALLBACK TO STANDARD PATTERN DOMINANCE (EXACT OLD CODE LOGIC)
         if (typeof HB_MIXED !== "undefined" && HB_MIXED) {
             let mixedRes = mixedStructural(combined);
             if (mixedRes.length > 1) return mixedRes;
@@ -5336,12 +5702,416 @@ function toggleStarColumnsVisibility() {
     });
 }
 
+/* =========================================================
+   HOUSE BREAKING 3-PILLAR BAR CHART ENGINE
+   Matches PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS
+   All 3 Pillars Checked by Default: EFF A = true, EFF B = true, EFF C = true
+   ========================================================= */
+window.HB_CHART_INC_A = (window.HB_CHART_INC_A !== undefined) ? window.HB_CHART_INC_A : true;
+window.HB_CHART_INC_B = (window.HB_CHART_INC_B !== undefined) ? window.HB_CHART_INC_B : true;
+window.HB_CHART_INC_C = true;
+var HB_CHART_VIM_SOURCE = "chandra_year";
+
+/* Ensure at least 1 checkbox remains active */
+window.toggleHBChartFilter = function(level, checkboxEl) {
+    if (level === "A") window.HB_CHART_INC_A = checkboxEl.checked;
+    if (level === "B") window.HB_CHART_INC_B = checkboxEl.checked;
+    if (level === "C") window.HB_CHART_INC_C = checkboxEl.checked;
+
+    if (!window.HB_CHART_INC_A && !window.HB_CHART_INC_B && !window.HB_CHART_INC_C) {
+        checkboxEl.checked = true;
+        if (level === "A") window.HB_CHART_INC_A = true;
+        if (level === "B") window.HB_CHART_INC_B = true;
+        if (level === "C") window.HB_CHART_INC_C = true;
+    }
+
+    updateHBMiniChartOnly();
+};
+
+/* 110% Visual Height Scale (0% -> 10 units, 100% -> 110 units, identical to Shortened Links Bar Chart) */
+function getHBVisualPillarHeight(score) {
+    let clampedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    let visualUnits  = clampedScore + 10;
+    return ((visualUnits / 110) * 100).toFixed(2);
+}
+
+/* Dasha / Bukthi Timeline Span Resolver for House Breaking Bar Chart */
+function getHBPlanetDashaSpan(planet) {
+    let d = typeof vimDOB === "function" ? vimDOB() : null;
+    if (!d) return "";
+
+    let pivot = document.getElementById("pivotSelect")?.value || "Lagna";
+    if (pivot.startsWith("CSL")) return "";
+
+    let isChandra = HB_CHART_VIM_SOURCE.includes("chandra");
+    let showAge   = HB_CHART_VIM_SOURCE.includes("age");
+
+    let abs = isChandra
+        ? (typeof vimMoonAbs === "function" ? vimMoonAbs() : null)
+        : (typeof vimLagnaAbs === "function" ? vimLagnaAbs() : null);
+    if (abs == null || isNaN(abs)) return "";
+
+    let startObj = vimStart(abs, d);
+    let curDate  = new Date(startObj.start);
+    let rotated  = vimRotate(startObj.lord);
+
+    let mahaStartDates = {};
+    for (let i = 0; i < rotated.length; i++) {
+        let p = rotated[i];
+        let years = VIM_YEARS[p];
+        let endDate = vimAddYears(curDate, years);
+        mahaStartDates[p] = {
+            start: new Date(curDate),
+            end: new Date(endDate),
+            isFirst: (i === 0)
+        };
+        curDate = endDate;
+    }
+
+    const formatSpan = (startDt, endDt, isFirstStart) => {
+        if (showAge) {
+            let startAge = Math.max(0, Math.floor((startDt - d) / MS_YEAR));
+            let endAge   = Math.floor((endDt - d) / MS_YEAR);
+            if (isFirstStart) startAge = 0;
+            return `${startAge} - ${endAge}`;
+        } else {
+            let startYear = isFirstStart ? d.getFullYear() : startDt.getFullYear();
+            let endYear   = endDt.getFullYear();
+            return `${startYear} - ${String(endYear).slice(-2)}`;
+        }
+    };
+
+    if (pivot === "Lagna") {
+        let md = mahaStartDates[planet];
+        if (!md) return "";
+        return formatSpan(md.start, md.end, md.isFirst);
+    }
+
+    if (VIM_ORDER.includes(pivot)) {
+        let md = mahaStartDates[pivot];
+        if (!md) return "";
+
+        let bukthiStart   = new Date(md.start);
+        let bukthiRotated = vimRotate(pivot);
+
+        for (let i = 0; i < bukthiRotated.length; i++) {
+            let bp       = bukthiRotated[i];
+            let bYears   = VIM_YEARS[pivot] * (VIM_YEARS[bp] / 120);
+            let bEndDate = vimAddYears(bukthiStart, bYears);
+
+            if (bp === planet) {
+                return formatSpan(bukthiStart, bEndDate, (md.isFirst && i === 0));
+            }
+            bukthiStart = bEndDate;
+        }
+    }
+
+    return "";
+}
+
+function getHBMiniBarStyle(score) {
+    if (score < 20) return {
+        bg: "linear-gradient(180deg, #ef4444 0%, #7f1d1d 100%)",
+        border: "1px solid #fca5a5", shadow: "rgba(239, 68, 68, 0.55)"
+    };
+    if (score < 50) return {
+        bg: "linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)",
+        border: "1px solid #93c5fd", shadow: "rgba(59, 130, 246, 0.55)"
+    };
+    if (score < 70) return {
+        bg: "linear-gradient(180deg, #facc15 0%, #854d0e 100%)",
+        border: "1px solid #fef08a", shadow: "rgba(250, 204, 21, 0.55)"
+    };
+    return {
+        bg: "linear-gradient(180deg, #22c55e 0%, #14532d 100%)",
+        border: "1px solid #86efac", shadow: "rgba(34, 197, 94, 0.55)"
+    };
+}
+
+const HB_OUTER_EVEN_MAP = {
+    /* --- 6 DIGITS (1 Combination) --- */
+    "2,4,6,8,10,12": 25,
+
+    /* --- 5 DIGITS (6 Combinations) --- */
+    "2,4,6,8,10": 70,
+    "2,4,6,8,12": 40,
+    "2,4,6,10,12": 70,
+    "2,4,8,10,12": 40,
+    "2,6,8,10,12": 40,
+    "4,6,8,10,12": 30,
+
+    /* --- 4 DIGITS (15 Combinations) --- */
+    "2,4,6,8": 50,
+    "2,4,6,10": 100,
+    "2,4,6,12": 50,
+    "2,4,8,10": 75,
+    "2,4,8,12": 30,
+    "2,4,10,12": 80,
+    "2,6,8,10": 80,
+    "2,6,8,12": 25,
+    "2,6,10,12": 80,
+    "2,8,10,12": 40,
+    "4,6,8,10": 50,
+    "4,6,8,12": 20,
+    "4,6,10,12": 60,
+    "4,8,10,12": 30,
+    "6,8,10,12": 30,
+
+    /* --- 3 DIGITS (20 Combinations) --- */
+    "2,4,6": 80,
+    "2,4,8": 40,
+    "2,4,10": 80,
+    "2,4,12": 60,
+    "2,6,8": 40,
+    "2,6,10": 80,
+    "2,6,12": 50,
+    "2,8,10": 50,
+    "2,8,12": 20,
+    "2,10,12": 50,
+    "4,6,8": 30,
+    "4,6,10": 80,
+    "4,6,12": 60,
+    "4,8,10": 40,
+    "4,8,12": 20,
+    "4,10,12": 60,
+    "6,8,10": 60,
+    "6,8,12": 20,
+    "6,10,12": 60,
+    "8,10,12": 20,
+
+    /* --- 2 DIGITS (15 Combinations) --- */
+    "2,4": 50,
+    "2,6": 50,
+    "2,8": 25,
+    "2,10": 50,
+    "2,12": 25,
+    "4,6": 50,
+    "4,8": 25,
+    "4,10": 60,
+    "4,12": 30,
+    "6,8": 20,
+    "6,10": 60,
+    "6,12": 25,
+    "8,10": 0,
+    "8,12": 0,
+    "10,12": 40,
+
+    /* --- 1 DIGIT (6 Combinations) --- */
+    "2": 25,
+    "4": 25,
+    "6": 50,
+    "8": 0,
+    "10": 50,
+    "12": 0
+};
+
+/* Score a Single Level (EFF A, EFF B, or EFF C) Independently */
+function scoreSingleHBLevel(effStr) {
+    if (!effStr) return { outer: 0, inner: 0 };
+    let m = String(effStr).match(/\d+/g);
+    if (!m) return { outer: 0, inner: 0 };
+
+    let uniqueNums = [...new Set(m.map(Number).filter(n => n >= 1 && n <= 12))].sort((a, b) => a - b);
+
+    let evenKey = uniqueNums.filter(n => n % 2 === 0).join(",");
+    let outer = (evenKey && HB_OUTER_EVEN_MAP[evenKey] !== undefined) ? HB_OUTER_EVEN_MAP[evenKey] : 0;
+
+    let oddCount = uniqueNums.filter(n => n % 2 !== 0).length;
+    let inner = (oddCount >= 5) ? 100 : (oddCount * 20);
+
+    return { outer, inner };
+}
+
+/* Render Vertical 3-Pillar Chart Card (Identical Structure to Shortened Effective Links Bar Chart) */
+function renderHBVerticalThreePillarCard(planetsOrder, mode, activeKeys) {
+    let isOuter = (mode === "outer");
+
+    let titleLeft  = isOuter ? "Outer Life ( Career , Money , Property , Investments )" : "Inner Life ( Education , Health , Marriage , Children )";
+    let titleRight = isOuter ? "Material Life" : "Personal Life";
+
+    let subTitle = isOuter
+        ? "Unique Even Digits (2, 4, 6, 8, 10, 12) • 63-Combination Matrix for Economic Growth, Profession, Property, Investment & Official Life"
+        : "Unique Odd Digits (1, 3, 5, 7, 9, 11) • 20% Per Unique Digit (5 or 6 Digits = 100%) for Education, Happiness, Marriage, Health & Personal Life";
+
+    let primaryColor = isOuter ? "var(--accent-saffron)" : "#e879f9";
+    let glowColor    = isOuter ? "rgba(255, 159, 28, 0.4)" : "rgba(232, 121, 249, 0.4)";
+    let borderColor  = isOuter ? "var(--accent-crimson)" : "#a21caf";
+
+    let activeLegendStr = activeKeys.map(k => `Pillar ${k}: EFF ${k}`).join("  |  ");
+
+    let html = `
+    <div class="hb-psbc-chart-card">
+        <div class="hb-psbc-chart-header" style="border-bottom: 2px solid ${borderColor};">
+            <h3 style="margin: 0; color: ${primaryColor}; font-size: 20px; font-weight: 900; text-shadow: 0 0 8px ${glowColor};">${titleLeft}</h3>
+            <span style="color: ${primaryColor}; font-size: 18px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">
+                ${titleRight}
+            </span>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-dim);">
+                ${subTitle}
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 900; background: #120407; border: 1px solid var(--border-gold); padding: 4px 12px; border-radius: 6px; color: var(--text-gold);">
+                <span>&#x25AE; ${activeLegendStr}</span>
+            </div>
+        </div>
+
+        <div class="hb-psbc-bars-stage">
+    `;
+
+    let labelsHtml = `<div class="hb-psbc-labels-stage">`;
+
+    planetsOrder.forEach(p => {
+        let eff = computeEffectiveLinksRow(p);
+        let levelData = {
+            A: { scoreObj: scoreSingleHBLevel(eff.A), raw: eff.A || "None", label: "EFF A (Planet + Star)" },
+            B: { scoreObj: scoreSingleHBLevel(eff.B), raw: eff.B || "None", label: "EFF B (Sub + Star of Sub)" },
+            C: { scoreObj: scoreSingleHBLevel(eff.C), raw: eff.C || "None", label: "EFF C (Sub-Sub + Star of SSL)" }
+        };
+
+        let shortName = markPlanet(p).split(" ")[0];
+        let dashaSpan = getHBPlanetDashaSpan(p);
+
+        let pillarsHtml = "";
+        let tagsCellsHtml = "";
+
+        activeKeys.forEach(k => {
+            let val       = isOuter ? levelData[k].scoreObj.outer : levelData[k].scoreObj.inner;
+            let barHeight = getHBVisualPillarHeight(val);
+            let theme     = getHBMiniBarStyle(val);
+            let tip       = `${shortName} | ${levelData[k].label}: [${levelData[k].raw}] -> ${val}% (Visual: ${val + 10}/110)`;
+
+            pillarsHtml += `
+                <div class="hb-psbc-pillar-slot" title="${tip}">
+                    <div class="hb-psbc-bar" style="background: ${theme.bg}; border: ${theme.border}; height: ${barHeight}%; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 14px ${theme.shadow};">
+                        <div class="hb-psbc-val">${val}%</div>
+                    </div>
+                </div>
+            `;
+
+            tagsCellsHtml += `
+                <div class="hb-psbc-tag-cell" title="${levelData[k].label}" style="background: ${theme.bg};">
+                    <span class="hb-psbc-tag-badge">${k}</span>
+                </div>
+            `;
+        });
+
+        let spanHtml = dashaSpan
+            ? `<div class="hb-psbc-span-badge">${dashaSpan}</div>`
+            : ``;
+
+        html += `
+            <div class="hb-psbc-tri-group">
+                ${pillarsHtml}
+            </div>
+        `;
+
+        labelsHtml += `
+            <div style="width: 8.2%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+                <div class="hb-psbc-tags">
+                    ${tagsCellsHtml}
+                </div>
+                <div class="hb-psbc-planet-pill">${shortName}</div>
+                ${spanHtml}
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    labelsHtml += `</div>`;
+
+    html += labelsHtml + `</div>`;
+    return html;
+}
+
+function buildHBMiniBarChartHtml() {
+    if (!cuspsData || cuspsData.length === 0) return "";
+
+    const planetsOrder = getPivotSortedPlanets();
+    let activeKeys = [];
+    if (window.HB_CHART_INC_A) activeKeys.push("A");
+    if (window.HB_CHART_INC_B) activeKeys.push("B");
+    if (window.HB_CHART_INC_C) activeKeys.push("C");
+
+    if (activeKeys.length === 0) {
+        window.HB_CHART_INC_A = true;
+        window.HB_CHART_INC_B = true;
+        window.HB_CHART_INC_C = true;
+        activeKeys = ["A", "B", "C"];
+    }
+
+    let pillarsPerPlanet = activeKeys.length;
+    let totalPillars     = pillarsPerPlanet * planetsOrder.length;
+
+    return `
+        <div class="hb-psbc-toolbar">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span style="color: var(--text-gold); font-size: 14px; font-weight: 900; letter-spacing: 0.8px;">
+                    &#x1F4CA; HOUSE BREAKING BAR CHART (${pillarsPerPlanet} PILLAR${pillarsPerPlanet > 1 ? 'S' : ''}/PLANET = ${totalPillars} PILLARS)
+                </span>
+
+                <label class="mcp-toggle-pill" style="padding: 4px 10px; font-size: 12.5px; border-color: rgba(45, 212, 191, 0.55);">
+                    <input type="checkbox" ${window.HB_CHART_INC_A ? "checked" : ""}
+                           onchange="toggleHBChartFilter('A', this)">
+                    <span style="color: #2dd4bf; font-weight: 900;">EFF A</span>
+                </label>
+
+                <label class="mcp-toggle-pill" style="padding: 4px 10px; font-size: 12.5px; border-color: rgba(248, 113, 113, 0.55);">
+                    <input type="checkbox" ${window.HB_CHART_INC_B ? "checked" : ""}
+                           onchange="toggleHBChartFilter('B', this)">
+                    <span style="color: #f87171; font-weight: 900;">EFF B</span>
+                </label>
+
+                <label class="mcp-toggle-pill" style="padding: 4px 10px; font-size: 12.5px; border-color: rgba(251, 191, 36, 0.55);">
+                    <input type="checkbox" ${window.HB_CHART_INC_C ? "checked" : ""}
+                           onchange="toggleHBChartFilter('C', this)">
+                    <span style="color: #fbbf24; font-weight: 900;">EFF C</span>
+                </label>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="color: var(--accent-cyan); font-size: 11.5px; font-weight: 900; text-transform: uppercase;">Timeline:</span>
+                <label class="mcp-toggle-pill" style="padding: 4px 9px; font-size: 12px;">
+                    <input type="radio" name="hbVimDateMode" ${HB_CHART_VIM_SOURCE === "chandra_year" ? "checked" : ""}
+                           onchange="HB_CHART_VIM_SOURCE = 'chandra_year'; updateHBMiniChartOnly();">
+                    <span>Year - Chandra</span>
+                </label>
+                <label class="mcp-toggle-pill" style="padding: 4px 9px; font-size: 12px;">
+                    <input type="radio" name="hbVimDateMode" ${HB_CHART_VIM_SOURCE === "lagna_year" ? "checked" : ""}
+                           onchange="HB_CHART_VIM_SOURCE = 'lagna_year'; updateHBMiniChartOnly();">
+                    <span>Year - Lagna</span>
+                </label>
+                <label class="mcp-toggle-pill" style="padding: 4px 9px; font-size: 12px;">
+                    <input type="radio" name="hbVimDateMode" ${HB_CHART_VIM_SOURCE === "chandra_age" ? "checked" : ""}
+                           onchange="HB_CHART_VIM_SOURCE = 'chandra_age'; updateHBMiniChartOnly();">
+                    <span>Age - Chandra</span>
+                </label>
+                <label class="mcp-toggle-pill" style="padding: 4px 9px; font-size: 12px;">
+                    <input type="radio" name="hbVimDateMode" ${HB_CHART_VIM_SOURCE === "lagna_age" ? "checked" : ""}
+                           onchange="HB_CHART_VIM_SOURCE = 'lagna_age'; updateHBMiniChartOnly();">
+                    <span>Age - Lagna</span>
+                </label>
+            </div>
+        </div>
+
+        ${renderHBVerticalThreePillarCard(planetsOrder, "outer", activeKeys)}
+        ${renderHBVerticalThreePillarCard(planetsOrder, "inner", activeKeys)}
+    `;
+}
+
+function updateHBMiniChartOnly() {
+    const slot = document.getElementById("hb-mini-chart-slot");
+    if (slot) {
+        slot.innerHTML = buildHBMiniBarChartHtml();
+    }
+}
+
 /* Render Effective Links as Per House Breaking Theory */
 function buildTable9() {
     const container = document.getElementById("table9-content");
     if (!container) return;
 
-    /* Ensure __T3_CACHE__ is always fresh before computing House Breaking */
     if (typeof updateT3CacheGlobal === "function") {
         updateT3CacheGlobal();
     }
@@ -5353,7 +6123,7 @@ function buildTable9() {
     if (!cuspsData || cuspsData.length === 0) {
         rowsHtml = `
             <tr>
-                <td colspan="9" style="padding: 18px; text-align: center; color: var(--text-dim); font-weight: 700;">
+                <td colspan="9" style="padding: 16px; text-align: center; color: var(--text-dim); font-weight: 700;">
                     Load or Fetch a Chart to view Effective Links as Per House Breaking Theory.
                 </td>
             </tr>
@@ -5369,18 +6139,24 @@ function buildTable9() {
 
             rowsHtml += `
                 <tr>
-                    <td class="table9-teal"><b>${formatHBPlanetWithSource(p)}</b></td>
-                    <td class="table9-teal">${kp.star ? formatHBPlanetWithSource(kp.star) : ""}</td>
+                    <td class="table9-teal">${formatHBCellRich(p, true)}</td>
+                    <td class="table9-teal" style="border-right: 2px solid #047857 !important;">${kp.star ? formatHBCellRich(kp.star, false) : ""}</td>
 
-                    <td class="table9-red">${kp.sub ? formatHBPlanetWithSource(kp.sub) : ""}</td>
-                    <td class="col-star-sub table9-red">${starOfSub ? formatHBPlanetWithSource(starOfSub) : ""}</td>
+                    <td class="table9-red">${kp.sub ? formatHBCellRich(kp.sub, false) : ""}</td>
+                    <td class="col-star-sub table9-red">${starOfSub ? formatHBCellRich(starOfSub, false) : ""}</td>
 
-                    <td class="table9-brown">${kp.ssl ? formatHBPlanetWithSource(kp.ssl) : ""}</td>
-                    <td class="col-star-ssl table9-brown">${starOfSSL ? formatHBPlanetWithSource(starOfSSL) : ""}</td>
+                    <td class="table9-brown" style="border-left: 2px solid rgba(251,191,36,0.6) !important;">${kp.ssl ? formatHBCellRich(kp.ssl, false) : ""}</td>
+                    <td class="col-star-ssl table9-brown">${starOfSSL ? formatHBCellRich(starOfSSL, false) : ""}</td>
 
-                    <td class="table9-teal" style="font-weight: 800;">${eff.A}</td>
-                    <td class="table9-red" style="font-weight: 800;">${eff.B}</td>
-                    <td class="table9-brown" style="font-weight: 800;">${eff.C}</td>
+                    <td class="table9-teal hb-eff-col" style="border-left: 2.5px solid var(--border-gold) !important;">
+                        ${eff.A ? `<span class="hb-eff-pill-a">${eff.A}</span>` : "—"}
+                    </td>
+                    <td class="table9-red hb-eff-col">
+                        ${eff.B ? `<span class="hb-eff-pill-b">${eff.B}</span>` : "—"}
+                    </td>
+                    <td class="table9-brown hb-eff-col">
+                        ${eff.C ? `<span class="hb-eff-pill-c">${eff.C}</span>` : "—"}
+                    </td>
                 </tr>
             `;
         });
@@ -5402,7 +6178,7 @@ function buildTable9() {
     container.innerHTML = `
         <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
             onclick="toggleCollapsible('table9-body', this)">
-            &#x26A1; EFFECTIVE LINKS AS PER { House Breaking Theory }
+            &#x26A1; EFFECTIVE LINKS AS PER { House Breaking } - GRAPH
         </h2>
 
         <div id="table9-body" class="collapsible-body" style="display: ${isOpen ? 'block' : 'none'};">
@@ -5506,19 +6282,19 @@ function buildTable9() {
 
             </div>
 
-            <!-- MAIN EFFECTIVE LINKS TABLE -->
-            <table class="table9-equal" style="margin-top: 0;">
+            <!-- SLIM & POLISHED EFFECTIVE LINKS TABLE -->
+            <table class="hb-slim-table">
                 <thead>
                     <tr>
                         <th>Planet</th>
-                        <th>Star Lord</th>
-                        <th>Sub</th>
+                        <th style="border-right: 2px solid var(--border-gold);">Star Lord</th>
+                        <th>Sub Lord</th>
                         <th class="col-star-sub">Star of Sub</th>
-                        <th>Sub-Sub</th>
+                        <th style="border-left: 2px solid var(--border-gold);">Sub-Sub Lord</th>
                         <th class="col-star-ssl">Star of Sub-Sub</th>
-                        <th>EFF A</th>
-                        <th>EFF B</th>
-                        <th>EFF C</th>
+                        <th style="border-left: 2.5px solid var(--border-gold); color: #2dd4bf;">EFF A</th>
+                        <th style="color: #f87171;">EFF B</th>
+                        <th style="color: #fbbf24;">EFF C</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -5527,6 +6303,11 @@ function buildTable9() {
             </table>
 
             ${legendsHtml}
+
+            <!-- 3-PILLAR BAR CHART (MATCHING SHORTENED EFFECTIVE LINKS BAR CHART STYLE) -->
+            <div id="hb-mini-chart-slot">
+                ${buildHBMiniBarChartHtml()}
+            </div>
 
         </div>
     `;
@@ -5545,7 +6326,7 @@ function buildTable9() {
 
     toggleStarColumnsVisibility();
 
-    /* Refresh ALL downstream modules that depend on House Breaking outputs (Table 33, Table 35, Table 37, Bar Charts, Vimshottari, DBA) */
+    /* Refresh ALL downstream modules that depend on House Breaking outputs */
     if (typeof buildHouseBreakingInnerOuterDivider === "function") buildHouseBreakingInnerOuterDivider();
     if (typeof buildTable10 === "function") buildTable10();
     if (typeof buildShortenedEffDivider === "function") buildShortenedEffDivider();
@@ -5559,6 +6340,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 <!-- EFFECTIVE LINKS AS PER HOUSE BREAKING THEORY -->
+
+
+
+
+
+
+
+
 
 
 
@@ -6274,7 +7063,111 @@ const NAK_SIZE  = 360 / 27;
 let VIM_VISUAL_OFFSET = 0;
 let VIM_ENABLE_ANTARA = false; // Default OFF: Expands only Dasha & Bukthi (Level 2)
 
+function captureVimBoxState(boxId) {
+    const box = document.getElementById(boxId);
+    if (!box) return null;
+    const state = {
+        openL1: [],
+        openL2: [],
+        activeL1: [],
+        activeL2: [],
+        activeL3: [],
+        hitKeys: []
+    };
+    box.querySelectorAll(":scope > .vimNode").forEach((l1Node, i1) => {
+        const r1 = l1Node.querySelector(":scope > .vimRow");
+        const c1 = l1Node.querySelector(":scope > .vimChildren");
+        if (c1 && c1.style.display === "block") state.openL1.push(i1);
+        if (r1 && (r1.classList.contains("activeLevel1") || r1.classList.contains("vimSelectedMaha"))) {
+            state.activeL1.push(i1);
+        }
+        if (r1 && r1.classList.contains("vimHit")) state.hitKeys.push(`1-${i1}`);
+
+        if (c1) {
+            c1.querySelectorAll(":scope > .vimNode").forEach((l2Node, i2) => {
+                const r2 = l2Node.querySelector(":scope > .vimRow");
+                const c2 = l2Node.querySelector(":scope > .vimChildren");
+                if (c2 && c2.style.display === "block") state.openL2.push(`${i1}-${i2}`);
+                if (r2 && (r2.classList.contains("activeLevel2") || r2.classList.contains("vimSelectedBukthi"))) {
+                    state.activeL2.push(`${i1}-${i2}`);
+                }
+                if (r2 && r2.classList.contains("vimHit")) state.hitKeys.push(`2-${i1}-${i2}`);
+
+                if (c2) {
+                    c2.querySelectorAll(":scope > .vimNode").forEach((l3Node, i3) => {
+                        const r3 = l3Node.querySelector(":scope > .vimRow");
+                        if (r3 && (r3.classList.contains("activeLevel3") || r3.classList.contains("vimSelectedAntara"))) {
+                            state.activeL3.push(`${i1}-${i2}-${i3}`);
+                        }
+                        if (r3 && r3.classList.contains("vimHit")) state.hitKeys.push(`3-${i1}-${i2}-${i3}`);
+                    });
+                }
+            });
+        }
+    });
+    return state;
+}
+
+function restoreVimBoxState(boxId, state) {
+    const box = document.getElementById(boxId);
+    if (!box || !state) return;
+
+    const l1Nodes = box.querySelectorAll(":scope > .vimNode");
+    l1Nodes.forEach((l1Node, i1) => {
+        const r1 = l1Node.querySelector(":scope > .vimRow");
+        const c1 = l1Node.querySelector(":scope > .vimChildren");
+
+        if (state.openL1.includes(i1) && c1) {
+            c1.style.display = "block";
+        }
+        if (state.activeL1.includes(i1) && r1) {
+            r1.classList.add("activeLevel1", "vimSelectedMaha");
+        }
+        if (state.hitKeys.includes(`1-${i1}`) && r1) {
+            r1.classList.add("vimHit");
+        }
+
+        if (c1) {
+            const l2Nodes = c1.querySelectorAll(":scope > .vimNode");
+            l2Nodes.forEach((l2Node, i2) => {
+                const key2 = `${i1}-${i2}`;
+                const r2 = l2Node.querySelector(":scope > .vimRow");
+                const c2 = l2Node.querySelector(":scope > .vimChildren");
+
+                if (state.activeL2.includes(key2) && r2) {
+                    r2.classList.add("activeLevel2", "vimSelectedBukthi");
+                }
+                if (state.hitKeys.includes(`2-${key2}`) && r2) {
+                    r2.classList.add("vimHit");
+                }
+
+                /* When Antara is enabled, open previously open L2 OR currently active/selected Bukthi */
+                if (VIM_ENABLE_ANTARA && c2 && (state.openL2.includes(key2) || state.activeL2.includes(key2))) {
+                    c2.style.display = "block";
+                }
+
+                if (c2 && VIM_ENABLE_ANTARA) {
+                    const l3Nodes = c2.querySelectorAll(":scope > .vimNode");
+                    l3Nodes.forEach((l3Node, i3) => {
+                        const key3 = `${i1}-${i2}-${i3}`;
+                        const r3 = l3Node.querySelector(":scope > .vimRow");
+                        if (state.activeL3.includes(key3) && r3) {
+                            r3.classList.add("activeLevel3", "vimSelectedAntara");
+                        }
+                        if (state.hitKeys.includes(`3-${key3}`) && r3) {
+                            r3.classList.add("vimHit");
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
+
 function toggleVimAntaraMode() {
+    const moonState  = captureVimBoxState("vimMoonBox");
+    const lagnaState = captureVimBoxState("vimLagnaBox");
+
     VIM_ENABLE_ANTARA = !VIM_ENABLE_ANTARA;
     const btn = document.getElementById("vimAntaraToggleBtn");
     if (btn) {
@@ -6288,7 +7181,10 @@ function toggleVimAntaraMode() {
             btn.style.color       = "#facc15";
         }
     }
+
     buildCollapsedVim();
+    restoreVimBoxState("vimMoonBox", moonState);
+    restoreVimBoxState("vimLagnaBox", lagnaState);
 }
 
 function toggleVimshottari() {
@@ -10697,18 +11593,833 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-
-
-
-
-
-
-
-
-<!-- PLANETARY STRENGTH BAR CHART -->
+<!-- PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS 1 (OLD) -->
 <style>
 /* =========================================================
-   PLANETARY STRENGTH BAR CHART STYLES
+   PLANETARY STRENGTH BAR CHART STYLES (OLD - SINGLE PILLAR)
+   ========================================================= */
+#planet-charts-wrapper-old > h2.collapsible-heading {
+    background: linear-gradient(135deg, #332701 0%, #171100 60%, #473802 100%) !important;
+    border: 1px solid #ca8a04 !important;
+    border-left: 6px solid #facc15 !important;
+    color: #fef08a !important;
+    box-shadow: var(--shadow-card), 0 0 16px rgba(250, 204, 21, 0.22) !important;
+}
+
+.psbc-old-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.psbc-old-chart-card {
+    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 22px 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card), var(--glow-gold);
+}
+
+.psbc-old-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.psbc-old-bars-stage {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 270px;
+    border-bottom: 2.5px solid var(--border-gold);
+    padding-top: 24px;
+    background: radial-gradient(circle at 50% 100%, rgba(255, 159, 28, 0.06), transparent 70%);
+}
+
+.psbc-old-labels-stage {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    margin-top: 14px;
+}
+
+.psbc-old-planet-pill {
+    background: linear-gradient(145deg, #2b0810 0%, #100306 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text-main);
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.65);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.psbc-old-span-badge {
+    font-size: 12.5px;
+    color: var(--text-gold);
+    font-weight: 900;
+    font-family: monospace;
+    background: #120407;
+    padding: 4px 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    text-align: center;
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
+.psbc-old-split-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.psbc-old-legend-box {
+    background: #120407;
+    border: 1px solid var(--border-soft);
+    padding: 16px;
+    border-radius: 8px;
+}
+</style>
+
+<div id="planet-charts-wrapper-old" class="kp-module-section"></div>
+
+<script>
+/* =========================================================
+   PLANETARY STRENGTH BAR CHART ENGINE (OLD - SINGLE PILLAR)
+   ========================================================= */
+var CHART_SECTION_OPEN_OLD = false; /* Collapsed by default */
+var CHART_REST_OPEN_OLD    = false;
+var CHART_VIM_SOURCE_OLD   = "chandra_year";
+
+window.OVERRIDE_SCORES_OLD = window.OVERRIDE_SCORES_OLD || {};
+
+function updateOverrideOld(planet, type, value) {
+    if (!window.OVERRIDE_SCORES_OLD[planet]) {
+        window.OVERRIDE_SCORES_OLD[planet] = { outer: null, inner: null };
+    }
+    window.OVERRIDE_SCORES_OLD[planet][type] = (value === "auto") ? null : parseInt(value, 10);
+    buildBarChartsOld();
+}
+
+function clearAllOverridesOld() {
+    window.OVERRIDE_SCORES_OLD = {};
+    buildBarChartsOld();
+}
+
+function getPlanetDashaSpanOld(planet) {
+    let d = typeof vimDOB === "function" ? vimDOB() : null;
+    if (!d) return "";
+
+    let pivot = document.getElementById("pivotSelect")?.value || "Lagna";
+    if (pivot.startsWith("CSL")) return "";
+
+    let isChandra = CHART_VIM_SOURCE_OLD.includes("chandra");
+    let showAge   = CHART_VIM_SOURCE_OLD.includes("age");
+
+    let abs = isChandra ? vimMoonAbs() : vimLagnaAbs();
+    if (abs == null || isNaN(abs)) return "";
+
+    let startObj = vimStart(abs, d);
+    let curDate  = new Date(startObj.start);
+    let rotated  = vimRotate(startObj.lord);
+
+    let mahaStartDates = {};
+    for (let i = 0; i < rotated.length; i++) {
+        let p = rotated[i];
+        let years = VIM_YEARS[p];
+        let endDate = vimAddYears(curDate, years);
+        mahaStartDates[p] = {
+            start: new Date(curDate),
+            end: new Date(endDate),
+            isFirst: (i === 0)
+        };
+        curDate = endDate;
+    }
+
+    const formatSpan = (startDt, endDt, isFirstStart) => {
+        if (showAge) {
+            let startAge = Math.max(0, Math.floor((startDt - d) / MS_YEAR));
+            let endAge   = Math.floor((endDt - d) / MS_YEAR);
+            if (isFirstStart) startAge = 0;
+            return `${startAge} - ${endAge}`;
+        } else {
+            let startYear = isFirstStart ? d.getFullYear() : startDt.getFullYear();
+            let endYear   = endDt.getFullYear();
+            return `${startYear} - ${String(endYear).slice(-2)}`;
+        }
+    };
+
+    if (pivot === "Lagna") {
+        let md = mahaStartDates[planet];
+        if (!md) return "";
+        return formatSpan(md.start, md.end, md.isFirst);
+    }
+
+    if (VIM_ORDER.includes(pivot)) {
+        let md = mahaStartDates[pivot];
+        if (!md) return "";
+
+        let bukthiStart   = new Date(md.start);
+        let bukthiRotated = vimRotate(pivot);
+
+        for (let i = 0; i < bukthiRotated.length; i++) {
+            let bp       = bukthiRotated[i];
+            let bYears   = VIM_YEARS[pivot] * (VIM_YEARS[bp] / 120);
+            let bEndDate = vimAddYears(bukthiStart, bYears);
+
+            if (bp === planet) {
+                return formatSpan(bukthiStart, bEndDate, (md.isFirst && i === 0));
+            }
+            bukthiStart = bEndDate;
+        }
+    }
+
+    return "";
+}
+
+function getSelectedEFFGroupsForChartsOld(p) {
+    let out = [];
+    let shortEff = computeTable10Row(p, true);
+    if (!shortEff) return out;
+    let parts = String(shortEff).split(/[>+]/);
+    parts.forEach(part => {
+        let matches = part.match(/\d+/g);
+        if (matches) {
+            let clean = [...new Set(matches.map(Number))].filter(n => n >= 1 && n <= 12).sort((a,b)=>a-b);
+            if (clean.length) out.push(clean);
+        }
+    });
+    return out;
+}
+
+function getBarThemeOld(score) {
+    if (score < 20) return {
+        bg: "linear-gradient(180deg, #ef4444 0%, #7f1d1d 100%)",
+        border: "1px solid #fca5a5", shadow: "rgba(239, 68, 68, 0.55)"
+    };
+    if (score < 50) return {
+        bg: "linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%)",
+        border: "1px solid #93c5fd", shadow: "rgba(59, 130, 246, 0.55)"
+    };
+    if (score < 70) return {
+        bg: "linear-gradient(180deg, #facc15 0%, #854d0e 100%)",
+        border: "1px solid #fef08a", shadow: "rgba(250, 204, 21, 0.55)"
+    };
+    return {
+        bg: "linear-gradient(180deg, #22c55e 0%, #14532d 100%)",
+        border: "1px solid #86efac", shadow: "rgba(34, 197, 94, 0.55)"
+    };
+}
+
+const OUTER_SCORE_MAP_OLD = {
+    "1,4,7,10": 100, "1,4,7": 90, "1,4,10": 90, "1,7,10": 90, "4,7,10": 90,
+    "1,4": 60, "1,10": 70, "4,7": 60, "7,10": 80,
+    "2,5,8,11": 30, "2,5,8": 40, "2,5,11": 30, "2,8,11": 40, "5,8,11": 30,
+    "2,5": 30, "2,11": 30, "5,8": 10, "8,11": 20,
+    "3,6,9,12": 40, "3,6,9": 40, "3,6,12": 50, "3,9,12": 20, "6,9,12": 50,
+    "3,6": 40, "3,12": 20, "6,9": 40, "9,12": 20,
+
+    "1,5,9": 0, "1,5": 0, "1,9": 0, "5,9": 0,
+    "2,6,10": 100, "2,6": 70, "2,10": 80, "6,10": 90,
+    "3,7,11": 20, "3,7": 20, "3,11": 10, "7,11": 20,
+    "4,8,12": 50, "4,8": 60, "4,12": 70, "8,12": 40,
+
+    "1,7": 60, "2,8": 40, "3,9": 10, "4,10": 80, "5,11": 0, "6,12": 50,
+
+    "1,3,5,7,9,11": 30,
+    "1,3,5,7,9": 30, "1,3,5,7,11": 30, "1,3,5,9,11": 20, "1,3,7,9,11": 30, "1,5,7,9,11": 30, "3,5,7,9,11": 30,
+    "1,3,5,7": 30, "1,3,5,9": 20, "1,3,5,11": 20, "1,3,7,9": 30, "1,3,7,11": 30, "1,3,9,11": 20,
+    "1,5,7,9": 30, "1,5,7,11": 30, "1,5,9,11": 20, "1,7,9,11": 30,
+    "3,5,7,9": 20, "3,5,7,11": 20, "3,5,9,11": 0, "3,7,9,11": 20, "5,7,9,11": 20,
+    "1,3,5": 20, "1,3,7": 40, "1,3,9": 20, "1,3,11": 20, "1,5,7": 40, "1,5,11": 20, "1,7,9": 40, "1,7,11": 40, "1,9,11": 20,
+    "3,5,7": 30, "3,5,9": 10, "3,5,11": 10, "3,7,9": 20, "3,9,11": 10, "5,7,9": 20, "5,7,11": 30, "5,9,11": 0, "7,9,11": 20,
+    "1,3": 20, "1,11": 30, "3,5": 10, "5,7": 20, "7,9": 20, "9,11": 10,
+
+    "2,4,6,8,10,12": 30,
+    "2,4,6,8,10": 60, "2,4,6,8,12": 40, "2,4,6,10,12": 70, "2,4,8,10,12": 30, "2,6,8,10,12": 30, "4,6,8,10,12": 30,
+    "2,4,6,8": 60, "2,4,6,10": 100, "2,4,6,12": 80, "2,4,8,10": 70, "2,4,8,12": 40, "2,4,10,12": 80,
+    "2,6,8,10": 70, "2,6,8,12": 30, "2,6,10,12": 70, "2,8,10,12": 30,
+    "4,6,8,10": 60, "4,6,8,12": 30, "4,6,10,12": 70, "4,8,10,12": 50, "6,8,10,12": 40,
+    "2,4,6": 80, "2,4,8": 60, "2,4,10": 90, "2,4,12": 80, "2,6,8": 30, "2,6,12": 30, "2,8,10": 40, "2,8,12": 20, "2,10,12": 50,
+    "4,6,8": 60, "4,6,10": 100, "4,6,12": 70, "4,8,10": 70, "4,10,12": 80,
+    "6,8,10": 70, "6,8,12": 30, "6,10,12": 70, "8,10,12": 30,
+    "2,4": 60, "2,12": 40, "4,6": 60, "6,8": 40, "8,10": 40, "10,12": 40,
+
+    "1": 20, "2": 30, "3": 10, "4": 30, "5": 0, "6": 50, "7": 20, "8": 10, "9": 0, "10": 50, "11": 10, "12": 10
+};
+
+const INNER_SCORE_MAP_OLD = {
+    "1,4,7,10": 80, "1,4,7": 70, "1,4,10": 70, "1,7,10": 70, "4,7,10": 70,
+    "1,4": 60, "1,10": 60, "4,7": 50, "7,10": 50,
+    "2,5,8,11": 60, "2,5,8": 40, "2,5,11": 60, "2,8,11": 60, "5,8,11": 60,
+    "2,5": 40, "2,11": 40, "5,8": 30, "8,11": 40,
+    "3,6,9,12": 40, "3,6,9": 50, "3,6,12": 30, "3,9,12": 50, "6,9,12": 30,
+    "3,6": 30, "3,12": 40, "6,9": 30, "9,12": 30,
+
+    "1,5,9": 100, "1,5": 70, "1,9": 70, "5,9": 80,
+    "2,6,10": 20, "2,6": 20, "2,10": 20, "6,10": 10,
+    "3,7,11": 100, "3,7": 70, "3,11": 70, "7,11": 80,
+    "4,8,12": 10, "4,8": 20, "4,12": 20, "8,12": 0,
+
+    "1,7": 70, "2,8": 10, "3,9": 70, "4,10": 40, "5,11": 80, "6,12": 20,
+
+    "1,3,5,7,9,11": 100,
+    "1,3,5,7,9": 90, "1,3,5,7,11": 90, "1,3,5,9,11": 90, "1,3,7,9,11": 90, "1,5,7,9,11": 90, "3,5,7,9,11": 90,
+    "1,3,5,7": 70, "1,3,5,9": 70, "1,3,5,11": 70, "1,3,7,9": 70, "1,3,7,11": 70, "1,3,9,11": 70,
+    "1,5,7,9": 70, "1,5,7,11": 70, "1,5,9,11": 70, "1,7,9,11": 70,
+    "3,5,7,9": 70, "3,5,7,11": 70, "3,5,9,11": 70, "3,7,9,11": 70, "5,7,9,11": 70,
+    "1,3,5": 50, "1,3,7": 60, "1,3,9": 60, "1,3,11": 60, "1,5,7": 50, "1,5,11": 50, "1,7,9": 60, "1,7,11": 60, "1,9,11": 60,
+    "3,5,7": 50, "3,5,9": 50, "3,5,11": 50, "3,7,9": 50, "3,9,11": 50, "5,7,9": 50, "5,7,11": 50, "5,9,11": 50, "7,9,11": 50,
+    "1,3": 40, "1,11": 40, "3,5": 40, "5,7": 40, "7,9": 40, "9,11": 40,
+
+    "2,4,6,8,10,12": 30,
+    "2,4,6,8,10": 30, "2,4,6,8,12": 30, "2,4,6,10,12": 30, "2,4,8,10,12": 30, "2,6,8,10,12": 30, "4,6,8,10,12": 30,
+    "2,4,6,8": 30, "2,4,6,10": 30, "2,4,6,12": 30, "2,4,8,10": 30, "2,4,8,12": 20, "2,4,10,12": 30,
+    "2,6,8,10": 20, "2,6,8,12": 20, "2,6,10,12": 20, "2,8,10,12": 20,
+    "4,6,8,10": 30, "4,6,8,12": 20, "4,6,10,12": 30, "4,8,10,12": 10, "6,8,10,12": 10,
+    "2,4,6": 40, "2,4,8": 30, "2,4,10": 50, "2,4,12": 40, "2,6,8": 40, "2,6,12": 40, "2,8,10": 40, "2,8,12": 20, "2,10,12": 30,
+    "4,6,8": 20, "4,6,10": 50, "4,6,12": 40, "4,8,10": 30, "4,10,12": 30,
+    "6,8,10": 30, "6,8,12": 10, "6,10,12": 30, "8,10,12": 20,
+    "2,4": 40, "2,12": 30, "4,6": 20, "6,8": 10, "8,10": 10, "10,12": 30,
+
+    "1": 50, "2": 30, "3": 30, "4": 30, "5": 40, "6": 10, "7": 30, "8": 0, "9": 40, "10": 10, "11": 30, "12": 0
+};
+
+function calculateOuterScoreOld(numsList) {
+    if (!numsList || numsList.length === 0) return 0;
+    let str = numsList.slice().sort((a, b) => a - b).join(",");
+    return OUTER_SCORE_MAP_OLD.hasOwnProperty(str) ? OUTER_SCORE_MAP_OLD[str] : 0;
+}
+
+function calculateInnerScoreOld(numsList) {
+    if (!numsList || numsList.length === 0) return 0;
+    let str = numsList.slice().sort((a, b) => a - b).join(",");
+    return INNER_SCORE_MAP_OLD.hasOwnProperty(str) ? INNER_SCORE_MAP_OLD[str] : 0;
+}
+
+function getOuterGraceMarksOld(groupArray) {
+    if (!groupArray || groupArray.length === 0) return 0;
+    const validOuter = [2, 6, 10, 3, 7, 11];
+    return groupArray.filter(n => validOuter.includes(n)).length * 10;
+}
+
+function getInnerGraceMarksOld(groupArray) {
+    if (!groupArray || groupArray.length === 0) return 0;
+    const validInner = [1, 3, 5, 7, 9, 11];
+    return groupArray.filter(n => validInner.includes(n)).length * 10;
+}
+
+function getCalculatedOuterScoreOld(p) {
+    let groups = getSelectedEFFGroupsForChartsOld(p);
+    if (!groups || groups.length === 0) return 0;
+
+    let tempStar   = T10_ADD_STARLORD;
+    let tempSubSub = T10_ADD_SUBSUB;
+    let tempSub    = T10_ADD_SUBLORD;
+
+    T10_ADD_STARLORD = false;
+    T10_ADD_SUBSUB   = false;
+    T10_ADD_SUBLORD  = false;
+
+    let baseGroups = getSelectedEFFGroupsForChartsOld(p);
+
+    T10_ADD_STARLORD = tempStar;
+    T10_ADD_SUBSUB   = tempSubSub;
+    T10_ADD_SUBLORD  = tempSub;
+
+    let baseScore = 0;
+    for (let i = 0; i < baseGroups.length; i++) {
+        baseScore += calculateOuterScoreOld(baseGroups[i]);
+    }
+
+    if (tempStar || tempSubSub || tempSub) {
+        if (baseScore <= 30) {
+            let totalGrace = 0;
+            for (let i = baseGroups.length; i < groups.length; i++) {
+                totalGrace += getOuterGraceMarksOld(groups[i]);
+            }
+            totalGrace = Math.min(30, totalGrace);
+            return Math.min(60, baseScore + totalGrace);
+        } else {
+            return Math.min(100, baseScore);
+        }
+    }
+    return Math.min(100, baseScore);
+}
+
+function getCalculatedInnerScoreOld(p) {
+    let groups = getSelectedEFFGroupsForChartsOld(p);
+    if (!groups || groups.length === 0) return 0;
+
+    let tempStar   = T10_ADD_STARLORD;
+    let tempSubSub = T10_ADD_SUBSUB;
+    let tempSub    = T10_ADD_SUBLORD;
+
+    T10_ADD_STARLORD = false;
+    T10_ADD_SUBSUB   = false;
+    T10_ADD_SUBLORD  = false;
+
+    let baseGroups = getSelectedEFFGroupsForChartsOld(p);
+
+    T10_ADD_STARLORD = tempStar;
+    T10_ADD_SUBSUB   = tempSubSub;
+    T10_ADD_SUBLORD  = tempSub;
+
+    let baseScore = 0;
+    for (let i = 0; i < baseGroups.length; i++) {
+        baseScore += calculateInnerScoreOld(baseGroups[i]);
+    }
+
+    if (tempStar || tempSubSub || tempSub) {
+        let totalGrace   = 0;
+        let totalPenalty = 0;
+
+        for (let i = baseGroups.length; i < groups.length; i++) {
+            let bypassedGrp = groups[i];
+            totalGrace   += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
+            totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
+        }
+
+        totalGrace = Math.min(30, totalGrace);
+
+        if (baseScore <= 30) {
+            return Math.min(60, baseScore + totalGrace);
+        } else if (baseScore >= 60) {
+            return Math.max(0, baseScore - totalPenalty);
+        } else {
+            return Math.min(100, baseScore);
+        }
+    }
+    return Math.min(100, baseScore);
+}
+
+function getFinalOuterScoreOld(p) {
+    if (window.OVERRIDE_SCORES_OLD[p] && window.OVERRIDE_SCORES_OLD[p].outer !== null) {
+        return window.OVERRIDE_SCORES_OLD[p].outer;
+    }
+    return getCalculatedOuterScoreOld(p);
+}
+
+function getFinalInnerScoreOld(p) {
+    if (window.OVERRIDE_SCORES_OLD[p] && window.OVERRIDE_SCORES_OLD[p].inner !== null) {
+        return window.OVERRIDE_SCORES_OLD[p].inner;
+    }
+    return getCalculatedInnerScoreOld(p);
+}
+
+function getComparisonBarColorOld(score) {
+    if (score <= 10) return "#ef4444";
+    if (score <= 30) return "#475569";
+    if (score <= 50) return "#2563eb";
+    if (score <= 70) return "#eab308";
+    return "#22c55e";
+}
+
+function renderVerticalChartOld(planetsOrder, type) {
+    let isOuter = (type === "outer");
+
+    let titleLeft  = isOuter ? "Outer Life ( Career , Money , Property , Investments )" : "Inner Life ( Education , Health , Marriage , Children )";
+    let titleRight = isOuter ? "Material Life" : "Personal Life";
+
+    let subTitle = isOuter
+        ? "Planet Strength (Based on Dasa Bhukti) for Economic Growth, Profession, Property, Investment, Responsibility, Status, Self-Control and Official Life"
+        : "Planet Strength (Based on Dasa Bhukti) for Education, Happiness, Marriage Life, Health, Public Relationship, Enjoyment, Charity Thinking, Enjoyable Expenses, Soul related Personal Life";
+
+    let primaryColor = isOuter ? "var(--accent-saffron)" : "#e879f9";
+    let glowColor    = isOuter ? "rgba(255, 159, 28, 0.4)" : "rgba(232, 121, 249, 0.4)";
+    let borderColor  = isOuter ? "var(--accent-crimson)" : "#a21caf";
+
+    let html = `
+    <div class="psbc-old-chart-card">
+        <div class="psbc-old-chart-header" style="border-bottom: 2px solid ${borderColor};">
+            <h3 style="margin: 0; color: ${primaryColor}; font-size: 20px; font-weight: 900; text-shadow: 0 0 8px ${glowColor};">${titleLeft}</h3>
+            <span style="color: ${primaryColor}; font-size: 18px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9;">
+                ${titleRight}
+            </span>
+        </div>
+
+        <div style="font-size: 13.5px; font-weight: 700; color: var(--text-dim); margin-bottom: 18px;">
+            ${subTitle}
+        </div>
+
+        <div class="psbc-old-bars-stage">
+    `;
+
+    let labelsHtml = `<div class="psbc-old-labels-stage">`;
+
+    planetsOrder.forEach(p => {
+        let score     = isOuter ? getFinalOuterScoreOld(p) : getFinalInnerScoreOld(p);
+        let theme     = getBarThemeOld(score);
+        let shortName = markPlanet(p).split(" ")[0];
+        let dashaSpan = getPlanetDashaSpanOld(p);
+
+        let spanHtml = dashaSpan
+            ? `<div class="psbc-old-span-badge">${dashaSpan}</div>`
+            : ``;
+
+        html += `
+            <div style="display: flex; flex-direction: column; align-items: center; width: 9%; height: 100%; justify-content: flex-end;">
+                <div style="font-weight: 900; color: #ffffff; font-size: 14.5px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.9);">${score}%</div>
+                <div style="width: 68%; background: ${theme.bg}; border: ${theme.border}; border-bottom: none; border-radius: 6px 6px 0 0; height: ${score}%; min-height: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 14px ${theme.shadow}; transition: height 0.5s ease-in-out;"></div>
+            </div>
+        `;
+
+        labelsHtml += `
+            <div style="width: 9%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+                <div class="psbc-old-planet-pill">${shortName}</div>
+                ${spanHtml}
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    labelsHtml += `</div>`;
+
+    html += labelsHtml + `</div>`;
+    return html;
+}
+
+function renderBhavaCSLTableOld() {
+    if (!cuspsData || cuspsData.length === 0) return "";
+
+    let pivotHouse = getPivotHouse();
+    let base = [...cuspsData].sort((a, b) => a.bhava - b.bhava);
+    let rotated = [];
+    let start = base.findIndex(c => c.bhava === pivotHouse);
+    if (start < 0) start = 0;
+    for (let i = 0; i < 12; i++) {
+        rotated.push(base[(start + i) % 12]);
+    }
+
+    let rowsHtml = "";
+    rotated.forEach((c, i) => {
+        let bhava       = i + 1;
+        let csl         = c.subLord;
+        let displayName = markPlanet(csl).split(" ")[0];
+        let innerScore  = getFinalInnerScoreOld(csl);
+        let outerScore  = getFinalOuterScoreOld(csl);
+        let innerColor  = getComparisonBarColorOld(innerScore);
+        let outerColor  = getComparisonBarColorOld(outerScore);
+
+        rowsHtml += `
+        <tr>
+            <td style="font-weight: 900; color: var(--accent-saffron); font-size: 15px; width: 7%;">${bhava}</td>
+            <td style="font-weight: 900; color: var(--text-gold); font-size: 15px; width: 13%;">${displayName}</td>
+            <td style="width: 40%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #140508; height: 18px; border-radius: 3px; border: 1px solid var(--border-soft); overflow: hidden;">
+                        <div style="width: ${innerScore}%; background: ${innerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; font-size: 14px; color: var(--text-main); width: 48px; text-align: right;">${innerScore}%</span>
+                </div>
+            </td>
+            <td style="width: 40%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #140508; height: 18px; border-radius: 3px; border: 1px solid var(--border-soft); overflow: hidden;">
+                        <div style="width: ${outerScore}%; background: ${outerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; font-size: 14px; color: var(--text-main); width: 48px; text-align: right;">${outerScore}%</span>
+                </div>
+            </td>
+        </tr>
+        `;
+    });
+
+    return `
+    <div class="psbc-old-chart-card">
+        <h3 style="margin: 0 0 14px 0; color: var(--text-gold); font-size: 18px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+            &#x1F3DB; 12 Bhava CSL Potential (FATE)
+        </h3>
+        <div class="psbc-old-split-layout">
+            <div style="flex: 1 1 620px;">
+                <table style="margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th>Bhava</th>
+                            <th>CSL</th>
+                            <th style="color: #86efac;">Inner Life (Non-Material)</th>
+                            <th style="color: var(--text-gold);">Outer Life (Material)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 14px;">
+                <div class="psbc-old-legend-box">
+                    <div style="display:flex; align-items:center; margin-bottom:8px;"><span style="background:#22c55e; color:#000; font-weight:900; padding:4px 8px; width:95px; text-align:center; border-radius:3px; margin-right:12px; font-size:12.5px;">71 - 100%</span><b>Very Good</b></div>
+                    <div style="display:flex; align-items:center; margin-bottom:8px;"><span style="background:#eab308; color:#000; font-weight:900; padding:4px 8px; width:95px; text-align:center; border-radius:3px; margin-right:12px; font-size:12.5px;">51 - 70%</span><b>Good</b></div>
+                    <div style="display:flex; align-items:center; margin-bottom:8px;"><span style="background:#2563eb; color:#fff; font-weight:900; padding:4px 8px; width:95px; text-align:center; border-radius:3px; margin-right:12px; font-size:12.5px;">31 - 50%</span><b>Average</b></div>
+                    <div style="display:flex; align-items:center; margin-bottom:8px;"><span style="background:#475569; color:#fff; font-weight:900; padding:4px 8px; width:95px; text-align:center; border-radius:3px; margin-right:12px; font-size:12.5px;">11 - 30%</span><b>Bad</b></div>
+                    <div style="display:flex; align-items:center;"><span style="background:#ef4444; color:#fff; font-weight:900; padding:4px 8px; width:95px; text-align:center; border-radius:3px; margin-right:12px; font-size:12.5px;">0 - 10%</span><b>Very Bad</b></div>
+                </div>
+                <div class="psbc-old-legend-box" style="font-size: 13px; color: var(--text-dim); line-height: 1.5;">
+                    <div style="color: #86efac; font-weight: 800; margin-bottom: 4px;">Inner Life (Non-Material)</div>
+                    <div style="margin-bottom: 12px;">Education, Happiness, Health, Marriage Life and sentiment sense.</div>
+                    <div style="color: var(--text-gold); font-weight: 800; margin-bottom: 4px;">Outer Life (Material)</div>
+                    <div>Economic, Profession, Property developing, logical sense.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function renderComparisonTableOld(planetsOrder) {
+    let totalOuter = 0;
+    let totalInner = 0;
+    let rowsHtml   = "";
+
+    planetsOrder.forEach(p => {
+        let outerScore = getFinalOuterScoreOld(p);
+        let innerScore = getFinalInnerScoreOld(p);
+        totalOuter += outerScore;
+        totalInner += innerScore;
+
+        let outerColor = getComparisonBarColorOld(outerScore);
+        let innerColor = getComparisonBarColorOld(innerScore);
+        let fullName   = markPlanet(p).split(" ")[0];
+
+        rowsHtml += `
+        <tr>
+            <td style="font-weight: 900; font-size: 15px; color: var(--text-gold); width: 12%;">${fullName}</td>
+            <td style="width: 44%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #140508; height: 18px; border-radius: 3px; overflow: hidden; border: 1px solid var(--border-soft);">
+                        <div style="width: ${outerScore}%; background: ${outerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; color: var(--text-main); width: 48px; text-align: right;">${outerScore}%</span>
+                </div>
+            </td>
+            <td style="width: 44%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div style="flex-grow: 1; background: #140508; height: 18px; border-radius: 3px; overflow: hidden; border: 1px solid var(--border-soft);">
+                        <div style="width: ${innerScore}%; background: ${innerColor}; height: 100%; transition: width 0.4s ease;"></div>
+                    </div>
+                    <span style="font-weight: 900; color: var(--text-main); width: 48px; text-align: right;">${innerScore}%</span>
+                </div>
+            </td>
+        </tr>
+        `;
+    });
+
+    let avgOuter = planetsOrder.length ? Math.round(totalOuter / planetsOrder.length) : 0;
+    let avgInner = planetsOrder.length ? Math.round(totalInner / planetsOrder.length) : 0;
+
+    return `
+    <div class="psbc-old-chart-card">
+        <h3 style="margin: 0 0 14px 0; color: var(--text-gold); font-size: 18px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
+            &#x2696; Outer vs Inner Life Strength Comparison
+        </h3>
+        <div class="psbc-old-split-layout">
+            <div style="flex: 1 1 620px;">
+                <table style="margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th>Planet</th>
+                            <th style="color: var(--text-gold);">Outer Life &mdash; Official (Material)</th>
+                            <th style="color: #86efac;">Inner Life &mdash; Personal (Non-Material)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="flex: 1 1 260px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="psbc-old-legend-box">
+                    <h4 style="color: var(--accent-emerald); margin: 0 0 16px 0; font-size: 17px; text-align: center; text-transform: uppercase;">Avg. Planet Strength</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 900; color: var(--text-gold); font-size: 16px;">Official Life</span>
+                        <span style="font-weight: 900; color: var(--text-gold); font-size: 22px;">${avgOuter}%</span>
+                    </div>
+                    <p style="font-size: 12.5px; color: var(--text-dim); margin: 0 0 18px 0;">
+                        Favorable Planet strength for Economic, Profession, Property development &amp; logical sense.
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 900; color: #86efac; font-size: 16px;">Personal Life</span>
+                        <span style="font-weight: 900; color: #86efac; font-size: 22px;">${avgInner}%</span>
+                    </div>
+                    <p style="font-size: 12.5px; color: var(--text-dim); margin: 0;">
+                        Favorable Planet strength for Education, Happiness, Health, Marriage Life &amp; sentiment sense.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function renderOverrideTableOld(planetsOrder) {
+    let html = `
+    <div class="psbc-old-chart-card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1.5px solid var(--border-gold); padding-bottom: 10px;">
+            <h3 style="color: var(--text-gold); margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase;">&#x1F39B; Manual Score Overrides (OLD)</h3>
+            <button type="button" class="action-btn btn-clear" onclick="clearAllOverridesOld()">&#x21BA; Reset All to Auto</button>
+        </div>
+        <table style="margin-top: 0;">
+            <thead>
+                <tr>
+                    <th>Planet</th>
+                    <th>Outer Life Override</th>
+                    <th>Inner Life Override</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    planetsOrder.forEach(p => {
+        let calcOuter = getCalculatedOuterScoreOld(p);
+        let calcInner = getCalculatedInnerScoreOld(p);
+
+        let overOuter = window.OVERRIDE_SCORES_OLD[p] ? window.OVERRIDE_SCORES_OLD[p].outer : null;
+        let overInner = window.OVERRIDE_SCORES_OLD[p] ? window.OVERRIDE_SCORES_OLD[p].inner : null;
+
+        let makeSelect = (type, calcVal, overrideVal) => {
+            let isOverridden = (overrideVal !== null);
+            let borderStyle  = isOverridden ? "border: 2px solid #22c55e !important;" : "";
+            let sel = `<select onchange="updateOverrideOld('${p}', '${type}', this.value)" style="${borderStyle} width: 150px; text-align: center;">`;
+            sel += `<option value="auto" ${!isOverridden ? "selected" : ""}>Auto (${calcVal}%)</option>`;
+            for (let i = 10; i <= 100; i += 10) {
+                let isSel = (isOverridden && i === overrideVal) ? "selected" : "";
+                sel += `<option value="${i}" ${isSel}>${i}%</option>`;
+            }
+            sel += `</select>`;
+            return sel;
+        };
+
+        html += `
+            <tr>
+                <td style="font-weight: 900; color: var(--accent-saffron); font-size: 15px;">${markPlanet(p).split(" ")[0]}</td>
+                <td>${makeSelect("outer", calcOuter, overOuter)}</td>
+                <td>${makeSelect("inner", calcInner, overInner)}</td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div>`;
+    return html;
+}
+
+function buildBarChartsOld() {
+    const container = document.getElementById("planet-charts-wrapper-old");
+    if (!container) return;
+
+    const existingBody = document.getElementById("charts-body-old");
+    if (existingBody) {
+        CHART_SECTION_OPEN_OLD = (existingBody.style.display === "block");
+    }
+
+    const existingRest = document.getElementById("charts-rest-body-old");
+    if (existingRest) {
+        CHART_REST_OPEN_OLD = (existingRest.style.display === "block");
+    }
+
+    let planetsOrder = getPivotSortedPlanets();
+
+    let html = `
+        <h2 class="collapsible-heading ${CHART_SECTION_OPEN_OLD ? 'open' : 'collapsed'}"
+            onclick="CHART_SECTION_OPEN_OLD = !CHART_SECTION_OPEN_OLD; toggleSection('charts-body-old', this)">
+            &#x1F4CA; PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS OLD
+        </h2>
+
+        <div id="charts-body-old" class="collapsible-content" style="display: ${CHART_SECTION_OPEN_OLD ? 'block' : 'none'};">
+
+            <div class="psbc-old-controls-grid" style="grid-template-columns: 1fr;">
+                <div class="mcp-card">
+                    <div class="mcp-card-title">
+                        <span>&#x23F3; Dasha Timeline Display (OLD)</span>
+                    </div>
+                    <div class="mcp-row">
+                        <label class="mcp-toggle-pill">
+                            <input type="radio" name="vimDateModeOld" ${CHART_VIM_SOURCE_OLD === "chandra_year" ? "checked" : ""}
+                                   onchange="CHART_VIM_SOURCE_OLD = 'chandra_year'; buildBarChartsOld();">
+                            <span>Year - Chandra</span>
+                        </label>
+
+                        <label class="mcp-toggle-pill">
+                            <input type="radio" name="vimDateModeOld" ${CHART_VIM_SOURCE_OLD === "lagna_year" ? "checked" : ""}
+                                   onchange="CHART_VIM_SOURCE_OLD = 'lagna_year'; buildBarChartsOld();">
+                            <span>Year - Lagna</span>
+                        </label>
+
+                        <label class="mcp-toggle-pill">
+                            <input type="radio" name="vimDateModeOld" ${CHART_VIM_SOURCE_OLD === "chandra_age" ? "checked" : ""}
+                                   onchange="CHART_VIM_SOURCE_OLD = 'chandra_age'; buildBarChartsOld();">
+                            <span>Age - Chandra</span>
+                        </label>
+
+                        <label class="mcp-toggle-pill">
+                            <input type="radio" name="vimDateModeOld" ${CHART_VIM_SOURCE_OLD === "lagna_age" ? "checked" : ""}
+                                   onchange="CHART_VIM_SOURCE_OLD = 'lagna_age'; buildBarChartsOld();">
+                            <span>Age - Lagna</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            ${renderVerticalChartOld(planetsOrder, "outer")}
+            ${renderVerticalChartOld(planetsOrder, "inner")}
+
+            <h2 class="collapsible-heading ${CHART_REST_OPEN_OLD ? 'open' : 'collapsed'}"
+                onclick="CHART_REST_OPEN_OLD = !CHART_REST_OPEN_OLD; toggleSection('charts-rest-body-old', this)"
+                style="margin-top: 10px !important;">
+                &#x1F4C8; EXPAND REST (12 BHAVA FATE &bull; COMPARISON &bull; MANUAL OVERRIDES)
+            </h2>
+
+            <div id="charts-rest-body-old" class="collapsible-content" style="display: ${CHART_REST_OPEN_OLD ? 'block' : 'none'}; margin-top: 14px;">
+                ${renderBhavaCSLTableOld()}
+                ${renderComparisonTableOld(planetsOrder)}
+                ${renderOverrideTableOld(planetsOrder)}
+            </div>
+
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+</script>
+<!-- PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS 1 (OLD) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS  2-->
+<style>
+/* =========================================================
+   PLANETARY STRENGTH BAR CHART STYLES (3:1 WIDTH & 110% SCALE)
    ========================================================= */
 .psbc-controls-grid {
     display: grid;
@@ -10736,28 +12447,142 @@ document.addEventListener("DOMContentLoaded", () => {
     margin-bottom: 12px;
 }
 
+/* 2-Pillar Attached Architecture (2:1 Width Ratio & 110-Unit Visual Stage) */
 .psbc-bars-stage {
     display: flex;
     justify-content: space-around;
     align-items: flex-end;
-    height: 270px;
+    height: 325px;
     border-bottom: 2.5px solid var(--border-gold);
-    padding-top: 24px;
-    background: radial-gradient(circle at 50% 100%, rgba(255, 159, 28, 0.06), transparent 70%);
+    padding: 34px 10px 0 10px;
+    background: radial-gradient(circle at 50% 95%, rgba(250, 204, 21, 0.06), transparent 70%);
 }
 
 .psbc-labels-stage {
     display: flex;
     justify-content: space-around;
     align-items: flex-start;
-    margin-top: 14px;
+    margin-top: 10px;
+    padding: 0 10px;
+}
+
+.psbc-dual-group {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 8.2%;
+    height: 100%;
+    gap: 0;
+}
+
+.psbc-dual-slot-1 {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+}
+
+.psbc-dual-slot-2 {
+    flex: 0.5;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+}
+
+.psbc-dual-val {
+    font-weight: 900;
+    color: #ffffff;
+    font-size: 15px !important;
+    margin-bottom: 5px;
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+    z-index: 6;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.psbc-dual-bar-left {
+    width: 100%;
+    flex-shrink: 0;
+    border-bottom: none !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.75) !important;
+    border-radius: 6px 0 0 0;
+    transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+}
+
+.psbc-split-mode .psbc-dual-bar-left::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1.5px;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 5;
+}
+
+.psbc-dual-bar-right {
+    width: 100%;
+    flex-shrink: 0;
+    border-bottom: none !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.75) !important;
+    border-radius: 0 6px 0 0;
+    transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+}
+
+.psbc-dual-tags {
+    display: flex;
+    width: 100%;
+    background: #100306;
+    border: 1px solid rgba(200, 138, 43, 0.45);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+
+.psbc-dual-tag-cell {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 0;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.psbc-dual-tag-p1 {
+    flex: 3;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.14);
+    border-right: 1px solid rgba(200, 138, 43, 0.35);
+}
+
+.psbc-dual-tag-p2 {
+    flex: 1;
+    color: #f472b6;
+    background: rgba(244, 114, 182, 0.14);
 }
 
 .psbc-planet-pill {
     background: linear-gradient(145deg, #2b0810 0%, #100306 100%);
     border: 1px solid var(--border-gold);
     border-radius: 6px;
-    padding: 6px 10px;
+    padding: 6px 4px;
     color: var(--text-main);
     font-size: 14.5px;
     font-weight: 800;
@@ -10765,20 +12590,24 @@ document.addEventListener("DOMContentLoaded", () => {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.65);
     text-align: center;
     white-space: nowrap;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .psbc-span-badge {
-    font-size: 12.5px;
+    font-size: 14px !important;
     color: var(--text-gold);
     font-weight: 900;
     font-family: monospace;
     background: #120407;
-    padding: 4px 8px;
+    padding: 4px 6px;
     border: 1px solid var(--border-soft);
     border-radius: 5px;
     text-align: center;
     margin-top: 6px;
     white-space: nowrap;
+    width: 100%;
 }
 
 .psbc-split-layout {
@@ -10800,15 +12629,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <script>
 /* =========================================================
-   PLANETARY STRENGTH BAR CHART ENGINE (OUTER & INNER LIFE)
+   PLANETARY STRENGTH BAR CHART ENGINE (SHORTENED LINKS MODE)
+   TWO-PILLAR ARCHITECTURE (3:1 WIDTH RATIO + 110% VISUAL SCALE)
    ========================================================= */
-var CHART_SOURCE_MODE  = "short";
-var CHART_SHOW_EFF_A   = true;
-var CHART_SHOW_EFF_B   = true;
-var CHART_SHOW_EFF_C   = false;
 var CHART_SECTION_OPEN = true;
 var CHART_REST_OPEN    = false;
 var CHART_VIM_SOURCE   = "chandra_year";
+var CHART_SPLIT_MODE   = true;
 
 window.OVERRIDE_SCORES = window.OVERRIDE_SCORES || {};
 
@@ -10897,64 +12724,48 @@ function getPlanetDashaSpan(planet) {
     return "";
 }
 
-/* Group Extractor for Scoring */
+/* Group Extractor for Shortened Links */
 function getSelectedEFFGroupsForCharts(p) {
     let out = [];
-    let kp = getPlanetKPLords(p);
-    if (!kp) return out;
-
-    let starOfSub = getPlanetKPLords(kp.sub)?.star || null;
-    let starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
-
-    function cleanNums(arr) {
-        if (!Array.isArray(arr)) return [];
-        return [...new Set(
-            arr.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 12)
-        )].sort((a, b) => a - b);
-    }
-
-    function parseEffStrToMultipleGroups(str) {
-        if (!str) return [];
-        let parts = String(str).split(/[>+]/);
-        let groups = [];
-        parts.forEach(part => {
-            let matches = part.match(/\d+/g);
-            if (matches) {
-                groups.push(cleanNums(matches.map(Number)));
-            }
-        });
-        return groups;
-    }
-
-    if (CHART_SOURCE_MODE === "raw") {
-        if (CHART_SHOW_EFF_A) {
-            let grpA = [];
-            if (p)       grpA.push(...(computeHBFinal(p) || []));
-            if (kp.star) grpA.push(...(computeHBFinal(kp.star) || []));
-            out.push(cleanNums(grpA));
+    let shortEff = computeTable10Row(p, true);
+    if (!shortEff) return out;
+    let parts = String(shortEff).split(/[>+]/);
+    parts.forEach(part => {
+        let matches = part.match(/\d+/g);
+        if (matches) {
+            let clean = [...new Set(matches.map(Number))].filter(n => n >= 1 && n <= 12).sort((a,b)=>a-b);
+            if (clean.length) out.push(clean);
         }
-        if (CHART_SHOW_EFF_B) {
-            let grpB = [];
-            if (kp.sub)    grpB.push(...(computeHBFinal(kp.sub) || []));
-            if (starOfSub) grpB.push(...(computeHBFinal(starOfSub) || []));
-            out.push(cleanNums(grpB));
-        }
-        if (CHART_SHOW_EFF_C) {
-            let grpC = [];
-            if (kp.ssl)    grpC.push(...(computeHBFinal(kp.ssl) || []));
-            if (starOfSSL) grpC.push(...(computeHBFinal(starOfSSL) || []));
-            out.push(cleanNums(grpC));
-        }
-    } else if (CHART_SOURCE_MODE === "short") {
-        let shortEff = computeTable10Row(p, true);
-        out.push(...parseEffStrToMultipleGroups(shortEff));
-    } else {
-        let eff = computeEffectiveLinksRow(p);
-        if (CHART_SHOW_EFF_A) out.push(...parseEffStrToMultipleGroups(eff.A));
-        if (CHART_SHOW_EFF_B) out.push(...parseEffStrToMultipleGroups(eff.B));
-        if (CHART_SHOW_EFF_C) out.push(...parseEffStrToMultipleGroups(eff.C));
-    }
+    });
+    return out;
+}
 
+/* Pillar 1 Pure Group Extractor (Excludes SSL topping) */
+function getPillar1GroupsForCharts(p) {
+    let prevIncSSL  = T10_INCLUDE_SSL;
+    let prevAddSSL  = T10_ADD_SUBSUB;
+    let prevExclSSL = window.T10_EXCLUDE_SUBSUB_RULE;
+
+    T10_INCLUDE_SSL = false;
+    T10_ADD_SUBSUB  = false;
+    window.T10_EXCLUDE_SUBSUB_RULE = true;
+
+    let groups = getSelectedEFFGroupsForCharts(p);
+
+    T10_INCLUDE_SSL = prevIncSSL;
+    T10_ADD_SUBSUB  = prevAddSSL;
+    window.T10_EXCLUDE_SUBSUB_RULE = prevExclSSL;
+
+    return groups;
+}
+
+/* Pillar 2 (Sub-Sub Lord) Group Extractor */
+function getSSLDirectGroupsForCharts(sslPlanet) {
+    let out = [];
+    if (!sslPlanet) return out;
+    let vals = (typeof getHBValuesRaw === "function") ? (getHBValuesRaw(sslPlanet) || []) : [];
+    let clean = [...new Set(vals.map(Number))].filter(n => n >= 1 && n <= 12).sort((a, b) => a - b);
+    if (clean.length) out.push(clean);
     return out;
 }
 
@@ -10977,7 +12788,13 @@ function getBarTheme(score) {
     };
 }
 
-/* Strict Combination Score Mappings */
+/* Convert 0-100% score into 10-110 visual scale mapped to 0-100% container height */
+function getVisualPillarHeight(score) {
+    let clampedScore = Math.max(0, Math.min(100, Number(score) || 0));
+    let visualUnits  = clampedScore + 10; // 0% -> 10 units, 10% -> 20 units, ..., 100% -> 110 units
+    return ((visualUnits / 110) * 100).toFixed(2);
+}
+
 const OUTER_SCORE_MAP = {
     "1,4,7,10": 100, "1,4,7": 90, "1,4,10": 90, "1,7,10": 90, "4,7,10": 90,
     "1,4": 60, "1,10": 70, "4,7": 60, "7,10": 80,
@@ -11076,114 +12893,116 @@ function getInnerGraceMarks(groupArray) {
     return groupArray.filter(n => validInner.includes(n)).length * 10;
 }
 
+/* Pillar 1: Outer Score (Planet + Starlord + Sublord) */
 function getCalculatedOuterScore(p) {
-    let groups = getSelectedEFFGroupsForCharts(p);
+    let groups = getPillar1GroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
 
-    if (CHART_SOURCE_MODE === "short") {
-        let tempStar   = T10_ADD_STARLORD;
-        let tempSubSub = T10_ADD_SUBSUB;
-        let tempSub    = T10_ADD_SUBLORD;
+    let tempStar   = T10_ADD_STARLORD;
+    let tempSubSub = T10_ADD_SUBSUB;
+    let tempSub    = T10_ADD_SUBLORD;
 
-        T10_ADD_STARLORD = false;
-        T10_ADD_SUBSUB   = false;
-        T10_ADD_SUBLORD  = false;
+    T10_ADD_STARLORD = false;
+    T10_ADD_SUBSUB   = false;
+    T10_ADD_SUBLORD  = false;
 
-        let baseGroups = getSelectedEFFGroupsForCharts(p);
+    let baseGroups = getPillar1GroupsForCharts(p);
 
-        T10_ADD_STARLORD = tempStar;
-        T10_ADD_SUBSUB   = tempSubSub;
-        T10_ADD_SUBLORD  = tempSub;
+    T10_ADD_STARLORD = tempStar;
+    T10_ADD_SUBSUB   = tempSubSub;
+    T10_ADD_SUBLORD  = tempSub;
 
-        let baseScore = 0;
-        for (let i = 0; i < baseGroups.length; i++) {
-            baseScore += calculateOuterScore(baseGroups[i]);
-        }
-
-        if (tempStar || tempSubSub || tempSub) {
-            if (baseScore <= 30) {
-                let totalGrace = 0;
-                for (let i = baseGroups.length; i < groups.length; i++) {
-                    totalGrace += getOuterGraceMarks(groups[i]);
-                }
-                totalGrace = Math.min(30, totalGrace);
-                return Math.min(60, baseScore + totalGrace);
-            } else {
-                return Math.min(100, baseScore);
-            }
-        }
-        return Math.min(100, baseScore);
+    let baseScore = 0;
+    for (let i = 0; i < baseGroups.length; i++) {
+        baseScore += calculateOuterScore(baseGroups[i]);
     }
 
-    let scoredGroups = groups.map(grp => ({ length: grp.length, score: calculateOuterScore(grp) }));
-    let validGroups  = scoredGroups.filter(g => g.score > 0);
-    if (validGroups.length === 0) return 0;
-
-    let maxLength = Math.max(...validGroups.map(g => g.length));
-    let maxScore  = 0;
-    validGroups.forEach(g => {
-        if (g.length === maxLength && g.score > maxScore) maxScore = g.score;
-    });
-    return maxScore;
+    if (tempStar || tempSubSub || tempSub) {
+        if (baseScore <= 30) {
+            let totalGrace = 0;
+            for (let i = baseGroups.length; i < groups.length; i++) {
+                totalGrace += getOuterGraceMarks(groups[i]);
+            }
+            totalGrace = Math.min(30, totalGrace);
+            return Math.min(60, baseScore + totalGrace);
+        } else {
+            return Math.min(100, baseScore);
+        }
+    }
+    return Math.min(100, baseScore);
 }
 
+/* Pillar 1: Inner Score (Planet + Starlord + Sublord) */
 function getCalculatedInnerScore(p) {
-    let groups = getSelectedEFFGroupsForCharts(p);
+    let groups = getPillar1GroupsForCharts(p);
     if (!groups || groups.length === 0) return 0;
 
-    if (CHART_SOURCE_MODE === "short") {
-        let tempStar   = T10_ADD_STARLORD;
-        let tempSubSub = T10_ADD_SUBSUB;
-        let tempSub    = T10_ADD_SUBLORD;
+    let tempStar   = T10_ADD_STARLORD;
+    let tempSubSub = T10_ADD_SUBSUB;
+    let tempSub    = T10_ADD_SUBLORD;
 
-        T10_ADD_STARLORD = false;
-        T10_ADD_SUBSUB   = false;
-        T10_ADD_SUBLORD  = false;
+    T10_ADD_STARLORD = false;
+    T10_ADD_SUBSUB   = false;
+    T10_ADD_SUBLORD  = false;
 
-        let baseGroups = getSelectedEFFGroupsForCharts(p);
+    let baseGroups = getPillar1GroupsForCharts(p);
 
-        T10_ADD_STARLORD = tempStar;
-        T10_ADD_SUBSUB   = tempSubSub;
-        T10_ADD_SUBLORD  = tempSub;
+    T10_ADD_STARLORD = tempStar;
+    T10_ADD_SUBSUB   = tempSubSub;
+    T10_ADD_SUBLORD  = tempSub;
 
-        let baseScore = 0;
-        for (let i = 0; i < baseGroups.length; i++) {
-            baseScore += calculateInnerScore(baseGroups[i]);
-        }
-
-        if (tempStar || tempSubSub || tempSub) {
-            let totalGrace   = 0;
-            let totalPenalty = 0;
-
-            for (let i = baseGroups.length; i < groups.length; i++) {
-                let bypassedGrp = groups[i];
-                totalGrace   += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
-                totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
-            }
-
-            totalGrace = Math.min(30, totalGrace);
-
-            if (baseScore <= 30) {
-                return Math.min(60, baseScore + totalGrace);
-            } else if (baseScore >= 60) {
-                return Math.max(0, baseScore - totalPenalty);
-            } else {
-                return Math.min(100, baseScore);
-            }
-        }
-        return Math.min(100, baseScore);
+    let baseScore = 0;
+    for (let i = 0; i < baseGroups.length; i++) {
+        baseScore += calculateInnerScore(baseGroups[i]);
     }
 
-    let scoredGroups = groups.map(grp => ({ length: grp.length, score: calculateInnerScore(grp) }));
-    let validGroups  = scoredGroups.filter(g => g.score > 0);
-    if (validGroups.length === 0) return 0;
+    if (tempStar || tempSubSub || tempSub) {
+        let totalGrace   = 0;
+        let totalPenalty = 0;
 
-    let maxLength = Math.max(...validGroups.map(g => g.length));
-    let maxScore  = 0;
-    validGroups.forEach(g => {
-        if (g.length === maxLength && g.score > maxScore) maxScore = g.score;
-    });
-    return maxScore;
+        for (let i = baseGroups.length; i < groups.length; i++) {
+            let bypassedGrp = groups[i];
+            totalGrace   += bypassedGrp.filter(n => [1, 3, 5, 7, 9, 11].includes(n)).length * 10;
+            totalPenalty += bypassedGrp.filter(n => [4, 8, 12].includes(n)).length * 10;
+        }
+
+        totalGrace = Math.min(30, totalGrace);
+
+        if (baseScore <= 30) {
+            return Math.min(60, baseScore + totalGrace);
+        } else if (baseScore >= 60) {
+            return Math.max(0, baseScore - totalPenalty);
+        } else {
+            return Math.min(100, baseScore);
+        }
+    }
+    return Math.min(100, baseScore);
+}
+
+/* Pillar 2: Sub-Sub Lord Outer Score */
+function getCalculatedSSLOuterScore(p) {
+    let kp = getPlanetKPLords(p);
+    if (!kp || !kp.ssl) return 0;
+    let sslGroups = getSSLDirectGroupsForCharts(kp.ssl);
+    if (!sslGroups || sslGroups.length === 0) return 0;
+    let score = 0;
+    for (let i = 0; i < sslGroups.length; i++) {
+        score += calculateOuterScore(sslGroups[i]);
+    }
+    return Math.min(100, score);
+}
+
+/* Pillar 2: Sub-Sub Lord Inner Score */
+function getCalculatedSSLInnerScore(p) {
+    let kp = getPlanetKPLords(p);
+    if (!kp || !kp.ssl) return 0;
+    let sslGroups = getSSLDirectGroupsForCharts(kp.ssl);
+    if (!sslGroups || sslGroups.length === 0) return 0;
+    let score = 0;
+    for (let i = 0; i < sslGroups.length; i++) {
+        score += calculateInnerScore(sslGroups[i]);
+    }
+    return Math.min(100, score);
 }
 
 function getFinalOuterScore(p) {
@@ -11200,6 +13019,14 @@ function getFinalInnerScore(p) {
     return getCalculatedInnerScore(p);
 }
 
+function getFinalSSLOuterScore(p) {
+    return getCalculatedSSLOuterScore(p);
+}
+
+function getFinalSSLInnerScore(p) {
+    return getCalculatedSSLInnerScore(p);
+}
+
 function getComparisonBarColor(score) {
     if (score <= 10) return "#ef4444";
     if (score <= 30) return "#475569";
@@ -11208,7 +13035,7 @@ function getComparisonBarColor(score) {
     return "#22c55e";
 }
 
-/* Vertical Bar Chart Renderer (Outer & Inner Life) */
+/* Vertical 2-Pillar Bar Chart Renderer (110% Visual Scale: Score + 10 Units) */
 function renderVerticalChart(planetsOrder, type) {
     let isOuter = (type === "outer");
 
@@ -11232,34 +13059,101 @@ function renderVerticalChart(planetsOrder, type) {
             </span>
         </div>
 
-        <div style="font-size: 13.5px; font-weight: 700; color: var(--text-dim); margin-bottom: 18px;">
-            ${subTitle}
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-dim);">
+                ${subTitle}
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 800; background: #120407; border: 1px solid var(--border-gold); padding: 4px 12px; border-radius: 6px;">
+                <span style="color: #38bdf8;">&#x25AE; Pillar 1 (Wider): Planet + Star + Sub</span>
+                <span style="color: var(--border-gold);">|</span>
+                <span style="color: #f472b6;">&#x25AE; Pillar 2 (Narrower): Sub-Sub Lord (SSL)</span>
+            </div>
         </div>
 
-        <div class="psbc-bars-stage">
+        <div class="psbc-bars-stage ${CHART_SPLIT_MODE ? 'psbc-split-mode' : ''}">
     `;
 
     let labelsHtml = `<div class="psbc-labels-stage">`;
 
     planetsOrder.forEach(p => {
-        let score     = isOuter ? getFinalOuterScore(p) : getFinalInnerScore(p);
-        let theme     = getBarTheme(score);
+        let kp        = getPlanetKPLords(p);
+        let sslPlanet = kp ? kp.ssl : "";
+        let sslShort  = sslPlanet ? markPlanet(sslPlanet).split(" ")[0] : "SSL";
+
+        let scoreP1 = isOuter ? getFinalOuterScore(p) : getFinalInnerScore(p);
+        let scoreP2 = isOuter ? getFinalSSLOuterScore(p) : getFinalSSLInnerScore(p);
+
+        /* 110% Visual Scale:
+           0% -> 10 visual units (Red bar clearly visible)
+           10% -> 20 visual units (Distinctly taller than 0%)
+           100% -> 110 visual units (Full 100% stage height) */
+        let barHeightP1 = getVisualPillarHeight(scoreP1);
+        let barHeightP2 = getVisualPillarHeight(scoreP2);
+
+        let themeP1 = getBarTheme(scoreP1);
+        let themeP2 = getBarTheme(scoreP2);
+
         let shortName = markPlanet(p).split(" ")[0];
         let dashaSpan = getPlanetDashaSpan(p);
+
+        let p1Groups = getPillar1GroupsForCharts(p).map(g => g.join(",")).join(" + ") || "None";
+        let p2Groups = getSSLDirectGroupsForCharts(sslPlanet).map(g => g.join(",")).join(" + ") || "None";
+
+        let tipP1 = `${shortName} | Pillar 1 (Planet + Star + Sub: ${p1Groups}) -> ${scoreP1}% (Visual: ${scoreP1 + 10}/110)`;
+        let tipP2 = `${shortName} | Pillar 2 (Sub-Sub Lord ${sslShort}: ${p2Groups}) -> ${scoreP2}% (Visual: ${scoreP2 + 10}/110)`;
 
         let spanHtml = dashaSpan
             ? `<div class="psbc-span-badge">${dashaSpan}</div>`
             : ``;
 
         html += `
-            <div style="display: flex; flex-direction: column; align-items: center; width: 9%; height: 100%; justify-content: flex-end;">
-                <div style="font-weight: 900; color: #ffffff; font-size: 14.5px; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.9);">${score}%</div>
-                <div style="width: 68%; background: ${theme.bg}; border: ${theme.border}; border-bottom: none; border-radius: 6px 6px 0 0; height: ${score}%; min-height: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 14px ${theme.shadow}; transition: height 0.5s ease-in-out;"></div>
+            <div class="psbc-dual-group">
+                <!-- PILLAR 1 -->
+                <div class="psbc-dual-slot-1" title="${tipP1}">
+                    <div class="psbc-dual-bar-left" style="background: ${themeP1.bg}; border: ${themeP1.border}; height: ${barHeightP1}%; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 14px ${themeP1.shadow};">
+                        <div class="psbc-dual-val">${scoreP1}%</div>
+                    </div>
+                </div>
+
+                <!-- PILLAR 2 (1:0.5 Ratio) -->
+                <div class="psbc-dual-slot-2" title="${tipP2}">
+                    <div class="psbc-dual-bar-right" style="background: ${themeP2.bg}; border: ${themeP2.border}; height: ${barHeightP2}%; box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 -4px 14px ${themeP2.shadow};">
+                        <div class="psbc-dual-val">${scoreP2}%</div>
+                    </div>
+                </div>
             </div>
         `;
 
+        let numStyle = "border:1px solid #facc15; border-radius:4px; padding:1px 7px; font-size:14px; background:#000000; color:#facc15; font-family:monospace; font-weight:900; text-shadow:none;";
+        
+        let tagsHtml = CHART_SPLIT_MODE 
+            ? `<div class="psbc-dual-tags">
+                   <div class="psbc-dual-tag-cell psbc-dual-tag-p1" title="Planet + Starlord + Sublord" style="display: flex; padding: 4px 0; background: ${themeP1.bg}; flex: 1; border-right: 2px solid rgba(0,0,0,0.75);">
+                       <div style="flex:1; border-right: 1.5px solid rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center;">
+                           <span style="${numStyle}">1</span>
+                       </div>
+                       <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+                           <span style="${numStyle}">2</span>
+                       </div>
+                   </div>
+                   <div class="psbc-dual-tag-cell psbc-dual-tag-p2" title="Sub-Sub Lord (${sslShort})" style="display: flex; align-items:center; justify-content:center; padding: 4px 0; background: ${themeP2.bg}; flex: 0.5;">
+                       <span style="${numStyle}">3</span>
+                   </div>
+               </div>`
+            : `<div class="psbc-dual-tags">
+                   <div class="psbc-dual-tag-cell psbc-dual-tag-p1" title="Planet + Starlord + Sublord" style="display: flex; padding: 4px 0; background: ${themeP1.bg}; flex: 1; border-right: 2px solid rgba(0,0,0,0.75);">
+                       <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+                           <span style="${numStyle}">1</span>
+                       </div>
+                   </div>
+                   <div class="psbc-dual-tag-cell psbc-dual-tag-p2" title="Sub-Sub Lord (${sslShort})" style="display: flex; align-items:center; justify-content:center; padding: 4px 0; background: ${themeP2.bg}; flex: 0.5;">
+                       <span style="${numStyle}">2</span>
+                   </div>
+               </div>`;
+
         labelsHtml += `
-            <div style="width: 9%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+            <div style="width: 8.2%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;">
+                ${tagsHtml}
                 <div class="psbc-planet-pill">${shortName}</div>
                 ${spanHtml}
             </div>
@@ -11480,7 +13374,7 @@ function renderOverrideTable(planetsOrder) {
             let borderStyle  = isOverridden ? "border: 2px solid #22c55e !important;" : "";
             let sel = `<select onchange="updateOverride('${p}', '${type}', this.value)" style="${borderStyle} width: 150px; text-align: center;">`;
             sel += `<option value="auto" ${!isOverridden ? "selected" : ""}>Auto (${calcVal}%)</option>`;
-            for (let i = 10; i <= 100; i += 10) {
+            for (let i = 0; i <= 100; i += 10) {
                 let isSel = (isOverridden && i === overrideVal) ? "selected" : "";
                 sel += `<option value="${i}" ${isSel}>${i}%</option>`;
             }
@@ -11501,8 +13395,12 @@ function renderOverrideTable(planetsOrder) {
     return html;
 }
 
-/* Main Builder for Planetary Strength Bar Chart Module */
+/* Main Builder for Planetary Strength Bar Chart Module (Builds BOTH New & Old) */
 function buildBarCharts() {
+    if (typeof buildBarChartsOld === "function") {
+        buildBarChartsOld();
+    }
+
     const container = document.getElementById("planet-charts-wrapper");
     if (!container) return;
 
@@ -11517,76 +13415,20 @@ function buildBarCharts() {
     }
 
     let planetsOrder = getPivotSortedPlanets();
-    let labelA = (CHART_SOURCE_MODE === "raw") ? "Planet + Star" : "EFF A";
-    let labelB = (CHART_SOURCE_MODE === "raw") ? "Sub + Star of Sub" : "EFF B";
-    let labelC = (CHART_SOURCE_MODE === "raw") ? "Sub-Sub + Star of Sub-Sub" : "EFF C";
 
     let html = `
         <h2 class="collapsible-heading ${CHART_SECTION_OPEN ? 'open' : 'collapsed'}"
             onclick="CHART_SECTION_OPEN = !CHART_SECTION_OPEN; toggleSection('charts-body', this)">
-            &#x1F4CA; PLANETARY STRENGTH BAR CHART
+            &#x1F4CA; PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS
         </h2>
 
         <div id="charts-body" class="collapsible-content" style="display: ${CHART_SECTION_OPEN ? 'block' : 'none'};">
 
-            <div class="psbc-controls-grid">
-
-                <!-- POD 1: DATA SOURCE MODE -->
+            <div class="psbc-controls-grid" style="grid-template-columns: 1fr;">
+                <!-- POD: DASHA TIMELINE DISPLAY -->
                 <div class="mcp-card">
                     <div class="mcp-card-title">
-                        <span>&#x1F4E1; 1. Data Source Mode</span>
-                    </div>
-                    <div class="mcp-row">
-                        <label class="mcp-toggle-pill">
-                            <input type="radio" name="chartSourceMode" value="raw" ${CHART_SOURCE_MODE === "raw" ? "checked" : ""}
-                                   onchange="CHART_SOURCE_MODE = this.value; buildBarCharts();">
-                            <span style="color: var(--accent-cyan);">Raw Mode</span>
-                        </label>
-
-                        <label class="mcp-toggle-pill">
-                            <input type="radio" name="chartSourceMode" value="eff" ${CHART_SOURCE_MODE === "eff" ? "checked" : ""}
-                                   onchange="CHART_SOURCE_MODE = this.value; buildBarCharts();">
-                            <span style="color: var(--text-gold);">Effective Mode</span>
-                        </label>
-
-                        <label class="mcp-toggle-pill">
-                            <input type="radio" name="chartSourceMode" value="short" ${CHART_SOURCE_MODE === "short" ? "checked" : ""}
-                                   onchange="CHART_SOURCE_MODE = this.value; buildBarCharts();">
-                            <span style="color: var(--accent-emerald);">Shortened Links</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- POD 2: LEVEL FILTERS -->
-                <div class="mcp-card">
-                    <div class="mcp-card-title">
-                        <span>&#x1F50D; 2. Active Level Filters (Raw / Effective)</span>
-                    </div>
-                    <div class="mcp-row">
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="chkEffA" ${CHART_SHOW_EFF_A ? "checked" : ""}
-                                   onchange="CHART_SHOW_EFF_A = this.checked; buildBarCharts();">
-                            <span>${labelA}</span>
-                        </label>
-
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="chkEffB" ${CHART_SHOW_EFF_B ? "checked" : ""}
-                                   onchange="CHART_SHOW_EFF_B = this.checked; buildBarCharts();">
-                            <span>${labelB}</span>
-                        </label>
-
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="chkEffC" ${CHART_SHOW_EFF_C ? "checked" : ""}
-                                   onchange="CHART_SHOW_EFF_C = this.checked; buildBarCharts();">
-                            <span>${labelC}</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- POD 3: DASHA TIMELINE BADGES -->
-                <div class="mcp-card">
-                    <div class="mcp-card-title">
-                        <span>&#x23F3; 3. Dasha Timeline Display</span>
+                        <span>&#x23F3; Dasha Timeline Display</span>
                     </div>
                     <div class="mcp-row">
                         <label class="mcp-toggle-pill">
@@ -11612,9 +13454,14 @@ function buildBarCharts() {
                                    onchange="CHART_VIM_SOURCE = 'lagna_age'; buildBarCharts();">
                             <span>Age - Lagna</span>
                         </label>
+
+                        <label class="mcp-toggle-pill" style="border-color: rgba(56, 189, 248, 0.5);">
+                            <input type="checkbox" id="psbcSplitToggle" ${CHART_SPLIT_MODE ? "checked" : ""}
+                                   onchange="CHART_SPLIT_MODE = this.checked; buildBarCharts();">
+                            <span style="color: #38bdf8; font-weight: 900;">SPLIT</span>
+                        </label>
                     </div>
                 </div>
-
             </div>
 
             ${renderVerticalChart(planetsOrder, "outer")}
@@ -11642,7 +13489,11 @@ document.addEventListener("DOMContentLoaded", () => {
     buildBarCharts();
 });
 </script>
-<!-- PLANETARY STRENGTH BAR CHART -->
+<!-- PLANETARY STRENGTH BAR CHART - SHORTENED EFFECTIVE LINKS  2-->
+
+
+
+
 
 
 
@@ -13876,15 +15727,18 @@ function renderPlanetaryHouseSignificationsModule() {
     `;
 
     displayPlanets.forEach(p => {
-        let sub = [], ssl = [], star = [], sign = [];
+        let sub = [], ssl = [], star = [];
 
         cuspsData.forEach(c => {
             const h = rotateHouse(c.bhava, pivotHouse);
             if (c.subLord  === p) sub.push(h);
             if (c.sslLord  === p) ssl.push(h);
             if (c.starLord === p) star.push(h);
-            if (c.signLord === p) sign.push(h);
         });
+
+        let sign = (typeof getSignLordHousesWithShift === "function")
+            ? getSignLordHousesWithShift(p, pivotHouse)
+            : [];
 
         /* Rahu / Ketu Sign-Lord Dispositor Rule */
         if (p === "Rahu" || p === "Ketu") {
@@ -13892,12 +15746,9 @@ function renderPlanetaryHouseSignificationsModule() {
             const dispositor = signLords[signPlaced];
 
             if (dispositor) {
-                cuspsData.forEach(c => {
-                    if (c.signLord === dispositor) {
-                        sign.push(rotateHouse(c.bhava, pivotHouse));
-                    }
-                });
-
+                if (typeof getSignLordHousesWithShift === "function") {
+                    sign.push(...getSignLordHousesWithShift(dispositor, pivotHouse));
+                }
                 let dispPlacement = rotateHouse(getPlanetHouse(dispositor), pivotHouse);
                 if (document.getElementById("retroMode")?.checked) {
                     dispPlacement = applyRetroPlacement(dispPlacement);
@@ -14001,8 +15852,42 @@ document.addEventListener("DOMContentLoaded", () => {
 <!-- EFFECTIVE LINKS TABLE — [ 1,4,7,10 ] • [ 2,5,8,11 ] • [ 3,6,9,12 ] -->
 <style>
 /* =========================================================
-   EFFECTIVE LINKS GROUPING TABLES (QUADRANT & TRINE) — STYLES
+   EFFECTIVE LINKS SPLITTER (H1 MASTER + H2 SUB-TABLES)
    ========================================================= */
+h1.eff-splitter-h1.collapsible-heading {
+    background: linear-gradient(135deg, #042f1d 0%, #02170e 60%, #063d26 100%) !important;
+    border: 1.5px solid #047857 !important;
+    border-left: 6px solid #10b981 !important;
+    color: #d1fae5 !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    padding: 13px 20px !important;
+    margin: 24px 0 0 0 !important;
+    border-radius: 8px !important;
+    box-shadow: var(--shadow-card), 0 0 16px rgba(16, 185, 129, 0.24) !important;
+    cursor: pointer;
+    user-select: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+h1.eff-splitter-h1.collapsible-heading:hover {
+    border-color: var(--border-bright) !important;
+    box-shadow: var(--shadow-card), var(--glow-strong) !important;
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+#effective-links-splitter-body > .kp-module-section:first-child h2.collapsible-heading {
+    margin-top: 4px !important;
+}
+
 .eff-group-filterGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -14080,64 +15965,138 @@ document.addEventListener("DOMContentLoaded", () => {
 .eff-cluster-d   { color: #c084fc; }
 </style>
 
-<div id="effective-links-quadrant-module" class="kp-module-section">
+<!-- H1 MASTER WRAPPER: EFFECTIVE LINKS SPLITTER -->
+<div id="effective-links-splitter-master" class="kp-module-section">
     <div id="anchor-table6"></div>
-    <h2 class="collapsible-heading collapsed"
-        onclick="toggleCollapsible('effective-links-quadrant-body', this)">
-        &#x1F522; EFFECTIVE LINKS TABLE &mdash; [ 1,4,7,10 ] &bull; [ 2,5,8,11 ] &bull; [ 3,6,9,12 ]
-    </h2>
+    <h1 class="eff-splitter-h1 collapsible-heading collapsed"
+        onclick="toggleCollapsible('effective-links-splitter-body', this)">
+        &#x1F522; EFFECTIVE LINKS SPLITTER
+    </h1>
 
-    <div id="effective-links-quadrant-body" class="collapsible-body">
-        <div class="eff-group-filterGrid">
-            <div class="eff-group-filterCard">
-                <div class="eff-group-filterTitle">1. Repetition &amp; Column Filters</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <label class="mcp-toggle-pill" style="color: var(--accent-cyan);">
-                        <input type="checkbox" id="countRepetition"
-                            onchange="syncEffectiveGroupFilterChange('countRepetition', this.checked)">
-                        <span>Count Repetition</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreSSL"
-                            onchange="syncEffectiveGroupFilterChange('ignoreSSL', this.checked)">
-                        <span>Ignore Sub-Sub Column</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreStar"
-                            onchange="syncEffectiveGroupFilterChange('ignoreStar', this.checked)">
-                        <span>Ignore Star Lord Column</span>
-                    </label>
-                </div>
-            </div>
+    <div id="effective-links-splitter-body" class="collapsible-body">
 
-            <div class="eff-group-filterCard">
-                <div class="eff-group-filterTitle">2. Sub &amp; Sub-Sub Level Row Filters</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreSubRow"
-                            onchange="syncEffectiveGroupFilterChange('ignoreSubRow', this.checked)">
-                        <span>Ignore Sub Lord Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreStarOfSub"
-                            onchange="syncEffectiveGroupFilterChange('ignoreStarOfSub', this.checked)">
-                        <span>Ignore Star of Sub Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreSSLRow" checked
-                            onchange="syncEffectiveGroupFilterChange('ignoreSSLRow', this.checked)">
-                        <span>Ignore Sub-Sub Lord Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="ignoreStarOfSSL" checked
-                            onchange="syncEffectiveGroupFilterChange('ignoreStarOfSSL', this.checked)">
-                        <span>Ignore Star of Sub-Sub Row</span>
-                    </label>
+        <!-- H2 TABLE 1: [ 1,4,7,10 ] • [ 2,5,8,11 ] • [ 3,6,9,12 ] -->
+        <div id="effective-links-quadrant-module" class="kp-module-section" style="margin: 0 0 18px 0;">
+            <h2 class="collapsible-heading tab-green open"
+                onclick="toggleCollapsible('effective-links-quadrant-body', this)">
+                &#x1F522; EFFECTIVE LINKS TABLE &mdash; [ 1,4,7,10 ] &bull; [ 2,5,8,11 ] &bull; [ 3,6,9,12 ]
+            </h2>
+
+            <div id="effective-links-quadrant-body" class="collapsible-body" style="display: block;">
+                <div class="eff-group-filterGrid">
+                    <div class="eff-group-filterCard">
+                        <div class="eff-group-filterTitle">1. Repetition &amp; Column Filters</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label class="mcp-toggle-pill" style="color: var(--accent-cyan);">
+                                <input type="checkbox" id="countRepetition"
+                                    onchange="syncEffectiveGroupFilterChange('countRepetition', this.checked)">
+                                <span>Count Repetition</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreSSL"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSSL', this.checked)">
+                                <span>Ignore Sub-Sub Column</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreStar"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStar', this.checked)">
+                                <span>Ignore Star Lord Column</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="eff-group-filterCard">
+                        <div class="eff-group-filterTitle">2. Sub &amp; Sub-Sub Level Row Filters</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreSubRow"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSubRow', this.checked)">
+                                <span>Ignore Sub Lord Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreStarOfSub" checked
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStarOfSub', this.checked)">
+                                <span>Ignore Star of Sub Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreSSLRow" checked
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSSLRow', this.checked)">
+                                <span>Ignore Sub-Sub Lord Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="ignoreStarOfSSL" checked
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStarOfSSL', this.checked)">
+                                <span>Ignore Star of Sub-Sub Row</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
+
+                <div id="effective-links-quadrant-tableSlot" class="eff-group-tableWrap"></div>
             </div>
         </div>
 
-        <div id="effective-links-quadrant-tableSlot" class="eff-group-tableWrap"></div>
+        <!-- H2 TABLE 2: [ 1,5,9 ] • [ 2,6,10 ] • [ 3,7,11 ] • [ 4,8,12 ] -->
+        <div id="effective-links-trine-module" class="kp-module-section" style="margin: 0;">
+            <h2 class="collapsible-heading tab-green open"
+                onclick="toggleCollapsible('effective-links-trine-body', this)">
+                &#x1F53A; EFFECTIVE LINKS TABLE &mdash; [ 1,5,9 ] &bull; [ 2,6,10 ] &bull; [ 3,7,11 ] &bull; [ 4,8,12 ]
+            </h2>
+
+            <div id="effective-links-trine-body" class="collapsible-body" style="display: block;">
+                <div class="eff-group-filterGrid">
+                    <div class="eff-group-filterCard">
+                        <div class="eff-group-filterTitle">1. Repetition &amp; Column Filters (Synced)</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label class="mcp-toggle-pill" style="color: var(--accent-cyan);">
+                                <input type="checkbox" id="trineMirror_countRepetition"
+                                    onchange="syncEffectiveGroupFilterChange('countRepetition', this.checked)">
+                                <span>Count Repetition</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreSSL"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSSL', this.checked)">
+                                <span>Ignore Sub-Sub Column</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreStar"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStar', this.checked)">
+                                <span>Ignore Star Lord Column</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="eff-group-filterCard">
+                        <div class="eff-group-filterTitle">2. Sub &amp; Sub-Sub Level Row Filters (Synced)</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreSubRow"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSubRow', this.checked)">
+                                <span>Ignore Sub Lord Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreStarOfSub"
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStarOfSub', this.checked)">
+                                <span>Ignore Star of Sub Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreSSLRow" checked
+                                    onchange="syncEffectiveGroupFilterChange('ignoreSSLRow', this.checked)">
+                                <span>Ignore Sub-Sub Lord Row</span>
+                            </label>
+                            <label class="mcp-toggle-pill">
+                                <input type="checkbox" id="trineMirror_ignoreStarOfSSL" checked
+                                    onchange="syncEffectiveGroupFilterChange('ignoreStarOfSSL', this.checked)">
+                                <span>Ignore Star of Sub-Sub Row</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="effective-links-trine-tableSlot" class="eff-group-tableWrap"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -14270,7 +16229,6 @@ function renderEffectiveLinksQuadrantModule() {
     const st    = readEffectiveGroupFilterStateFromDOM();
     const order = getPivotSortedPlanets();
 
-    /* Sync Trine Mirror Checkboxes if already mounted */
     Object.keys(st).forEach(k => {
         const m = document.getElementById("trineMirror_" + k);
         if (m && m.checked !== st[k]) m.checked = st[k];
@@ -14324,81 +16282,6 @@ function renderEffectiveLinksQuadrantModule() {
     slot.innerHTML = html;
 }
 
-/* Order-Independent Orchestrator Alias */
-window.buildTable5 = renderEffectiveLinksQuadrantModule;
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderEffectiveLinksQuadrantModule();
-});
-</script>
-<!-- EFFECTIVE LINKS TABLE — [ 1,4,7,10 ] • [ 2,5,8,11 ] • [ 3,6,9,12 ] -->
-
-
-<!-- EFFECTIVE LINKS TABLE — [ 1,5,9 ] • [ 2,6,10 ] • [ 3,7,11 ] • [ 4,8,12 ] -->
-<div id="effective-links-trine-module" class="kp-module-section">
-    <h2 class="collapsible-heading collapsed"
-        onclick="toggleCollapsible('effective-links-trine-body', this)">
-        &#x1F53A; EFFECTIVE LINKS TABLE &mdash; [ 1,5,9 ] &bull; [ 2,6,10 ] &bull; [ 3,7,11 ] &bull; [ 4,8,12 ]
-    </h2>
-
-    <div id="effective-links-trine-body" class="collapsible-body">
-        <div class="eff-group-filterGrid">
-            <div class="eff-group-filterCard">
-                <div class="eff-group-filterTitle">1. Repetition &amp; Column Filters (Synced)</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <label class="mcp-toggle-pill" style="color: var(--accent-cyan);">
-                        <input type="checkbox" id="trineMirror_countRepetition"
-                            onchange="syncEffectiveGroupFilterChange('countRepetition', this.checked)">
-                        <span>Count Repetition</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreSSL"
-                            onchange="syncEffectiveGroupFilterChange('ignoreSSL', this.checked)">
-                        <span>Ignore Sub-Sub Column</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreStar"
-                            onchange="syncEffectiveGroupFilterChange('ignoreStar', this.checked)">
-                        <span>Ignore Star Lord Column</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="eff-group-filterCard">
-                <div class="eff-group-filterTitle">2. Sub &amp; Sub-Sub Level Row Filters (Synced)</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreSubRow"
-                            onchange="syncEffectiveGroupFilterChange('ignoreSubRow', this.checked)">
-                        <span>Ignore Sub Lord Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreStarOfSub"
-                            onchange="syncEffectiveGroupFilterChange('ignoreStarOfSub', this.checked)">
-                        <span>Ignore Star of Sub Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreSSLRow" checked
-                            onchange="syncEffectiveGroupFilterChange('ignoreSSLRow', this.checked)">
-                        <span>Ignore Sub-Sub Lord Row</span>
-                    </label>
-                    <label class="mcp-toggle-pill">
-                        <input type="checkbox" id="trineMirror_ignoreStarOfSSL" checked
-                            onchange="syncEffectiveGroupFilterChange('ignoreStarOfSSL', this.checked)">
-                        <span>Ignore Star of Sub-Sub Row</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div id="effective-links-trine-tableSlot" class="eff-group-tableWrap"></div>
-    </div>
-</div>
-
-<script>
-/* =========================================================
-   EFFECTIVE LINKS TABLE (TRINE GROUPING) — ENGINE
-   ========================================================= */
 function renderEffectiveLinksTrineModule() {
     const slot = document.getElementById("effective-links-trine-tableSlot");
     if (!slot) return;
@@ -14467,10 +16350,12 @@ function renderEffectiveLinksTrineModule() {
     slot.innerHTML = html;
 }
 
-/* Order-Independent Orchestrator Alias */
+/* Order-Independent Orchestrator Aliases */
+window.buildTable5 = renderEffectiveLinksQuadrantModule;
 window.buildTable7 = renderEffectiveLinksTrineModule;
 
 document.addEventListener("DOMContentLoaded", () => {
+    renderEffectiveLinksQuadrantModule();
     renderEffectiveLinksTrineModule();
 });
 </script>
@@ -14639,24 +16524,18 @@ function computePlanetaryAspectHouses(placedHouse, planetName) {
 }
 
 function computeSignLordHousesForSynthesis(planetName, pivotHouse) {
-    const out = [];
-
-    cuspsData.forEach(c => {
-        if (c.signLord === planetName) {
-            out.push(rotateHouse(c.bhava, pivotHouse));
-        }
-    });
+    const out = (typeof getSignLordHousesWithShift === "function")
+        ? [...getSignLordHousesWithShift(planetName, pivotHouse)]
+        : [];
 
     /* Rahu / Ketu Dispositor Lordship & Placement Rule */
     if ((planetName === "Rahu" || planetName === "Ketu") && out.length === 0) {
         const signPlaced = document.getElementById(planetName + "_sign")?.value;
         const dispositor = signLords[signPlaced];
         if (dispositor) {
-            cuspsData.forEach(c => {
-                if (c.signLord === dispositor) {
-                    out.push(rotateHouse(c.bhava, pivotHouse));
-                }
-            });
+            if (typeof getSignLordHousesWithShift === "function") {
+                out.push(...getSignLordHousesWithShift(dispositor, pivotHouse));
+            }
             let dispPlaced = rotateHouse(getPlanetHouse(dispositor), pivotHouse);
             if (document.getElementById("retroMode")?.checked) {
                 dispPlaced = applyRetroPlacement(dispPlaced);
@@ -14871,60 +16750,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
