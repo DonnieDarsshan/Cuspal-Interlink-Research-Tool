@@ -1359,8 +1359,37 @@ function buildCuspalChart() {
             <button type="button" class="action-btn" onclick="fillTodayDateTimeOnly()" style="background: linear-gradient(to bottom, #b45309, #78350f); color: #fff;">&#x23F2; TODAY'S</button>
             <button type="button" class="action-btn btn-clear" onclick="clearFetchData()">&#x1F9F9; Clear</button>
 
-            <input type="file" id="loadProfileInput" accept=".json" style="display:none" onchange="loadCloudProfile(event)">
-            <button type="button" class="action-btn btn-load" onclick="document.getElementById('loadProfileInput').click()">&#x1F4C2; Load Profile</button>
+            <input type="file" id="loadProfileInput" accept=".json" style="display:none" onchange="autoRestoreFS(); loadCloudProfile(event)" oncancel="autoRestoreFS()">
+            <button type="button" class="action-btn btn-load" onclick="triggerFileLoad()">&#x1F4C2; Load Profile</button>
+
+            <script>
+            window._wasInFS = false;
+            function triggerFileLoad() {
+                let doc = window.document;
+                window._wasInFS = !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement);
+                document.getElementById('loadProfileInput').click();
+            }
+            function autoRestoreFS() {
+                if (window._wasInFS) {
+                    // Browsers block auto-fullscreen without a physical tap.
+                    // This captures your VERY NEXT tap anywhere on the screen to restore it.
+                    const restoreAction = () => {
+                        let docEl = window.document.documentElement;
+                        let reqFS = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+                        if (reqFS) {
+                            let promise = reqFS.call(docEl);
+                            if (promise && promise.catch) promise.catch(() => {});
+                        }
+                        // Remove the listeners once triggered
+                        document.removeEventListener('click', restoreAction, { capture: true });
+                        document.removeEventListener('touchstart', restoreAction, { capture: true });
+                    };
+                    
+                    document.addEventListener('click', restoreAction, { once: true, capture: true });
+                    document.addEventListener('touchstart', restoreAction, { once: true, capture: true });
+                }
+            }
+            </script>
             <button type="button" class="action-btn btn-save" onclick="saveCloudProfile()">&#x1F4BE; Save Profile</button>
             <button type="button" id="fetchCloudBtn" class="action-btn btn-fetch" onclick="fetchFromCloud()">Fetch Data &#x1F4E1;</button>
         </div>
