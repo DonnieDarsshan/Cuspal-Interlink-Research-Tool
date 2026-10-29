@@ -598,7 +598,39 @@ body[data-kp-theme="on"] tr.lvl-subsub td:first-child { border-left: 4px solid #
     <div id="navTimeTool">
         <select id="miniPivotSelect" title="Select Pivot"></select>
         <input type="time" id="miniTimeInput" step="1" title="HH:MM:SS" oninput="applyMiniTimeChange()">
+        <span style="color:var(--border-gold); margin:0 2px; opacity:0.5;">|</span>
+        <button type="button" onclick="toggleFullScreen()" title="Toggle Full Screen" style="background: transparent; color: #38bdf8; border: none; font-size: 16px; font-weight: 900; cursor: pointer; padding: 0 4px; line-height: 1; text-shadow: 0 0 6px rgba(56,189,248,0.5);">&#x26F6;</button>
     </div>
+
+<script>
+function toggleFullScreen() {
+    let doc = window.document;
+    let docEl = doc.documentElement;
+    let requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    let cancelFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+    
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+        requestFullScreen.call(docEl);
+    } else {
+        cancelFullScreen.call(doc);
+    }
+}
+</script>
+
+<script>
+function toggleFullScreen() {
+    let doc = window.document;
+    let docEl = doc.documentElement;
+    let requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    let cancelFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+    
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+        requestFullScreen.call(docEl);
+    } else {
+        cancelFullScreen.call(doc);
+    }
+}
+</script>
 </div>
 
 <h1 class="app-master-title">&#x2728; Cuspal Interlink Research Suite &#x2728;</h1>
