@@ -615,6 +615,22 @@ function toggleFullScreen() {
         cancelFullScreen.call(doc);
     }
 }
+
+// Automatically enter Full Screen when clicking any heading
+document.addEventListener('click', function(e) {
+    if (e.target.closest('h1, h2, h3, .collapsible-heading, .pred-card-header')) {
+        let doc = window.document;
+        let docEl = doc.documentElement;
+        let reqFS = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+        
+        if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            if (reqFS) {
+                let promise = reqFS.call(docEl);
+                if (promise && promise.catch) promise.catch(() => {});
+            }
+        }
+    }
+}, { capture: true });
 </script>
 
 <script>
