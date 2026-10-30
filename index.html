@@ -9444,2016 +9444,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-<!-- PREDICTION MODULE -->
-<style>
-.pred-section-card {
-    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
-    border: 1.5px solid var(--border-gold);
-    border-radius: 8px;
-    padding: 16px 18px;
-    margin-bottom: 22px;
-    box-shadow: var(--shadow-card), var(--glow-gold);
-}
-
-.pred-section-card:last-child {
-    margin-bottom: 0;
-}
-
-.pred-card-header {
-    color: var(--accent-cyan) !important;
-    font-size: 16px !important;
-    font-weight: 900 !important;
-    letter-spacing: 1.4px;
-    text-transform: uppercase;
-    padding: 10px 16px !important;
-    margin: 0 !important;
-    background: linear-gradient(90deg, rgba(56, 189, 248, 0.14) 0%, rgba(18, 5, 9, 0.9) 100%) !important;
-    border: 1px solid var(--border-gold) !important;
-    border-left: 4px solid var(--accent-cyan) !important;
-    border-radius: 6px !important;
-}
-
-.pred-item-card {
-    margin-bottom: 12px;
-    border: 1px solid var(--border-soft);
-    background: linear-gradient(180deg, #16070a 0%, #0e0406 100%);
-    border-radius: 6px;
-    overflow: hidden;
-    transition: border-color 0.15s ease;
-}
-
-.pred-item-card:hover {
-    border-color: var(--border-gold);
-}
-
-.pred-item-card.planet-card {
-    border-left: 4px solid var(--accent-emerald);
-}
-
-.pred-item-card.cusp-card {
-    border-left: 4px solid var(--accent-cyan);
-}
-
-.pred-item-header {
-    padding: 10px 14px !important;
-    margin: 0 !important;
-    font-size: 15px !important;
-    font-weight: 800 !important;
-    background: rgba(255, 255, 255, 0.02) !important;
-    border: none !important;
-    box-shadow: none !important;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-}
-
-.pred-item-body {
-    display: none;
-    padding: 12px 18px 14px 18px;
-    border-top: 1px dashed var(--border-soft);
-    background: rgba(10, 3, 5, 0.65);
-    font-size: 14px;
-}
-
-.pred-match-list {
-    margin: 6px 0 10px 0;
-    padding-left: 20px;
-    line-height: 1.55;
-}
-
-.pred-match-list li {
-    margin-bottom: 4px;
-}
-</style>
-
-<div id="table80-container" class="kp-module-section">
-    <h2 class="collapsible-heading collapsed" onclick="toggleCollapsible('table80-body', this)">
-        &#x1F52E; PREDICTION MODULE
-    </h2>
-
-    <div id="table80-body" class="collapsible-body">
-
-        <div class="kp-control-bar" style="justify-content: space-between;">
-            <div style="color: var(--text-dim); font-size: 13.5px; font-weight: 700;">
-                &#x2139; Matches Natal Shortened Effective Links against 500+ Life Event Rules (Planets &amp; 12 Cusps).
-            </div>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                <button type="button" id="t80-generate-btn" class="action-btn btn-fetch" onclick="generateTable80Manual()">
-                    &#x1F680; Generate Predictions
-                </button>
-                <button type="button" class="action-btn" onclick="toggleAllPredictionCards(true)" style="background: linear-gradient(to bottom, #ca8a04, #713f12); color: #fff;">
-                    Expand All
-                </button>
-                <button type="button" class="action-btn btn-clear" onclick="toggleAllPredictionCards(false)">
-                    Collapse All
-                </button>
-            </div>
-        </div>
-
-        <div id="table80-content-area" style="display: none;"></div>
-
-    </div>
-</div>
-
-<script>
-/* =========================================================
-   SHORTENED EFFECTIVE LINKS CORE ENGINE (computeTable10Row)
-   Shared by Prediction Module & Shortened Effective Links
-   ========================================================= */
-var T10_INCLUDE_SSL         = false;
-var T10_ADD_STARLORD        = true;
-var T10_ADD_SUBLORD         = false;
-var T10_ADD_SUBSUB          = false;
-window.T10_EXCLUDE_SUBSUB_RULE = false;
-
-function computeTable10Row(p, excludeSublordForGraphs = false) {
-    let kp = getPlanetKPLords(p);
-    if (!kp) return "";
-
-    let shift = getPivotShift();
-
-    let pValsRaw   = getHBValuesRaw(p) || [];
-    let sValsRaw   = kp.star ? (getHBValuesRaw(kp.star) || []) : [];
-    let subValsRaw = kp.sub  ? (getHBValuesRaw(kp.sub)  || []) : [];
-    let sslValsRaw = [];
-
-    let includeSSL = false;
-    if (kp.ssl) {
-        let isSslUntenanted = false;
-        if (typeof formatHBPlanet === "function") {
-            let formattedSsl = formatHBPlanet(kp.ssl);
-            if (formattedSsl && formattedSsl.includes("$")) {
-                isSslUntenanted = true;
-            }
-        }
-        if (isSslUntenanted && kp.star && kp.sub && kp.star === kp.sub) {
-            includeSSL = true;
-        }
-    }
-
-    if (typeof T10_INCLUDE_SSL !== "undefined" && T10_INCLUDE_SSL) {
-        includeSSL = true;
-    }
-
-    if (kp.ssl && (kp.ssl === p || kp.ssl === kp.star || kp.ssl === kp.sub)) {
-        includeSSL = false;
-    }
-
-    if (includeSSL && kp.ssl) {
-        sslValsRaw = getHBValuesRaw(kp.ssl) || [];
-    }
-
-    let strongNumsRaw = [];
-    if (typeof formatHBPlanet === "function") {
-        if (formatHBPlanet(p)?.includes("$")) strongNumsRaw.push(...pValsRaw);
-        if (kp.star && formatHBPlanet(kp.star)?.includes("$")) strongNumsRaw.push(...sValsRaw);
-        if (kp.sub  && formatHBPlanet(kp.sub)?.includes("$"))  strongNumsRaw.push(...subValsRaw);
-        if (includeSSL && kp.ssl && formatHBPlanet(kp.ssl)?.includes("$")) strongNumsRaw.push(...sslValsRaw);
-    }
-
-    const unrotate   = (arr) => arr.map(v => ((v + shift - 1) % 12) + 1);
-    const uniqueSort = (arr) => [...new Set(arr)].sort((a, b) => a - b);
-
-    let pVals      = uniqueSort(unrotate(pValsRaw));
-    let sVals      = uniqueSort(unrotate(sValsRaw));
-    let subVals    = uniqueSort(unrotate(subValsRaw));
-    let sslVals    = uniqueSort(unrotate(sslValsRaw));
-    let strongNums = uniqueSort(unrotate(strongNumsRaw));
-
-    let pS   = pVals.join(",");
-    let stS  = sVals.join(",");
-    let subS = subVals.join(",");
-    let sslS = sslVals.join(",");
-
-    let finalArrBase = [];
-
-    if (pS === "3,6,12" && stS === "1,7" && subS === "") finalArrBase = [1, 3, 7];
-    else if (pS === "5,8,11" && stS === "9" && subS === "8" && sslS === "3,6,12") finalArrBase = [5, 8, 11];
-    else if (pS === "1,4,10" && stS === "2" && subS === "1" && sslS === "5,8,11") finalArrBase = [1, 4, 10];
-    else if (pS === "1,7" && stS === "5,8,11" && subS === "2,4,10") finalArrBase = [1, 4, 7, 10];
-    else if (pS === "" && stS === "11" && subS === "2,4,8,10" && sslS === "5") finalArrBase = [2, 5, 8, 11];
-    else if (pS === "6,12" && stS === "11" && subS === "6,12") finalArrBase = [6, 12];
-    else if (stS === "3,9" && subS === "6,12") finalArrBase = [3, 6, 9, 12];
-    else if (stS === "5,8,11" && subS === "1,4,10" && sslS === "2") finalArrBase = [2, 5, 8, 11];
-    else if (pS === "5,8,11" && stS === "6,12" && subS === "") finalArrBase = [6, 8, 12];
-    else if (pS === "1,4,10" && stS === "2" && subS === "1") finalArrBase = [1, 4, 10];
-    else if (pS === "2,4,8,10" && stS === "5" && subS === "5") finalArrBase = [2, 5, 8];
-    else if (pS === "1" && stS === "10" && subS === "4") finalArrBase = [1, 4, 10];
-    else if (pS === "2,4,10" && stS === "1,7" && subS === "2,4,10") finalArrBase = [1, 4, 7, 10];
-    else if (stS === "3,6,12" && subS === "5,8,11") finalArrBase = [6, 8, 12];
-    else if (pS === "2,3,5,8" && stS === "10" && subS === "10") finalArrBase = [2, 5, 8];
-    else if (pS === "3,8" && stS === "9" && subS === "4" && sslS === "6,11,12") finalArrBase = [4, 6, 8, 12];
-    else if (pS === "" && stS === "11" && subS === "3,9") finalArrBase = [3, 9, 11];
-    else if (pS === "3,6,12" && stS === "1,7" && subS === "12") finalArrBase = [1, 3, 7];
-    else if (pS === "2,6,8,12" && stS === "8" && subS === "1") finalArrBase = [2, 6, 8, 12];
-    else if (pS === "5" && stS === "2,4,8,10" && subS === "" && sslS === "4,8,12") finalArrBase = [2, 4, 8, 10, 12];
-    else if (pS === "2,4,8,10" && stS === "2,8,9" && subS === "7" && sslS === "4,8,12") finalArrBase = [2, 4, 8, 10, 12];
-    else if (pS === "4,8,12" && stS === "" && subS === "2,4,8,10" && sslS === "7") finalArrBase = [2, 4, 8, 10, 12];
-    else if (pS === "4,8,12" && stS === "11" && subS === "3,9") finalArrBase = [3, 9, 11];
-    else if (pS === "11" && stS === "4,8,12" && subS === "3,9") finalArrBase = [3, 9, 11];
-    else if (stS === "4,8,12" && subS === "3,9" && sslS === "3,9") finalArrBase = [3, 9];
-    else if (pS === "2,9" && stS === "4,8" && subS === "7,10") finalArrBase = [4, 7, 10];
-    else if (pS === "1,5,7,11" && stS === "2,9" && subS === "2,4,8,10") finalArrBase = [1, 4, 7, 10];
-    else if (pS === "5" && stS === "2,4,8,10" && subS === "6,12") finalArrBase = [2, 4, 6, 8, 10, 12];
-    else {
-        let all      = uniqueSort([...pVals, ...sVals, ...subVals]);
-        let evens    = all.filter(n => n % 2 === 0);
-        let odds     = all.filter(n => n % 2 !== 0);
-        let allEvens = evens;
-        let allOdds  = odds;
-
-        const hasAny = (arr, numsList) => numsList.some(n => arr.includes(n));
-
-        let patterns = [
-            { id: 1, group: [1, 4, 7, 10], matches: all.filter(n => [1, 4, 7, 10].includes(n)), rank: 1 },
-            { id: 2, group: [2, 5, 8, 11], matches: all.filter(n => [2, 5, 8, 11].includes(n)), rank: 2 },
-            { id: 3, group: [3, 6, 9, 12], matches: all.filter(n => [3, 6, 9, 12].includes(n)), rank: 3 }
-        ];
-
-        let getScore = (matches) => {
-            let score = 0;
-            matches.forEach(n => {
-                if (strongNums.includes(n))   score += 1000;
-                else if (subVals.includes(n)) score += 600;
-                else if (sVals.includes(n))   score += 200;
-                else if (pVals.includes(n))   score += 100;
-            });
-            return score;
-        };
-
-        patterns.forEach(pat => pat.score = getScore(pat.matches));
-
-        let activePatterns  = patterns.filter(pat => pat.matches.length > 0);
-        let strongAttackers = activePatterns.filter(pat => pat.matches.length >= 2 || pat.matches.some(n => strongNums.includes(n)));
-        let eliminatedIds   = new Set();
-
-        strongAttackers.forEach(attacker => {
-            if (attacker.id === 1) eliminatedIds.add(3);
-            if (attacker.id === 2) eliminatedIds.add(1);
-            if (attacker.id === 3) eliminatedIds.add(2);
-        });
-
-        if (eliminatedIds.size > 0 && eliminatedIds.size < activePatterns.length) {
-            patterns.forEach(pat => {
-                if (eliminatedIds.has(pat.id)) pat.score = -1000;
-            });
-        }
-
-        patterns.sort((a, b) => {
-            if (a.score !== b.score) return b.score - a.score;
-            if (b.matches.length !== a.matches.length) return b.matches.length - a.matches.length;
-            return a.rank - b.rank;
-        });
-
-        let bestPattern = patterns[0];
-
-        let strongEvensCount = evens.filter(n => strongNums.includes(n)).length;
-        let strongOddsCount  = odds.filter(n => strongNums.includes(n)).length;
-        let weakEvensCount   = evens.filter(n => !strongNums.includes(n)).length;
-        let weakOddsCount    = odds.filter(n => !strongNums.includes(n)).length;
-
-        let allValsWithDupes = [...pVals, ...sVals, ...subVals];
-        if (includeSSL && sslVals.length > 0) {
-            allValsWithDupes.push(...sslVals);
-        }
-        let rawEvensCount = allValsWithDupes.filter(n => n % 2 === 0).length;
-        let rawOddsCount  = allValsWithDupes.filter(n => n % 2 !== 0).length;
-
-        let pStrong  = pVals.filter(n => strongNums.includes(n));
-        let sSubWeak = [...sVals, ...subVals].filter(n => !strongNums.includes(n));
-        let pPattern = patterns.find(pat => pStrong.filter(n => pat.group.includes(n)).length >= 2);
-
-        let patternOverride = false;
-        if (patterns[0].matches.length >= 3) {
-            let tieExists = patterns.filter(pat => pat.matches.length === patterns[0].matches.length).length > 1;
-            if (!tieExists && patterns[0].matches.some(n => strongNums.includes(n))) {
-                patternOverride = true;
-            }
-        }
-
-        let massiveParityDominance = (evens.length >= odds.length + 3) || (odds.length >= evens.length + 3);
-        let pStrongEvens  = pStrong.filter(n => n % 2 === 0).length;
-        let pStrongOdds   = pStrong.filter(n => n % 2 !== 0).length;
-        let sSubWeakEvens = sSubWeak.filter(n => n % 2 === 0).length;
-        let sSubWeakOdds  = sSubWeak.filter(n => n % 2 !== 0).length;
-
-        let isSameParityCombine = false;
-        if (pStrong.length > 0) {
-            if (pStrongEvens === pStrong.length && sSubWeakEvens >= 2) isSameParityCombine = true;
-            if (pStrongOdds === pStrong.length && sSubWeakOdds >= 2)   isSameParityCombine = true;
-        }
-
-        if (strongEvensCount > 0 && strongEvensCount === evens.length && weakOddsCount === odds.length && strongOddsCount === 0 && !patternOverride && rawEvensCount >= rawOddsCount) {
-            finalArrBase = allEvens;
-        } else if (strongOddsCount > 0 && strongOddsCount === odds.length && weakEvensCount === evens.length && strongEvensCount === 0 && !patternOverride && rawOddsCount >= rawEvensCount) {
-            finalArrBase = allOdds;
-        } else if (rawEvensCount > rawOddsCount) {
-            finalArrBase = allEvens;
-        } else if (rawOddsCount > rawEvensCount) {
-            finalArrBase = allOdds;
-        } else if (pPattern && sSubWeak.length > 0 && !sSubWeak.some(n => pPattern.group.includes(n)) && !isSameParityCombine && !massiveParityDominance) {
-            finalArrBase = pPattern.matches.filter(n => pStrong.includes(n));
-        } else if (bestPattern.matches.length === 4 && hasAny(all, bestPattern.group)) {
-            finalArrBase = bestPattern.matches;
-        } else if (evens.length >= odds.length + 3) {
-            finalArrBase = allEvens;
-        } else if (odds.length >= evens.length + 3) {
-            finalArrBase = allOdds;
-        } else if (bestPattern.matches.length >= 3 && hasAny(all, bestPattern.group)) {
-            let hasStrongNum = bestPattern.matches.some(n => strongNums.includes(n));
-            if (hasStrongNum) finalArrBase = bestPattern.matches;
-            else if (evens.length >= odds.length + 2) finalArrBase = allEvens;
-            else if (odds.length >= evens.length + 2) finalArrBase = allOdds;
-            else finalArrBase = bestPattern.matches;
-        } else if (evens.length >= odds.length + 2) {
-            finalArrBase = allEvens;
-        } else if (odds.length >= evens.length + 2) {
-            finalArrBase = allOdds;
-        } else if (evens.length === 1 && odds.length === 1) {
-            let e = evens[0];
-            let o = odds[0];
-            let killersMap = {
-                1: [8, 12], 2: [9, 1], 3: [10, 2], 4: [11, 3],
-                5: [12, 4], 6: [1, 5], 7: [2, 6], 8: [3, 7],
-                9: [4, 8], 10: [5, 9], 11: [6, 10], 12: [7, 11]
-            };
-
-            let eIsStrong = strongNums.includes(e);
-            let oIsStrong = strongNums.includes(o);
-            let eKillsO   = killersMap[o] && killersMap[o].includes(e);
-            let oKillsE   = killersMap[e] && killersMap[e].includes(o);
-
-            if (eKillsO && !oKillsE) {
-                finalArrBase = (eIsStrong || !oIsStrong) ? allEvens : allOdds;
-            } else if (oKillsE && !eKillsO) {
-                finalArrBase = (oIsStrong || !eIsStrong) ? allOdds : allEvens;
-            } else {
-                if (o === 1 && e === 2) finalArrBase = allOdds;
-                else if (e === 2 && o === 3) finalArrBase = allEvens;
-                else if (o === 3 && e === 4) finalArrBase = allOdds;
-                else if (e === 4 && o === 5) finalArrBase = allEvens;
-                else if (o === 5 && e === 6) finalArrBase = allOdds;
-                else if (e === 6 && o === 7) finalArrBase = allEvens;
-                else if (o === 7 && e === 8) finalArrBase = allOdds;
-                else if (e === 8 && o === 9) finalArrBase = allEvens;
-                else if (o === 9 && e === 10) finalArrBase = allOdds;
-                else if (e === 12 && o === 1) finalArrBase = allEvens;
-                else finalArrBase = allEvens;
-            }
-        } else if (subVals.length > 0) {
-            let subEvens = subVals.filter(n => n % 2 === 0).length;
-            let subOdds  = subVals.filter(n => n % 2 !== 0).length;
-            if (subEvens > subOdds) finalArrBase = allEvens;
-            else if (subOdds > subEvens) finalArrBase = allOdds;
-            else finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
-        } else if (sVals.length > 0) {
-            let sEvens = sVals.filter(n => n % 2 === 0).length;
-            let sOdds  = sVals.filter(n => n % 2 !== 0).length;
-            if (sEvens > sOdds) finalArrBase = allEvens;
-            else if (sOdds > sEvens) finalArrBase = allOdds;
-            else finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
-        } else {
-            finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
-        }
-    }
-
-    const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
-    let finalArrPivot = uniqueSort(rotate(finalArrBase));
-    let baseResult    = finalArrPivot.join(",");
-
-    let additions = [];
-    let baseFullPatterns = [];
-    let standardPatterns = [[1, 4, 7, 10], [2, 5, 8, 11], [3, 6, 9, 12]];
-
-    for (let pat of standardPatterns) {
-        if (pat.every(n => finalArrPivot.includes(n))) {
-            baseFullPatterns.push(pat);
-        }
-    }
-
-    function addRotatedTopping(rotatedVals) {
-        if (!rotatedVals || rotatedVals.length === 0) return;
-        let vals = uniqueSort(rotatedVals);
-        if (baseFullPatterns.length > 0) {
-            vals = vals.filter(n => baseFullPatterns.some(pat => pat.includes(n)));
-        }
-        if (vals.length > 0) {
-            let str = vals.join(",");
-            let isSubset = vals.every(n => finalArrPivot.includes(n));
-            if (str && !additions.includes(str) && str !== baseResult && !isSubset) {
-                additions.push(str);
-            }
-        }
-    }
-
-    if (includeSSL && sslVals.length > 0 && !window.T10_EXCLUDE_SUBSUB_RULE) {
-        addRotatedTopping(rotate(sslVals));
-    }
-
-    let T3 = window.__T3_CACHE__;
-    let chain = [p];
-    if (kp.star) chain.push(kp.star);
-    if (kp.sub)  chain.push(kp.sub);
-
-    if (T3) {
-        chain.forEach(ent => {
-            if (T3[ent]) {
-                let entSubVals  = String(T3[ent].sub  || "").split(",").filter(Boolean).map(Number);
-                let entSslVals  = String(T3[ent].ssl  || "").split(",").filter(Boolean).map(Number);
-                let entStarVals = String(T3[ent].star || "").split(",").filter(Boolean).map(Number);
-
-                if (T10_ADD_SUBLORD && !excludeSublordForGraphs && entSubVals.length > 0) {
-                    let leftOut = entSubVals.filter(n => !finalArrPivot.includes(n));
-                    if (leftOut.length > 0) addRotatedTopping(leftOut);
-                }
-
-                if (T10_ADD_STARLORD) {
-                    if ((subVals.length > 0 || sslVals.length > 0) && sVals.length > 0) {
-                        addRotatedTopping(entStarVals);
-                    }
-                } else if (T10_ADD_SUBSUB) {
-                    if (!includeSSL && entSslVals.length > 0 && !window.T10_EXCLUDE_SUBSUB_RULE) {
-                        addRotatedTopping(entSslVals);
-                    }
-                }
-            }
-        });
-    }
-
-    if (additions.length > 0) {
-        return baseResult + (baseResult ? " + " : "") + additions.join(" + ");
-    }
-
-    return baseResult;
-}
-
-/* =========================================================
-   PREDICTION MODULE CSV DATABASE & MATCHING ENGINE
-   ========================================================= */
-const PREDICTION_CSV_DATA = `
-"Health Good",,1,"1,3,5,7,9,11"
-"Health Bad",,1,"2,4,6,10"
-"Health Very Bad",,1,"6,8,12"
-"Gaining Status, Respect",,1,"10,11"
-"Success In Self Efforts",,1,11
-"Body Accustomed/Adapted To Anything",,1,"2,11"
-"Longevity - Medium Period",,1,"2,7"
-"Life",,1,"2,7,11"
-"Life",,1,"2,7,9"
-"Tendency To Fight Always",,1,"2,8"
-"Murders","MA,SA",1,"2,8"
-"Body Averting To Anything",,1,"2,8,12"
-"Good Person",,1,"3,5,7,9,11"
-"Courageous Person",,1,"3,6"
-"Famous Person",,1,"3,6,10"
-"Tendency To Create Peace Always",,1,"3,7"
-"Coward",,1,"3,8"
-"Longevity - Short Period",,1,"3,8"
-"Aversion To Education (Illiterate Person)",,1,"3,8"
-"Running Away From Native",,1,"3,8,12"
-"Living Outside Of One's Own Residence",,1,"3,9"
-"Person Living Alone",,1,"3,9"
-"Person Living In Joint Family",,1,"4,10"
-"Not Addicted To Anything","SA,KE",1,"4,6"
-"No Interest Towards Sexual Affairs","SA,KE",1,"4,6,8,10"
-"Accidents","MA,SA",1,"4,8"
-"Highly Educated Person",,1,"4,9,11"
-"Good Health",,1,"5,11"
-"For Smooth Functioning Of Parts Of Body Referring To Health",,1,"5,11"
-"Addicted To Drugs, Liquor, Women","VE,MA",1,"5,7"
-"Womanizer","VE,MA",1,"5,7,9,11"
-"Lost Status Of Famous Person",,1,"5,8,10"
-"Life With Sufferings",,1,"5,8,12"
-"Confident Person",,1,"5,9"
-"Longevity - Long Life",,1,"5,9"
-"Person Leading Independent",,1,6
-"Diseases",,1,6
-"Dislike Harmony, Unity, With Others",,1,"6,10"
-"Successful Life",,1,"6,11"
-"Life With Lots Of Diseases",,1,"6,8,12"
-"Person Living As Dependent With Others",,1,7
-"Adjustable With Others (Accord, Unity)",,1,"7,11"
-"Suicides",,1,8
-"Does Not Possess Any Capacity For Doing Research",,1,"8,11"
-"Run Away From Living Place",,1,"8,12"
-"Scholar And Authority In Research Field",,1,"9,12"
-"Creul Person",,1,"2,4,6,8,10,12"
-"Passive Income",,2,"1,3,5,7,9,11"
-"Active Income",,2,"2,4,6,8,10,12"
-"Rich Person","JU,VE",2,"2,4,6,10"
-"Rich Enjoying Life",,2,"1,3,5,7,9,11"
-"Money Worries",,2,"8,12"
-"Money Very Bad",,2,8
-"Wealth Strong",,2,"2,4,6,10"
-"For Free Flow Of Fund Cash Flow From Blockage",,2,4
-"Cash Deposits With Someone Else For Safety",,2,7
-"Cash Held Up / Stalled Outside",,2,8
-"Fund & Cash Flow - Blockage (Liability)",,2,9
-"Business Started With Cash As Investment",,2,10
-"Excess / Abnormal Monetary Receipts",,2,11
-"Moneytary Income, Not To Be Returned",,2,11
-"Cash/Fund Savings As Investments",,2,12
-"Small Debts",,2,"1,3"
-"Investments",,2,"10,12"
-"Small Debts",,2,"3,11"
-"For Selling Gold And Other Ornaments",,2,"3,12"
-"Separation Of Someone From Family",,2,"3,12"
-"Loss In Gold & Jewelry Business",,2,"3,5,9"
-"Exchange Of Transaction, Cash Into Cheque",,2,"3,6"
-"For Running Gold Jewelry Business",,2,"4,10"
-"Visit Of Relatives",,2,"4,11"
-"Scholarships",,2,"4,11"
-"Augmenting Gold Ornaments",,2,"4,12"
-"Purchase Of Households",,2,"4,6,11"
-"To Achieve For Scholarship",,2,"4,9"
-"Money Not Returned Back To Lender",,2,"5,11"
-"Parts Of Body Pertaining To 2nd Bhava To Be In Healthier Condition",,2,"5,11"
-"Expenditure For Goods",,2,"5,11,12"
-"Money Pledged For Gambling Purposes",,2,"5,12"
-"For Healthy Eye, Tooth, Throat",,2,"5,7,11"
-"Fluctuating Fund Flow (Unsteady)",,2,"5,9"
-"Money Issued As Donations (Gifts)",,2,"5,9"
-"Loss In Business, Started With Cash As Investment",,2,"5,9"
-"Steady Fund Flow",,2,"6,10"
-"Evade / Elude From Income Tax Dept",,2,"6,11"
-"Borrowings",,2,"6,11"
-"Money Banking Transactions",,2,"6,12"
-"Loans",,2,"6,8,11"
-"Eye, Tooth, Throat Troubles/Sufferings",,2,"6,8,12"
-"To Receive Help / Assistance From Others",,2,"7,11"
-"Loss Of Jewelry Items Due To Robbery",,2,"7,12"
-"To Be Land Up In Trouble With Income Tax Dept",,2,"7,12"
-"Receiving Donations/Gifts/Compliments",,2,"8,11"
-"Insurance Claims","SA",2,"8,11"
-"Swindling Of Others Jewelries By Bad Means",,2,"8,12"
-"Unnecessary Expenses / Expenditure",,2,"8,12"
-"To Go Out By Walk",,3,3
-"To Have Strong Will Power",,3,6
-"Deception Through Money Order",,3,8
-"Letter Correspondence",,3,9
-"To Shift From One Location To Another (Dislocation)",,3,9
-"To Involve In The Profession Of Broker",,3,10
-"Short Journeys",,3,11
-"Transfers",,3,"10,11"
-"Sale Of Properties",,3,"11,12"
-"Letter Correspondence",,3,"2,11"
-"Money Orders",,3,"2,11"
-"To Remain / Stay In The Same Place/Location",,3,"2,4"
-"Receipt/Collection Of Cheques",,3,"2,6"
-"Obstruction In Journey",,3,"2,8"
-"Obstruction In Dislocation",,3,"2,8"
-"Cheque Payments",,3,"2,8,12"
-"To Receive Money Order",,3,"2,9"
-"For Journey / Travelling",,3,"3,9"
-"Unable To File / Register A Suit",,3,"5,10"
-"To Act As A Commission Broker",,3,"5,10"
-"Pilgrimage By Foot",,3,"5,9"
-"For Smooth Functioning Of Part Of Body Covering Under 3rd Bhava",,3,"5,9,11"
-"To Become A Document Writer",,3,"6,10"
-"Filing A Suit",,3,"6,11"
-"Unable To Communicate Through Telephone",,3,"6,8"
-"Mental Disorder / Or Depressed Condition",,3,"6,8"
-"Heart Attack",,3,"6,8"
-"Diseases In Ear (S) / Nose",,3,"6,8,10"
-"Loss Of Sensation (Numbness) / Nervous Debility",,3,"6,8,12"
-"To Succeed In Obtaining Tenders",,3,"6,9,11"
-"To Sign Surety Documents",,3,"7,11"
-"News - True, Real And Factual In Nature",,3,"7,11"
-"Telephone Communications",,3,"7,9"
-"For Cancelation Of Contracts / Agreements",,3,"8,10"
-"Fake / Forgery Documents",,3,"8,10"
-"Unable To Correspond Through Letter",,3,"8,12"
-"Trouble Due To Standby As Surety",,3,"8,12"
-"False News / Communications",,3,"8,12"
-"To Lose Energy From One's Body",,3,"8,12"
-"To Install Telephone Booths / Center",,3,"9,10"
-"To Sign Contracts / Agreements",,3,"9,11"
-"To Ascertain For Original Documents",,3,"9,11"
-"Long Journeys",,3,"9,11"
-"Receipt Of Cheques",,3,"9,11"
-"Communications",,3,"9,11"
-"Agreements",,3,"9,11"
-"Negotiations",,3,"9,11"
-"To Perform As A Secret Agent /Or A As Spy",,3,"9,12"
-"For Foreign Travel",,3,"9,12"
-"Small Loan",,6,3
-"Marriage Within Relatives","MA",4,"1,3,5,7,9,11"
-"Rent Income Good",,4,"2,4,6,10"
-"Rent Enjoy Property No Income",,4,"5,9"
-"Rent Problems Litigation",,4,"8,12"
-"Property Loss","MA,VE",4,"5,8"
-"Property Never Buy",,4,"3,11"
-"Property Worries",,4,"8,12"
-"Real Estate Business","MA,VE",4,"2,4,6,10"
-"Real Estate Loss","MA,VE",4,"5,9"
-"Real Estate Problems","MA,VE",4,"8,12"
-"Property Good","MA",4,"2,4,6,10"
-"Property Bad","MA",4,"1,3,7,11"
-"Property Litigation","MA",4,"8,12"
-"Vehicle Accident Damage",,4,"6,8,12"
-"Vehicle Safe",,4,"1,3,5,7,9,11"
-"To Purchase Vehicles",,4,6
-"Vehicle Accident",,4,8
-"Productive Part Damaged",,4,8
-"Production Oriented Profession",,4,10
-"Moderate Level Education",,4,11
-"Land","MA",4,11
-"Cycle","SA",4,11
-"Motor Cycle","MA,VE,JU",4,11
-"Heavy Vehicles","MA,VE,MO",4,11
-"To Purchase Landed Properties",,4,12
-"Agricultural Land","MO,MA",4,"10,11"
-"To Purchase A Constructed House",,4,"10,12"
-"House","MA,VE",4,"11,12"
-"Hired Articles",,4,"2,6"
-"Agriculture",,4,"2,6,10"
-"Stable Properties",,4,"2,6,12"
-"Obstacles In Moderate Level Education",,4,"3,10"
-"Encumbrance In Properties",,4,"3,11"
-"Sale Of Landed Properties",,4,"3,12"
-"Sale Of Vehicles",,4,"3,12"
-"Sale Of Household Articles",,4,"3,12"
-"Productive Part Removal",,4,"3,12"
-"Sale Of House","VE",4,"3,12"
-"Unstable Properties",,4,"3,6,12"
-"Missing Of Vehicles",,4,"3,8,12"
-"To Purchase A Leased House",,4,"3,9"
-"Factory Lock Out",,4,"3,9"
-"Production Oriented Profession -Lockout",,4,"3,9"
-"To Purchase Leased Land",,4,"3,9"
-"Sale Of Heavy Vehicles",,4,"3,9,12"
-"Interchanging Of Vehicles",,4,"3,9,12"
-"Productive Part Replacement",,4,"3,9,12"
-"Factory Strike",,4,"5,10"
-"To Purchase Household Articles",,4,"5,11"
-"Pleasure Vehicles","MA,VE,JU",4,"5,11"
-"To Purchase Heavy Vehicles",,4,"6,10"
-"Employed In Factories/ Industries",,4,"6,10"
-"Engineer",,4,"6,10"
-"Architect",,4,"6,10"
-"Lower Grade School Teacher","VE",4,"6,10"
-"Furnitures, Cosmetics",,4,"6,11"
-"To Rent A House",,4,"6,12"
-"Daily Paid Worker In Factories",,4,"6,8"
-"Constructed House",,4,"6,9,11"
-"Vehicle Damaged",,4,"8,11"
-"Higher Level Education",,4,"9,11"
-"Ph.D/ Research Scholar",,4,"9,11,12"
-"Child Birth No Childlessness","JU",5,"4,12"
-"Child Birth 100% Good","JU",5,"1,3,5,7,9,11"
-"Child Birth Strong","JU",5,"3,7,11"
-"Child Birth Average","JU",5,"2,6,10"
-"Child Birth Very Bad","JU",5,"4,8,12"
-"Love Marriage Strong",,5,"1,3,5,7,9,11"
-"Love Breakup",,5,"4,8,12"
-"Politics Success","SU",5,"2,6,10"
-"Politics Failure","SU",5,"1,5,9"
-"First Night",,5,11
-"Child Short-Lived",,5,12
-"Blood Cells In Spoiling Condition",,5,12
-"Popular/Famous Astrologer",,5,"1,10"
-"To Get Trained In Arts",,5,"1,11"
-"Clearing Debts",,5,"1,11"
-"Healthy Life",,5,"1,11"
-"Disease Due To Blood Cells",,5,"1,6"
-"Spiritual Life","SA,KE",5,"10,11"
-"Fine Arts","VE",5,"10,11"
-"Professional Astrologer",,5,"2,10"
-"Gambling House",,5,"2,10"
-"To Gain In Gambling",,5,"2,11"
-"Child Birth",,5,"2,11"
-"Black Money",,5,"2,11"
-"Menopause (An End To Menses Cycle)",,5,"2,4,6"
-"To Do Commission Business",,5,"2,6"
-"To Work As Assistant Under Astrologer",,5,"2,6"
-"Winning Gambles/Races",,5,"2,6,11"
-"Priest Of A Temple",,5,"2,9"
-"Artist",,5,"3,10"
-"Lottery Business",,5,"3,10"
-"Blood Donation",,5,"3,12"
-"Sports Man (Player)",,5,"3,6,11"
-"To Lose One's Consciousness; To Affect One's Deep Knowledge",,5,"3,8,12"
-"For Regular Menstrual Cycle",,5,"3,9"
-"Love Failure",,5,"4,10"
-"Delivery Of Unhealthy Child",,5,"4,10"
-"To Teach Arts",,5,"4,10"
-"Divorce In Love Marriage",,5,"4,10"
-"Teacher In Astrology",,5,"4,10"
-"Sculptor",,5,"4,10"
-"For Irregular Menstrual Cycle",,5,"4,10"
-"To Become An Ascetic; Saint; (Reclusive Life)","SA",5,"4,10"
-"Ones Failure Life In Cine Field",,5,"4,10,12"
-"To Quit Politics",,5,"4,9"
-"Ones Successful Life In Cine Field",,5,"6,10"
-"To Be A Winner In Sports",,5,"6,11"
-"Winning Games",,5,"6,11"
-"Feast And Festivals",,5,"6,11"
-"Delivery Of Twins",,5,"7,11"
-"Illicit Love Affairs",,5,"7,11"
-"Love Marriage",,5,"7,11"
-"Obscene /Indecent Actor",,5,"8,10"
-"To Lose In Gambling",,5,"8,12"
-"Humiliated Due To Obscene/Indecent",,5,"8,12"
-"Abnormal Menstrual Bleeding",,5,"8,12"
-"Rape","MA",5,"8,12"
-"Giving Bribes",,5,"8,12"
-"To Have Healthy Blood Cells",,5,"9,11"
-"Researcher In Astrology",,5,"9,11"
-"Temple Trustee",,5,"9,11"
-"Illegal Affairs",,5,"9,11"
-"Indirect Love Affairs",,5,"9,12"
-"Job Monthly Income",,6,"2,4,6,10"
-"Job Enjoyment More Money Less",,6,"1,3,7,11"
-"Job No Money",,6,"5,9"
-"Job Heavy Loss",,6,"8,12"
-"Loan",,6,"2,4,6,10"
-"Heavy Loan",,6,8
-"Loan Repayment Easy",,6,"3,7,11"
-"Loan Not Possible",,6,"1,5,9"
-"Loan Blocked",,6,12
-"Inner Job Nature",,6,"1,3,5,7,9,11"
-"Hardworking Job",,6,"2,4,6,8,10,12"
-"Diseases Frequent","SU",6,"6,8,12"
-"Recovery From Disease",,6,1
-"Disease",,6,1
-"Secret Activities Of Partner",,6,5
-"To Win In Law Suits (Litigations)",,6,11
-"Winning Opponents",,6,11
-"Divorce",,6,12
-"Winning Litigation",,6,"1,11"
-"Medical Treatment To Diseases",,6,"1,12"
-"Borrow Money To Re-Pay Previous Loan",,6,"1,2"
-"Operation/Surgery",,6,"1,3,8,12"
-"Troublesome Disease",,6,"1,8"
-"Damage To Organ By Diseases",,6,"1,8"
-"Self Unconsciousness",,6,"1,8,12"
-"Borrowing (To Get Loan)",,6,"2,10"
-"Service - As An Employee",,6,"2,10"
-"Clearing Debts By Borrowings",,6,"2,11,12"
-"Money Borrowed For Other Transaction(S)",,6,"2,12"
-"Purchase Of Food Items & Related Materials",,6,"2,4"
-"Problem In Loan Transactions",,6,"2,9"
-"To Get Hand Loan (Money Without Interest)",,6,"3,11"
-"Problem Due To Hand Loan",,6,"3,8"
-"Airborne Disease (Vada)",,6,"3,8"
-"To Do Catering Business (Cooking Work)",,6,"4,10"
-"Disease Which Is Incurable",,6,"4,10"
-"Purchase Of New Dress Materials",,6,"4,11"
-"Purchase Second Hand (Used) Articles/Items",,6,"4,8"
-"To Remain Sick Permanently",,6,"4,8"
-"Life-Long Diseases",,6,"4,8"
-"Hereditary Disease",,6,"4,9"
-"To Recover From Disease",,6,"5,11"
-"Purchase Of Medicines",,6,"5,11"
-"To Attend A Feast",,6,"5,11"
-"Relief From Diseases",,6,"5,11"
-"To Recover From Coma Stage",,6,"5,7,11"
-"Return Of Borrowings (Loan Pay Back)",,6,"5,8,12"
-"Unsuccessful In Borrowing (Failure)",,6,"5,9"
-"To Relieve From Troublesome Disease",,6,"7,11"
-"Worker(S) On Daily Wages",,6,"8,10"
-"To Get Huge Loan",,6,"8,10"
-"To Work As Apprentice (Learner)",,6,"8,10"
-"Marriage Outside Caste",,7,"6,8,12"
-"Marriage Early","VE",7,"1,3,5,7,9,11"
-"Marriage Average",,7,"2,4,10"
-"Marriage Delayed",,7,"6,8,12"
-"Unmarried Possibility",,7,"6,12"
-"Second Marriage","VE,MA",7,"4,6,8,12"
-"Marriage Harmony Good","VE",7,"1,3,5,7,9,11"
-"Marriage Public Recognition",,7,"1,3,5,7,9,11"
-"Marriage Weak Recognition",,7,"2,4,6,10"
-"Guest Arrival",,7,4
-"Hidden / Indirect Enemies",,7,12
-"Marriage",,7,"5,7,11"
-"Religious Related Union Agreement",,7,"1,5,9"
-"Customer",,7,"10,11"
-"Catch Hold Of Thief",,7,"2,11"
-"To Bring Others Into Our Self Control",,7,"2,11"
-"Second Child",,7,"2,11"
-"Thief",,7,"2,12"
-"Giver Of Bank Loan",,7,"2,6,9,11"
-"To Exit / Abandon From A Contract",,7,"2,8"
-"Arguments/Debates",,7,"2,8"
-"Co-Operative Union Agreement",,7,"3,5,9,11"
-"Separation From Partnership Business",,7,"3,6,9"
-"To Enter / Get Into A Contract",,7,"3,9"
-"Temporary Separation",,7,"3,9"
-"Commercial Unions",,7,"3,9"
-"Party Of Agreement",,7,"3,9,11"
-"Partnership In Business",,7,"4,10"
-"Separation / Failure In Negotiation",,7,"4,10"
-"Ever Unsatisfied Person",,7,"4,10"
-"Troubles From Guest",,7,"4,12"
-"To Recover From Contagious Disease",,7,"5,11"
-"To Act As Mediator / Negotiator",,7,"5,11"
-"Union Agreement",,7,"5,11"
-"Business Partner",,7,"5,11"
-"Failure To Bring Others Into Our Self Control",,7,"5,8"
-"To Win/Success Over Enemies",,7,"6,11"
-"Divorce",,7,"6,12"
-"Troubles From Enemies",,7,"8,12"
-"To Elect / Select Non-Confidant(S)",,7,"8,12"
-"Enemies",,7,"8,12"
-"To Elect/Select Confidant(S)",,7,"9,11"
-"One Who Indulges In Multiple Affairs",,7,"9,11"
-"Major Accident",,8,"6,8,12"
-"Accident Avoided",,8,"1,3,5,7,9,11"
-"Major Surgery",,8,"2,4,6,8,10,12"
-"Natural Death",,8,8
-"Clearing Debts",,8,12
-"Unexpected Happiness",,8,"1,11"
-"Unexpected Sorrow / Grief",,8,"1,12"
-"Unexpected Hidden Life",,8,"1,12"
-"Unexpected Escape From Death",,8,"1,2"
-"Gain Due To Unexpected Love Affairs",,8,"1,2,5"
-"Recovery From Unexpected Sudden Disease",,8,"1,5,11"
-"Unexpected Sudden Disease",,8,"1,6"
-"Unexpected Sufferings Due To Pains /Agony",,8,"1,8"
-"Unexpected Sudden Suicide",,8,"1,8"
-"Unexpected Fruition Of Bribe/Corrupt Money",,8,"2,10"
-"Sudden Gains",,8,"2,11"
-"Unexpected Profits Of Money",,8,"2,11"
-"Unexpected Loss From Insurance Amount",,8,"2,12"
-"Unexpected Losses",,8,"2,12"
-"Unexpected Eye Affect (Affliction)",,8,"2,4,8"
-"Unexpected Fruition Of Insurance Amount",,8,"2,6"
-"Heavy Loan",,8,"2,6,11"
-"Unexpected Restraints In Cash Flow",,8,"2,9"
-"Unexpected Sudden Death",,8,"3,10"
-"Unexpected Dispute/Encumbrance From Properties",,8,"3,11"
-"Unexpected Mental Satisfaction",,8,"3,11"
-"Unexpected Loss Of Possession",,8,"3,12"
-"Unexpected Run Away (Escape) From Living Place",,8,"3,12"
-"Unexpected Mental Illness (Disease)",,8,"3,6"
-"Unexpected Contract Agreement",,8,"3,7,9"
-"Unexpected Mental Disorder / Suffering",,8,"3,8"
-"Unexpected Break In Contract",,8,"3,9"
-"Unexpected Separation From Love Affairs",,8,"4,10"
-"Unexpected Encumbrance In Hereditary Properties",,8,"4,11"
-"Unexpected Purchase Of Properties",,8,"4,12"
-"Unexpected Accidents",,8,"4,12"
-"Unexpected Escape From Accident",,8,"4,7"
-"Unexpected Accident",,8,"4,8"
-"Unexpected Fruition Of Hereditary Properties",,8,"4,9"
-"Trouble From Unexpected Immoral Affairs",,8,"4,9"
-"Escape From Unexpected Humiliation",,8,"5,11"
-"Unexpected Love Affairs",,8,"5,11"
-"Spoiling Name & Fame",,8,"5,12"
-"Loss Due To Unexpected Love Affairs",,8,"5,12"
-"Unexpected Humiliation",,8,"5,8"
-"Unexpected Immoral Affairs",,8,"5,9"
-"Unexpected Sudden Labour Strike",,8,"5,9"
-"Unexpected Sudden Fruition Of Employment",,8,"6,10"
-"Sudden Gifts",,8,"6,11"
-"Unexpected Sudden Separation (Divorce)",,8,"6,12"
-"Unexpected Sudden Marriage",,8,"7,11"
-"Unexpected Trouble / Incommode From Partner",,8,"7,8"
-"Unexpected Higher Education",,8,"9,11"
-"Unexpected Sudden Research Activity",,8,"9,12"
-"Second Marriage Possible",,9,"1,3,5,7,9,11"
-"Second Marriage Not Possible",,9,"4,6,10,12"
-"Higher Education Break",,9,"8,12"
-"Higher Education Not Used",,9,"5,9"
-"Higher Education Career Link",,9,"2,4,6,10"
-"Higher Education Different Field",,9,"1,3,7,11"
-"Foreign Job","RA,MO",9,"2,4,6,10"
-"Hereditary Disease",,9,6
-"Second Marriage",,9,7
-"Higher Education",,9,11
-"Long Journey",,9,12
-"Immoral / Illegal Affairs",,9,12
-"Secret Links / Relationships",,9,12
-"Change In Profession",,9,"10,12"
-"To Perform Export Business",,9,"10,12"
-"Success In Reasearches",,9,"11,12"
-"Child Birth Third Child",,9,"2,11"
-"Fortune",,9,"2,11"
-"Father Rejoining Family",,9,"2,11"
-"To Be Employed In Financial Institutions",,9,"2,6,10"
-"Trouble In Obtaining Hereditary Vehicles & Business Assets",,9,"3,10"
-"Fruition/Possession Of Hereditary Succession Rights",,9,"3,11"
-"To Obtain Lease / Contract Agreement",,9,"3,11"
-"Reception Of Information",,9,"3,11"
-"To Perform As Secret Agent / Cid",,9,"3,12"
-"For Pilgrimage",,9,"3,7"
-"Trouble In Obtaining Lease/Contract Agreement",,9,"3,8"
-"Loss Of Hereditary Succession Rights",,9,"3,8,12"
-"To Obtain Hereditary Vehicles & Business Assets",,9,"4,10"
-"To Lose First Respect (Hereditary)",,9,"4,10"
-"To Do One's Service As A Professor",,9,"4,10"
-"Job /Service Related To One's Education",,9,"4,10"
-"Visit Of Unknown",,9,"4,11"
-"Fruition Of Hereditary Properties",,9,"4,12"
-"Trouble Due To Immoral / Illegal Affairs With Lover",,9,"4,12"
-"To Receive First Respect (Hereditary)",,9,"5,11"
-"Relief From Disease Due To Divine Grace",,9,"5,11"
-"To Perform Divine Service",,9,"5,11"
-"To Become A Trusted Political Leader",,9,"5,11"
-"To Repay/ Settle Hereditary Loans",,9,"5,12"
-"Termination Of Foreign Service/Job At Abroad",,9,"5,8"
-"Getting Punished Due To Divine Judgment / Action",,9,"5,8,12"
-"Employment/Service Opportunity In Abroad",,9,"6,10"
-"Hereditary Loan Burden",,9,"6,12"
-"Involvement In Secret Research",,9,"6,12"
-"Obstruction In Second Marriage",,9,"6,8"
-"Loss Of Hereditary Treasure /Wealth",,9,"8,11"
-"Obstruction In Higher Education",,9,"8,12"
-"Job /Service Without Any Rank And Position",,10,5
-"Trouble Through Profession / Service",,10,5
-"No Growth In Business / Profession (Stagnation)",,10,8
-"Fraudulent Business (Intended To Deceive The Clients)",,10,8
-"Frequent Shutdown Of Business Units",,10,9
-"Job/Service With Rank And Position",,10,"1,6"
-"Business Deadlock (Standstill)",,10,"1,7"
-"Profession/Service With Huge Enormous Income",,10,"2,11"
-"Multiple Service / Job Activities",,10,"2,12"
-"Business Investors / Capitalists",,10,"2,12"
-"Commission Business",,10,"2,3,11"
-"To Run Brothel House (Prostitution)",,10,"2,5,9"
-"Service","ME,VE",10,"2,6"
-"Daily Labour","SA",10,"2,6"
-"Permanent Job / Service",,10,"2,6"
-"Sustained Growth For Ever In Business / Service",,10,"2,6"
-"Promotion In Job",,10,"2,6,11"
-"Job/Service Inclines To Accept Bribery/Corruption",,10,"2,8"
-"Cashier",,10,"2,8"
-"Outdoor Bussiness",,10,"3,12"
-"Job With Frequent Displacements / Transfers",,10,"3,12"
-"Production Of Materials",,10,"3,4"
-"Production & Sales Jobs",,10,"3,4,12"
-"Lady Broker",,10,"3,5,7,9,11"
-"Distraint/Seizure Of Business Unit / Industry",,10,"3,5,8,12"
-"Self Bussiness",,10,"3,7"
-"Coordinator / Mason's Supervisor",,10,"3,7"
-"Commercial Center Rent",,10,"3,7,12"
-"Production Oriented Business Profession/Service",,10,"4,10"
-"Doing Business As Hoarder",,10,"4,12"
-"Job / Service Based On Daily Wages",,10,"4,6"
-"Joint Business Venture With Others",,10,"4,7"
-"Business Competitions",,10,"4,7"
-"Temporary Job / Service",,10,"5,8"
-"Break In Service / Job",,10,"5,9"
-"Unemployed / Unable To Get Any Service",,10,"5,9"
-"Second Profession",,10,"6,12"
-"Accountants & Auditors",,10,"6,12"
-"Surgeons",,10,"6,8"
-"Break In Profession",,10,"7,11"
-"Doing Business On One's Name For The Sake Of One's Close Aide",,10,"7,12"
-"Trouble Through Large Business Units/ Industries",,10,"8,12"
-"Illegal Business Activity",,10,"8,12"
-"Retirement",,10,"9,12"
-"Satisfaction Of Desires",,11,1
-"Bore Well Water Found","MO",11,4
-"Favourable Situation To One On Satisfactory Events",,11,5
-"Suffering From Vitamin Deficiency (A Kind Of Disease)",,11,6
-"Troubles / Lose Arise Due To Greedy Action",,11,"8,12"
-"To Reach Status Rank, And Cadre As Per One's Wish",,11,"1,10"
-"Happy/Blissful Man",,11,"1,11"
-"To Fulfill One's Self Desire",,11,"1,11"
-"Satisfactory Child Birth As Per One's Wish",,11,"1,5"
-"Successful Man In All Aspects Of One's Life",,11,"1,6"
-"Frustration Due To One's Self Desire",,11,"1,8"
-"To Get Prestigious Post As Per One's Wish",,11,"1,9"
-"Develop One's Wish To End With Greedy Action",,11,"2,12"
-"House Sold For Good Price",,11,"2,6"
-"Fructification Of Job / Service As Per Own Wish",,11,"2,6"
-"Winning Any Girl Love",,11,"2,7"
-"Return From Foreign Country",,11,"2,8"
-"Happy Moments Through Friends",,11,"3,5"
-"Accord / Integration Among Unions",,11,"3,5,9"
-"Successful In Self Desires / One's Expectation",,11,"3,6"
-"Attachment With A Person As Per One's Own Wish /Liking",,11,"3,7"
-"Sufferings Through Friends",,11,"3,8"
-"Feeling Happy Through Son-In-Law/ Daughter-In-Law",,11,"3,9"
-"Unhappy Man",,11,"4,10"
-"Troubles Through Daughter-In-Law, Son-In-Law",,11,"4,10"
-"Rejection In Love With Someone To Whom One Has Shown Her Love Earlier",,11,"4,10"
-"Dissatisfactory Child Birth Against One's Wish",,11,"4,10"
-"Unable To Fix Marriage With Someone As Per Own Wish",,11,"4,6,10"
-"Getting Business Partner As Per Own Wish / Liking",,11,"4,7,10"
-"No Knowledge In Learning Art Of Any Kind / Branch",,11,"4,8"
-"Troubles Through Illegal Affairs",,11,"4,8"
-"Forfeit /To Lose From One's Prestigious Post",,11,"4,8"
-"Dissolutions / Disintegration Among Unions",,11,"4,8,10"
-"Recovery From Vitamin Deficiency (A Kind Of Disease)",,11,"5,10"
-"Sprightly Man (Jolly, Highly Spirited)",,11,"5,11"
-"Marriage With Someone As Per Own Liking",,11,"5,7"
-"Child Birth For Wife",,11,"5,8"
-"Failure In Self Desires /One's Expectation",,11,"5,8"
-"Dissatisfactory Business Partner",,11,"5,8,12"
-"To Obtain Wisdom On Interested / Favourite Art(S)",,11,"5,9"
-"Unable To Get The Chance For A Desired Job",,11,"5,9"
-"Illegal Affairs With A Person Of One's Own Liking",,11,"5,9"
-"Attachment With A Person One Who Dislikes",,11,"6,10"
-"Unfavourable Situation To One On Satisfactory Events",,11,"6,8"
-"Very Good Contender In All Divisions Of Life",,11,"8,12"
-"Unable To Fructify One's Own Wishes",,11,"8,12"
-"Profit Through Investments",,12,2
-"Troubles Through Investments",,12,7
-"Secret Threatening By Someone",,12,7
-"Impediments In Research Study",,12,8
-"To Accomplish Research Study",,12,9
-"To Perform Secret Business",,12,10
-"Man Of Hidden Attitude",,12,"1,11"
-"Secret Diseases",,12,"1,6"
-"Separation Of Secret Agent From Oneself",,12,"1,6"
-"Secret Agents / Spy",,12,"1,7"
-"To Spoil Name & Fame",,12,"1,8"
-"Troubles Through Hidden Attitude",,12,"1,8"
-"Danger Due To Secrets",,12,"1,8"
-"Investment In Business",,12,"2,10"
-"Income Tax Troubles",,12,"2,5,8"
-"To Obtain Secret Loan",,12,"2,6"
-"Recovery Of Money (Lost)",,12,"2,6,11"
-"Secret Looting",,12,"2,8"
-"Return To Motherland / From Abroad",,12,"2,8"
-"To Undergo Secret Abortion",,12,"3,10"
-"To Retain The Secrets Secretly",,12,"3,10"
-"To Forgo The Hidden Article From One's Hand",,12,"3,12"
-"Secret Delivery (Child Birth)",,12,"3,5"
-"Sale Of Products Bussiness",,12,"3,6"
-"Trouble In Holding Unauthorized Illegal Stock Items",,12,"3,7"
-"Troubles Through Secret Communications, Contacts",,12,"3,8"
-"To Capture / Steal One's Secret",,12,"3,8"
-"Absconding",,12,"3,8,12"
-"Imprisonment","RA",12,"3,8,9"
-"Secret Communications / Contacts",,12,"3,9"
-"To Reside In Foreign Country / Abroad",,12,"3,9"
-"Success In Secret Planning",,12,"4,10"
-"Investment In Buildings Land",,12,"4,11"
-"Success In Secret Plans",,12,"4,11"
-"Benami Properties",,12,"4,6"
-"Problems In Secret Marriage",,12,"4,6"
-"Unauthorized Holding Of Stocks Illegally",,12,"4,6"
-"Trouble In Secret Planning",,12,"4,7"
-"Trouble In Benami Properties",,12,"4,7"
-"Trouble Through Secret Love Affairs",,12,"4,7"
-"Troubles Through Secret Illegal Relationships",,12,"4,7"
-"Secret Love Affairs",,12,"5,11"
-"To Recover From Secret Diseases",,12,"5,11"
-"To Make Settlement/Repayment Of Secret Loan",,12,"5,11"
-"To Come Out Of Secret Acts",,12,"5,11"
-"For Secret Marriage",,12,"5,7"
-"Clearing Debts",,12,"5,8"
-"Unavailability Of Secret Works",,12,"5,9"
-"Secret Illegal Relationships",,12,"5,9"
-"To Establish Secret Works / Tasks",,12,"6,10"
-"Impediments In Secret Loan",,12,"7,8"
-"To Expose Outward One's Secret Act",,12,"7,8"
-"Secret Dangers",,12,"7,8"
-"Being Caught During Adulterating",,12,"7,9"
-"Adulterating In Business",,12,"8,10"
-"To Incur Loss From Investments",,12,"8,12"
-"To Bring Out The Secret Into Spotlight",,12,"9,11"
-"Body Part Replacement",,12,"2,4,6,8,10,12"
-`;
-
-let PREDICTION_RULES = [];
-
-function parsePredictionRow(rowText) {
-    let insideQuote = false;
-    let columns = [];
-    let currentWord = "";
-
-    for (let i = 0; i < rowText.length; i++) {
-        let char = rowText[i];
-        if (char === '"') {
-            insideQuote = !insideQuote;
-        } else if (char === ',' && !insideQuote) {
-            columns.push(currentWord.trim().replace(/"/g, ''));
-            currentWord = "";
-        } else {
-            currentWord += char;
-        }
-    }
-    columns.push(currentWord.trim().replace(/"/g, ''));
-    return columns;
-}
-
-function initPredictionEngine() {
-    if (PREDICTION_RULES.length > 0) return;
-    const lines = PREDICTION_CSV_DATA.split(/\r?\n/);
-
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (!line || line.includes("Events Of Life")) continue;
-
-        let parts = parsePredictionRow(line);
-        if (parts.length >= 4) {
-            let event      = parts[0];
-            let planetsStr = parts[1] || "";
-            let cuspStr    = parts[2] || "";
-            let housesStr  = parts[3] || "";
-
-            if (event && housesStr) {
-                let houses = housesStr.split(/[, ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
-                PREDICTION_RULES.push({
-                    event: event,
-                    planetsStr: planetsStr,
-                    cusp: cuspStr ? parseInt(cuspStr, 10) : null,
-                    houses: houses
-                });
-            }
-        }
-    }
-}
-
-function renderMatchGroups(fullMatches, partialGroups) {
-    let out = "";
-    if (fullMatches.length > 0) {
-        out += `<div style="color:#86efac; margin-top:6px; margin-bottom:8px;"><b style="color:#22c55e;">Full Combinations (${fullMatches.length}):</b>
-        <ul class="pred-match-list"><li>${fullMatches.join('</li><li>')}</li></ul></div>`;
-    }
-
-    let keys = Object.keys(partialGroups).map(Number).sort((a, b) => b - a);
-    keys.forEach(k => {
-        if (partialGroups[k].length > 0) {
-            out += `<div style="color:#fdba74; margin-top:6px; margin-bottom:8px;"><b style="color:#f97316;">${k} Digit Matching (${partialGroups[k].length}):</b>
-            <ul class="pred-match-list"><li>${partialGroups[k].join('</li><li>')}</li></ul></div>`;
-        }
-    });
-    return out;
-}
-
-function renderPlanetPredictions() {
-    let html = "";
-    let planetsList = getPivotSortedPlanets();
-
-    planetsList.forEach((p, index) => {
-        let fullEffStr = computeTable10Row(p);
-        let rawNumbers = fullEffStr.match(/\d+/g);
-        let eff = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
-
-        let fullMatches = [];
-        let partialGroups = {};
-
-        PREDICTION_RULES.forEach(r => {
-            let intersection = r.houses.filter(h => eff.includes(h));
-            let matchLen = intersection.length;
-            if (matchLen < 2) return;
-
-            let hint    = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
-            let cuspRef = r.cusp ? ` <span style="color:#a8a29e; font-size:12px;">(from Cusp ${r.cusp})</span>` : "";
-
-            if (matchLen === r.houses.length && r.houses.length > 0) {
-                fullMatches.push(`<span style="color:#facc15; font-weight:700;">${r.event}</span>${cuspRef} <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
-            } else {
-                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
-                partialGroups[matchLen].push(`<span style="color:#e2e8f0;">${r.event}</span>${cuspRef} <span style="color:#94a3b8; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
-            }
-        });
-
-        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
-        let pSafeId = `planet-collapser-${index}`;
-
-        if (groupHTML) {
-            html += `
-            <div class="pred-item-card planet-card">
-                <h4 class="collapsible-heading collapsed pred-item-header" onclick="toggleCollapsible('${pSafeId}', this)">
-                    <span><span style="color:var(--accent-emerald);">${markPlanet(p)}</span> &nbsp;<span style="color:var(--text-gold); font-size:13.5px;">[${fullEffStr}]</span></span>
-                </h4>
-                <div id="${pSafeId}" class="collapsible-body pred-item-body">
-                    ${groupHTML}
-                </div>
-            </div>`;
-        }
-    });
-
-    return html || "<div style='color:var(--text-dim); text-align:center; padding:12px;'>No matching combinations found for Planets (Minimum 2 digits).</div>";
-}
-
-function renderCuspalPredictions() {
-    if (!cuspsData || cuspsData.length === 0) {
-        return "<div style='color:var(--text-dim); text-align:center; padding:12px;'>Load or Fetch a Chart first.</div>";
-    }
-    let html = "";
-    let baseCusps = [...cuspsData].sort((a, b) => a.bhava - b.bhava);
-
-    baseCusps.forEach(c => {
-        let bhava      = c.bhava;
-        let csl        = c.subLord;
-        let fullEffStr = computeTable10Row(csl);
-        let rawNumbers = fullEffStr.match(/\d+/g);
-        let eff        = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
-
-        let fullMatches   = [];
-        let partialGroups = {};
-
-        PREDICTION_RULES.forEach(r => {
-            if (r.cusp !== bhava) return;
-            let intersection = r.houses.filter(h => eff.includes(h));
-            let matchLen     = intersection.length;
-            if (matchLen === 0) return;
-
-            let hint = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
-
-            if (matchLen === r.houses.length && r.houses.length > 0) {
-                fullMatches.push(`<span style="color:#facc15; font-weight:700;">${r.event}</span> <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
-            } else {
-                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
-                partialGroups[matchLen].push(`<span style="color:#e2e8f0;">${r.event}</span> <span style="color:#94a3b8; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
-            }
-        });
-
-        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
-        let cSafeId = `cusp-collapser-${bhava}`;
-
-        if (groupHTML) {
-            html += `
-            <div class="pred-item-card cusp-card">
-                <h4 class="collapsible-heading collapsed pred-item-header" onclick="toggleCollapsible('${cSafeId}', this)">
-                    <span><span style="color:var(--accent-cyan);">Cusp ${bhava} &mdash; ${markPlanet(csl)}</span> &nbsp;<span style="color:var(--text-gold); font-size:13.5px;">[${fullEffStr}]</span></span>
-                </h4>
-                <div id="${cSafeId}" class="collapsible-body pred-item-body">
-                    ${groupHTML}
-                </div>
-            </div>`;
-        }
-    });
-
-    return html || "<div style='color:var(--text-dim); text-align:center; padding:12px;'>No matching combinations found for Cusps.</div>";
-}
-
-function toggleAllPredictionCards(expand) {
-    const area = document.getElementById("table80-content-area");
-    if (!area || area.style.display === "none") return;
-
-    area.querySelectorAll(".pred-item-body").forEach(b => {
-        b.style.display = expand ? "block" : "none";
-    });
-    area.querySelectorAll(".pred-item-header").forEach(h => {
-        h.classList.toggle("open", expand);
-        h.classList.toggle("collapsed", !expand);
-    });
-}
-
-function generateTable80Manual() {
-    if (!cuspsData || cuspsData.length === 0) {
-        alert("Please Load or Fetch a Chart first before generating predictions.");
-        return;
-    }
-
-    const btn         = document.getElementById("t80-generate-btn");
-    const contentArea = document.getElementById("table80-content-area");
-    if (!contentArea) return;
-
-    if (btn) {
-        btn.innerHTML = "&#x23F3; Calculating...";
-        btn.disabled  = true;
-    }
-
-    setTimeout(() => {
-        try {
-            initPredictionEngine();
-
-            contentArea.innerHTML = `
-                <div class="pred-section-card">
-                    <h3 class="collapsible-heading open pred-card-header" onclick="toggleCollapsible('planets-matcher-body', this)">
-                        &#x1FA90; PLANETS MATCHER
-                    </h3>
-                    <div id="planets-matcher-body" class="collapsible-body" style="display: block; padding-top: 14px; border: none; background: transparent; box-shadow: none;">
-                        ${renderPlanetPredictions()}
-                    </div>
-                </div>
-
-                <div class="pred-section-card">
-                    <h3 class="collapsible-heading open pred-card-header" onclick="toggleCollapsible('cuspal-matcher-body', this)">
-                        &#x1F3DB; CUSPAL MATCHER (1 TO 12 BHAVAS)
-                    </h3>
-                    <div id="cuspal-matcher-body" class="collapsible-body" style="display: block; padding-top: 14px; border: none; background: transparent; box-shadow: none;">
-                        ${renderCuspalPredictions()}
-                    </div>
-                </div>
-            `;
-            contentArea.style.display = "block";
-
-            if (btn) {
-                btn.innerHTML = "&#x1F504; Re-Calculate Predictions";
-                btn.disabled  = false;
-            }
-        } catch (err) {
-            console.error("Prediction Module Error:", err);
-            if (btn) {
-                btn.innerHTML = "&#x26A0; Try Again";
-                btn.disabled  = false;
-            }
-        }
-    }, 40);
-}
-</script>
-<!-- PREDICTION MODULE -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- PLANET → STAR → SUB → SUB-SUB -->
-<style>
-/* =========================================================
-   PLANET → STAR → SUB → SUB-SUB STYLES
-   ========================================================= */
-.psss-planet-card {
-    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
-    border: 1.5px solid var(--border-gold);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 18px;
-    box-shadow: var(--shadow-card), var(--glow-gold);
-}
-
-.psss-planet-card:last-child {
-    margin-bottom: 0;
-}
-
-.psss-planet-banner {
-    font-size: 16.5px !important;
-    font-weight: 900 !important;
-    color: var(--accent-saffron) !important;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    background: linear-gradient(90deg, rgba(255, 159, 28, 0.14) 0%, rgba(26, 6, 11, 0.95) 50%, rgba(255, 159, 28, 0.14) 100%) !important;
-    padding: 10px !important;
-    border-bottom: 2px solid var(--border-gold) !important;
-}
-</style>
-
-<div id="table5-content" class="kp-module-section"></div>
-
-<script>
-/* =========================================================
-   PLANET → STAR → SUB → SUB-SUB ENGINE
-   ========================================================= */
-function sortHouseString(str) {
-    if (!str || str === "") return "";
-    return String(str).split(",").map(Number).filter(n => !isNaN(n) && n > 0).sort((a, b) => a - b).join(",");
-}
-
-function buildPlanetStarSubChainModule() {
-    const container = document.getElementById("table5-content");
-    if (!container) return;
-
-    const existingBody = document.getElementById("table5-body");
-    const isOpen = existingBody ? (existingBody.style.display === "block") : false;
-
-    if (!cuspsData || cuspsData.length === 0) {
-        container.innerHTML = `
-            <div id="anchor-table5"></div>
-            <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
-                onclick="toggleSection('table5-body', this)">
-                &#x1F517; PLANET &rarr; STAR &rarr; SUB &rarr; SUB-SUB
-            </h2>
-            <div id="table5-body" class="collapsible-content" style="display: ${isOpen ? 'block' : 'none'};">
-                <div style="padding: 16px; text-align: center; color: var(--text-dim); font-weight: 700;">
-                    Load or Fetch a Chart to view the Planet &rarr; Star &rarr; Sub &rarr; Sub-Sub Chain.
-                </div>
-            </div>
-        `;
-        return;
-    }
-
-    /* Ensure __T3_CACHE__ is populated even if Planetary House Significations is placed lower in DOM */
-    if (typeof updateT3CacheGlobal === "function" && (!window.__T3_CACHE__ || Object.keys(window.__T3_CACHE__).length === 0)) {
-        updateT3CacheGlobal();
-    }
-
-    const t3 = window.__T3_CACHE__ || {};
-    const displayPlanets = getPivotSortedPlanets();
-    const janma = resolveTaraJanmaPlanet();
-
-    let cardsHtml = "";
-
-    displayPlanets.forEach(p => {
-        let kp = getPlanetKPLords(p);
-        if (!kp) return;
-
-        let kpSubKP = getPlanetKPLords(kp.sub);
-        let kpSSLKP = getPlanetKPLords(kp.ssl);
-
-        let starOfSub    = kpSubKP ? kpSubKP.star : null;
-        let starOfSubSub = kpSSLKP ? kpSSLKP.star : null;
-
-        let chainRows = [
-            { label: "Planet",          planet: p,            data: t3[p],            lvlClass: "lvl-planet" },
-            { label: "Star Lord",       planet: kp.star,      data: t3[kp.star],      lvlClass: "lvl-planet" },
-            { label: "Sub Lord",        planet: kp.sub,       data: t3[kp.sub],       lvlClass: "lvl-sub"    },
-            { label: "Star of Sub",     planet: starOfSub,    data: t3[starOfSub],    lvlClass: "lvl-sub"    },
-            { label: "Sub-Sub Lord",    planet: kp.ssl,       data: t3[kp.ssl],       lvlClass: "lvl-subsub" },
-            { label: "Star of Sub-Sub", planet: starOfSubSub, data: t3[starOfSubSub], lvlClass: "lvl-subsub" }
-        ];
-
-        cardsHtml += `
-        <div class="psss-planet-card">
-            <table style="margin-top: 0;">
-                <thead>
-                    <tr>
-                        <th colspan="8" class="psss-planet-banner">
-                            ${markPlanet(p)}
-                        </th>
-                    </tr>
-                    <tr>
-                        <th style="width: 15%;">Entity</th>
-                        <th style="width: 16%;">Planet</th>
-                        <th style="width: 13%;">Sub</th>
-                        <th style="width: 13%;">Sub-Sub</th>
-                        <th style="width: 13%;">Star</th>
-                        <th style="width: 11%;">Sign</th>
-                        <th style="width: 8%;">Placement</th>
-                        <th style="width: 11%;">Tara</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        chainRows.forEach(r => {
-            let pName = r.planet || "";
-            cardsHtml += `
-                    <tr class="${r.lvlClass}">
-                        <td style="font-weight: 700;">${r.label}</td>
-                        <td><b>${pName ? markPlanet(pName) : ""}</b></td>
-                        <td class="sub-num" style="font-weight: 800; color: #38bdf8;">${sortHouseString(r.data?.sub)}</td>
-                        <td class="ssl-num" style="font-weight: 800; color: #39ff14;">${sortHouseString(r.data?.ssl)}</td>
-                        <td class="star-num" style="font-weight: 800; color: #facc15;">${sortHouseString(r.data?.star)}</td>
-                        <td>${sortHouseString(r.data?.sign)}</td>
-                        <td style="font-weight: 900;">${r.data?.place || ""}</td>
-                        <td style="font-weight: 800; color: #fde68a;">${pName ? computeTaraIndex(janma, pName) : ""}</td>
-                    </tr>
-            `;
-        });
-
-        cardsHtml += `
-                </tbody>
-            </table>
-        </div>
-        `;
-    });
-
-    container.innerHTML = `
-        <div id="anchor-table5"></div>
-        <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
-            onclick="toggleSection('table5-body', this)">
-            &#x1F517; PLANET &rarr; STAR &rarr; SUB &rarr; SUB-SUB
-        </h2>
-
-        <div id="table5-body" class="collapsible-content" style="display: ${isOpen ? 'block' : 'none'};">
-
-            <div class="kp-control-bar" style="justify-content: flex-start;">
-                <label style="font-weight: 800; color: var(--text-gold); gap: 10px;">
-                    <span>&#x2728; Tara Reference :</span>
-                    <select id="taraSelect_mirror" style="min-width: 180px;"></select>
-                </label>
-            </div>
-
-            ${cardsHtml}
-
-        </div>
-    `;
-
-    /* Bidirectional Sync Between Master Tara Dropdown & Mirror */
-    const masterTara = document.getElementById("taraSelect");
-    const mirrorTara = document.getElementById("taraSelect_mirror");
-    if (masterTara && mirrorTara) {
-        mirrorTara.innerHTML = masterTara.innerHTML;
-        mirrorTara.value     = masterTara.value;
-
-        mirrorTara.onchange = () => {
-            masterTara.value = mirrorTara.value;
-            masterTara.dispatchEvent(new Event("change"));
-        };
-    }
-}
-
-/* Keep legacy function alias so buildCuspalChart() & Tara listeners call it seamlessly */
-var buildTable4 = buildPlanetStarSubChainModule;
-
-document.addEventListener("DOMContentLoaded", () => {
-    buildPlanetStarSubChainModule();
-});
-</script>
-<!-- PLANET → STAR → SUB → SUB-SUB -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- PLANETS & 12 CUSPAL ALL LEVEL INNER & OUTER DIVIDER -->
-<style>
-/* =========================================================
-   ALL LEVEL INNER & OUTER DIVIDER — STYLES
-   ========================================================= */
-.all-level-divider-controlGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
-.all-level-divider-card {
-    background: linear-gradient(180deg, #1d080d 0%, #110407 100%);
-    border: 1px solid var(--border-gold);
-    border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-.all-level-divider-cardTitle {
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--accent-cyan);
-    border-bottom: 1px dashed var(--border-soft);
-    padding-bottom: 7px;
-    margin-bottom: 10px;
-}
-
-.all-level-divider-subHeading {
-    color: var(--text-gold);
-    font-size: 15.5px;
-    font-weight: 900;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    margin: 22px 0 10px 0;
-    padding: 8px 14px;
-    background: linear-gradient(90deg, rgba(177, 18, 38, 0.38) 0%, rgba(20, 6, 10, 0.85) 65%, transparent 100%);
-    border-left: 4px solid var(--accent-saffron);
-    border-radius: 4px;
-    text-align: left;
-}
-
-.all-level-divider-tableWrap {
-    width: 100%;
-    overflow-x: auto;
-    border-radius: 8px;
-}
-
-.all-level-divider-table {
-    margin-top: 0 !important;
-    min-width: 920px;
-    border-collapse: collapse;
-}
-
-.all-level-divider-table th,
-.all-level-divider-table td {
-    padding: 9px 10px !important;
-    vertical-align: middle;
-}
-
-.divider-gap-col {
-    border: none !important;
-    background: rgba(8, 2, 4, 0.95) !important;
-    width: 14px !important;
-    min-width: 14px !important;
-    padding: 0 !important;
-}
-
-.divider-entity-cell {
-    font-weight: 900;
-    color: var(--text-gold);
-    background: #120407 !important;
-    white-space: nowrap;
-}
-
-.divider-links-cell {
-    font-family: "Consolas", "Segoe UI Mono", monospace;
-    font-weight: 900;
-    color: #e9d5ff;
-    background: rgba(88, 28, 135, 0.14) !important;
-    letter-spacing: 0.4px;
-}
-
-.divider-out-head {
-    color: #fdba74 !important;
-}
-
-.divider-in-head {
-    color: #86efac !important;
-}
-
-.divider-head-sub {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-dim);
-    margin-top: 2px;
-    font-family: "Consolas", "Segoe UI Mono", monospace;
-}
-
-.divider-out-cell {
-    font-family: "Consolas", "Segoe UI Mono", monospace;
-    font-weight: 800;
-    color: #fdba74;
-}
-
-.divider-in-cell {
-    font-family: "Consolas", "Segoe UI Mono", monospace;
-    font-weight: 800;
-    color: #6ee7b7;
-}
-</style>
-
-<div id="all-level-inner-outer-divider-module" class="kp-module-section"></div>
-
-<script>
-/* =========================================================
-   ALL LEVEL INNER & OUTER DIVIDER — ENGINE
-   ========================================================= */
-window.T11_INC_PLANET = (window.T11_INC_PLANET !== undefined) ? window.T11_INC_PLANET : true;
-window.T11_INC_STARLORD = (window.T11_INC_STARLORD !== undefined) ? window.T11_INC_STARLORD : true;
-window.T11_INC_SUBLORD = (window.T11_INC_SUBLORD !== undefined) ? window.T11_INC_SUBLORD : true;
-window.T11_INC_STAR_OF_SUB = (window.T11_INC_STAR_OF_SUB !== undefined) ? window.T11_INC_STAR_OF_SUB : false;
-window.T11_INC_SUBSUB = (window.T11_INC_SUBSUB !== undefined) ? window.T11_INC_SUBSUB : false;
-window.T11_INC_STAR_OF_SUBSUB = (window.T11_INC_STAR_OF_SUBSUB !== undefined) ? window.T11_INC_STAR_OF_SUBSUB : false;
-
-window.T11_COL_SUB  = (window.T11_COL_SUB  !== undefined) ? window.T11_COL_SUB  : true;
-window.T11_COL_SSL  = (window.T11_COL_SSL  !== undefined) ? window.T11_COL_SSL  : false;
-window.T11_COL_STAR = (window.T11_COL_STAR !== undefined) ? window.T11_COL_STAR : true;
-
-const UNIVERSAL_PLANET_DIVIDER_RULES = {
-    outG: [2, 4, 6, 8, 10, 12],
-    outA: [3, 7, 11],
-    outB: [1, 5, 9],
-    inG:  [1, 3, 5, 7, 9, 11],
-    inA:  [2, 6, 10],
-    inB:  [4, 8, 12]
-};
-
-const UNIVERSAL_CUSP_DIVIDER_RULES = {
-    1:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
-    2:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
-    3:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
-    4:  { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] },
-    5:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [2, 6, 10], inB: [4, 8, 12] },
-    6:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
-    7:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
-    8:  { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] },
-    9:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [2, 6, 10], inB: [4, 8, 12] },
-    10: { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
-    11: { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
-    12: { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] }
-};
-
-const UNIVERSAL_CUSP_OUT_GOOD = [2, 4, 6, 8, 10, 12];
-const UNIVERSAL_CUSP_IN_GOOD  = [1, 3, 5, 7, 9, 11];
-
-/* Expose shared divider constants safely for any other divider modules */
-window.PLANET_DIVIDER = UNIVERSAL_PLANET_DIVIDER_RULES;
-window.CUSP_DIVIDER   = UNIVERSAL_CUSP_DIVIDER_RULES;
-
-function parseDividerHouseList(str) {
-    if (!str) return [];
-    return String(str)
-        .split(/[,>+ ]+/)
-        .map(Number)
-        .filter(n => !isNaN(n) && n >= 1 && n <= 12);
-}
-
-function intersectDividerRuleSet(valStr, ruleArr) {
-    const nums = Array.isArray(valStr) ? valStr : parseDividerHouseList(valStr);
-    const res  = nums.filter(n => ruleArr.includes(n));
-    const out  = [...new Set(res)].sort((a, b) => a - b).join(",");
-    return out === "" ? "—" : out;
-}
-
-function buildUniversalDividerHeaderCells(isPlanetTable) {
-    const outG = "2,4,6,8,10,12";
-    const outA = isPlanetTable ? "3,7,11" : "Bhava Rule";
-    const outB = isPlanetTable ? "1,5,9"  : "Bhava Rule";
-
-    const inG  = "1,3,5,7,9,11";
-    const inA  = isPlanetTable ? "2,6,10" : "Bhava Rule";
-    const inB  = isPlanetTable ? "4,8,12" : "Bhava Rule";
-
-    return `
-        <th>Entity</th>
-        <th>Combined Links</th>
-        <th class="divider-gap-col"></th>
-        <th class="divider-out-head">OUT = GOOD<span class="divider-head-sub">${outG}</span></th>
-        <th class="divider-out-head">OUT = AVG<span class="divider-head-sub">${outA}</span></th>
-        <th class="divider-out-head">OUT = BAD<span class="divider-head-sub">${outB}</span></th>
-        <th class="divider-gap-col"></th>
-        <th class="divider-in-head">IN = GOOD<span class="divider-head-sub">${inG}</span></th>
-        <th class="divider-in-head">IN = AVG<span class="divider-head-sub">${inA}</span></th>
-        <th class="divider-in-head">IN = BAD<span class="divider-head-sub">${inB}</span></th>
-    `;
-}
-
-function buildUniversalDividerDataRow(entityLabel, linksStr, isPlanetTable, cuspRuleObj = null) {
-    const outG = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outG : UNIVERSAL_CUSP_OUT_GOOD;
-    const outA = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outA : cuspRuleObj.outA;
-    const outB = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outB : cuspRuleObj.outB;
-
-    const inG  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inG  : UNIVERSAL_CUSP_IN_GOOD;
-    const inA  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inA  : cuspRuleObj.inA;
-    const inB  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inB  : cuspRuleObj.inB;
-
-    return `
-        <tr>
-            <td class="divider-entity-cell">${entityLabel}</td>
-            <td class="divider-links-cell">${linksStr || "—"}</td>
-            <td class="divider-gap-col"></td>
-            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outG)}</td>
-            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outA)}</td>
-            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outB)}</td>
-            <td class="divider-gap-col"></td>
-            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inG)}</td>
-            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inA)}</td>
-            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inB)}</td>
-        </tr>
-    `;
-}
-
-function computeAllLevelDividerMatrixRow(planetName) {
-    const cache = window.__T3_CACHE__;
-    if (!cache) return "";
-
-    const kp = getPlanetKPLords(planetName);
-    if (!kp) return "";
-
-    const starOfSub = getPlanetKPLords(kp.sub)?.star || null;
-    const starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
-
-    const entitiesToScan = [];
-
-    if (window.T11_INC_PLANET && planetName) entitiesToScan.push(planetName);
-    if (window.T11_INC_STARLORD && kp.star) entitiesToScan.push(kp.star);
-    if (window.T11_INC_SUBLORD && kp.sub) entitiesToScan.push(kp.sub);
-    if (window.T11_INC_STAR_OF_SUB && starOfSub) entitiesToScan.push(starOfSub);
-    if (window.T11_INC_SUBSUB && kp.ssl) entitiesToScan.push(kp.ssl);
-    if (window.T11_INC_STAR_OF_SUBSUB && starOfSSL) entitiesToScan.push(starOfSSL);
-
-    const combinedArr = [];
-
-    entitiesToScan.forEach(ent => {
-        const d = cache[ent];
-        if (!d) return;
-        if (window.T11_COL_SUB)  combinedArr.push(...parseDividerHouseList(d.sub));
-        if (window.T11_COL_SSL)  combinedArr.push(...parseDividerHouseList(d.ssl));
-        if (window.T11_COL_STAR) combinedArr.push(...parseDividerHouseList(d.star));
-    });
-
-    return [...new Set(combinedArr)].sort((a, b) => a - b).join(",");
-}
-
-function handleAllLevelEntityToggle(level, isChecked) {
-    /* Cascading levels: 1=Planet, 2=Star Lord, 3=Sub Lord, 4=Sub-Sub */
-    if (isChecked) {
-        if (level >= 1) window.T11_INC_PLANET = true;
-        if (level >= 2) window.T11_INC_STARLORD = true;
-        if (level >= 3) window.T11_INC_SUBLORD = true;
-        if (level >= 4) window.T11_INC_SUBSUB = true;
-    } else {
-        if (level <= 1) window.T11_INC_PLANET = false;
-        if (level <= 2) window.T11_INC_STARLORD = false;
-        if (level <= 3) {
-            window.T11_INC_SUBLORD = false;
-            window.T11_INC_STAR_OF_SUB = false; // Turns off Star of Sub if Sublord/Planet is unchecked
-        }
-        if (level <= 4) {
-            window.T11_INC_SUBSUB = false;
-            window.T11_INC_STAR_OF_SUBSUB = false; // Turns off Star of Sub-Sub if Sub-Sub/Planet is unchecked
-        }
-    }
-
-    if (document.getElementById('t11_chk_1')) document.getElementById('t11_chk_1').checked = window.T11_INC_PLANET;
-    if (document.getElementById('t11_chk_2')) document.getElementById('t11_chk_2').checked = window.T11_INC_STARLORD;
-    if (document.getElementById('t11_chk_3')) document.getElementById('t11_chk_3').checked = window.T11_INC_SUBLORD;
-    if (document.getElementById('t11_chk_4')) document.getElementById('t11_chk_4').checked = window.T11_INC_SUBSUB;
-    if (document.getElementById('t11_chk_opt_1')) document.getElementById('t11_chk_opt_1').checked = window.T11_INC_STAR_OF_SUB;
-    if (document.getElementById('t11_chk_opt_2')) document.getElementById('t11_chk_opt_2').checked = window.T11_INC_STAR_OF_SUBSUB;
-
-    refreshAllLevelDividerBodiesOnly();
-}
-
-function refreshAllLevelDividerBodiesOnly() {
-    const planetsBody = document.getElementById("all-level-divider-planets-tbody");
-    const cuspsBody   = document.getElementById("all-level-divider-cusps-tbody");
-    if (!planetsBody || !cuspsBody) return;
-
-    const orderedPlanets = getPivotSortedPlanets();
-    let planetRowsHtml   = "";
-
-    orderedPlanets.forEach(p => {
-        const effStr    = computeAllLevelDividerMatrixRow(p);
-        const shortName = markPlanet(p).split(" ")[0];
-        planetRowsHtml += buildUniversalDividerDataRow(shortName, effStr, true);
-    });
-    planetsBody.innerHTML = planetRowsHtml;
-
-    let cuspRowsHtml = "";
-    if (cuspsData && cuspsData.length > 0) {
-        const pivotHouse = getPivotHouse();
-        const baseCusps  = [...cuspsData].sort((a, b) => a.bhava - b.bhava);
-        let startIdx     = baseCusps.findIndex(c => c.bhava === pivotHouse);
-        if (startIdx < 0) startIdx = 0;
-
-        for (let i = 0; i < 12; i++) {
-            const c         = baseCusps[(startIdx + i) % 12];
-            const bhava     = i + 1;
-            const csl       = c.subLord;
-            const shortName = markPlanet(csl).split(" ")[0];
-            const label     = `${bhava} - ${shortName}`;
-            const rules     = UNIVERSAL_CUSP_DIVIDER_RULES[bhava];
-            const effStr    = computeAllLevelDividerMatrixRow(csl);
-            cuspRowsHtml   += buildUniversalDividerDataRow(label, effStr, false, rules);
-        }
-    }
-    cuspsBody.innerHTML = cuspRowsHtml;
-}
-
-function renderAllLevelInnerOuterDividerModule() {
-    const container = document.getElementById("all-level-inner-outer-divider-module");
-    if (!container) return;
-
-    const existingBody = document.getElementById("all-level-inner-outer-divider-body");
-    const wasOpen = existingBody ? (existingBody.style.display === "block") : false;
-
-    if (!cuspsData || cuspsData.length === 0) {
-        container.innerHTML = `
-            <h2 class="collapsible-heading ${wasOpen ? 'open' : 'collapsed'}"
-                onclick="toggleCollapsible('all-level-inner-outer-divider-body', this)">
-                &#x2696; PLANETS &amp; 12 CUSPAL ALL LEVEL INNER &amp; OUTER DIVIDER
-            </h2>
-            <div id="all-level-inner-outer-divider-body" class="collapsible-body" style="display: ${wasOpen ? 'block' : 'none'};">
-                <div style="padding: 16px; text-align: center; color: var(--text-dim); font-weight: 700;">
-                    Load or Fetch a Chart to view Planets &amp; 12 Cuspal All Level Inner &amp; Outer Divider.
-                </div>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = `
-        <h2 class="collapsible-heading ${wasOpen ? 'open' : 'collapsed'}"
-            onclick="toggleCollapsible('all-level-inner-outer-divider-body', this)">
-            &#x2696; PLANETS &amp; 12 CUSPAL ALL LEVEL INNER &amp; OUTER DIVIDER
-        </h2>
-
-        <div id="all-level-inner-outer-divider-body" class="collapsible-body" style="display: ${wasOpen ? 'block' : 'none'};">
-
-            <div style="background: rgba(250, 204, 21, 0.08); border: 1px solid var(--border-gold); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; color: var(--text-main); font-size: 13px; font-weight: 700;">
-                &#x2139;&#xFE0F; <b>Note:</b> This table is based on the <b>Planet &rarr; Star &rarr; Sub &rarr; Sub-Sub</b> table, pulling and combining house significations based on your selected entities and level filters below.
-            </div>
-
-            <div class="all-level-divider-controlGrid">
-                <div class="all-level-divider-card">
-                    <div class="all-level-divider-cardTitle">1. Select Source Levels (Entities)</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="t11_chk_1" ${window.T11_INC_PLANET ? "checked" : ""}
-                                onchange="handleAllLevelEntityToggle(1, this.checked)">
-                            <span>Planet</span>
-                        </label>
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="t11_chk_2" ${window.T11_INC_STARLORD ? "checked" : ""}
-                                onchange="handleAllLevelEntityToggle(2, this.checked)">
-                            <span>Star Lord</span>
-                        </label>
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="t11_chk_3" ${window.T11_INC_SUBLORD ? "checked" : ""}
-                                onchange="handleAllLevelEntityToggle(3, this.checked)">
-                            <span>Sub Lord</span>
-                        </label>
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" id="t11_chk_4" ${window.T11_INC_SUBSUB ? "checked" : ""}
-                                onchange="handleAllLevelEntityToggle(4, this.checked)">
-                            <span>Sub-Sub</span>
-                        </label>
-                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
-                            <input type="checkbox" id="t11_chk_opt_1" ${window.T11_INC_STAR_OF_SUB ? "checked" : ""}
-                                onchange="window.T11_INC_STAR_OF_SUB = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span style="color: #fbbf24;">Star of Sub (Opt)</span>
-                        </label>
-                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
-                            <input type="checkbox" id="t11_chk_opt_2" ${window.T11_INC_STAR_OF_SUBSUB ? "checked" : ""}
-                                onchange="window.T11_INC_STAR_OF_SUBSUB = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span style="color: #fbbf24;">Star of Sub-Sub (Opt)</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="all-level-divider-card">
-                    <div class="all-level-divider-cardTitle">2. Select Signification Columns to Extract</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_COL_SUB ? "checked" : ""}
-                                onchange="window.T11_COL_SUB = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Sublord Column</span>
-                        </label>
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_COL_SSL ? "checked" : ""}
-                                onchange="window.T11_COL_SSL = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Sub-Sub Column</span>
-                        </label>
-                        <label class="mcp-toggle-pill">
-                            <input type="checkbox" ${window.T11_COL_STAR ? "checked" : ""}
-                                onchange="window.T11_COL_STAR = this.checked; refreshAllLevelDividerBodiesOnly();">
-                            <span>Starlord Column</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="all-level-divider-subHeading" style="margin-top: 8px;">
-                1. Planets All-Level Inner &amp; Outer Divider
-            </div>
-            <div class="all-level-divider-tableWrap">
-                <table class="all-level-divider-table">
-                    <thead>
-                        <tr>${buildUniversalDividerHeaderCells(true)}</tr>
-                    </thead>
-                    <tbody id="all-level-divider-planets-tbody"></tbody>
-                </table>
-            </div>
-
-            <div class="all-level-divider-subHeading" style="margin-top: 26px;">
-                2. 12 Cuspal Sublords All-Level Inner &amp; Outer Divider
-            </div>
-            <div class="all-level-divider-tableWrap">
-                <table class="all-level-divider-table">
-                    <thead>
-                        <tr>${buildUniversalDividerHeaderCells(false)}</tr>
-                    </thead>
-                    <tbody id="all-level-divider-cusps-tbody"></tbody>
-                </table>
-            </div>
-
-        </div>
-    `;
-
-    refreshAllLevelDividerBodiesOnly();
-}
-
-/* Extend Factory Reset Safely for All-Level Divider Flags */
-(function hookAllLevelDividerReset() {
-    if (typeof window.resetAllTogglesToDefault === "function" && !window.resetAllTogglesToDefault.__allLevelHooked) {
-        const _origReset = window.resetAllTogglesToDefault;
-        window.resetAllTogglesToDefault = function() {
-            _origReset.apply(this, arguments);
-            window.T11_INC_PLANET         = true;
-            window.T11_INC_STARLORD       = true;
-            window.T11_INC_SUBLORD        = true;
-            window.T11_INC_STAR_OF_SUB    = false;
-            window.T11_INC_SUBSUB         = false;
-            window.T11_INC_STAR_OF_SUBSUB = false;
-            window.T11_COL_SUB            = true;
-            window.T11_COL_SSL            = false;
-            window.T11_COL_STAR           = true;
-        };
-        window.resetAllTogglesToDefault.__allLevelHooked = true;
-    }
-})();
-
-/* Order-Independent Orchestrator Aliases */
-window.buildTable11Divider = renderAllLevelInnerOuterDividerModule;
-window.renderTable11Inner  = refreshAllLevelDividerBodiesOnly;
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderAllLevelInnerOuterDividerModule();
-});
-</script>
-<!-- PLANETS & 12 CUSPAL ALL LEVEL INNER & OUTER DIVIDER -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 <!-- SHORTENED EFFECTIVE LINKS -->
@@ -11660,6 +9650,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 <!-- SHORTENED EFFECTIVE LINKS -->
+
+
+
+
+
+
 
 
 
@@ -15920,12 +13916,2035 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+<!-- PREDICTION MODULE -->
+<style>
+.pred-section-card {
+    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-card), var(--glow-gold);
+}
+
+.pred-section-card:last-child {
+    margin-bottom: 0;
+}
+
+.pred-card-header {
+    color: var(--accent-cyan) !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    padding: 10px 16px !important;
+    margin: 0 !important;
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.14) 0%, rgba(18, 5, 9, 0.9) 100%) !important;
+    border: 1px solid var(--border-gold) !important;
+    border-left: 4px solid var(--accent-cyan) !important;
+    border-radius: 6px !important;
+}
+
+.pred-item-card {
+    margin-bottom: 12px;
+    border: 1px solid var(--border-soft);
+    background: linear-gradient(180deg, #16070a 0%, #0e0406 100%);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+}
+
+.pred-item-card:hover {
+    border-color: var(--border-gold);
+}
+
+.pred-item-card.planet-card {
+    border-left: 4px solid var(--accent-emerald);
+}
+
+.pred-item-card.cusp-card {
+    border-left: 4px solid var(--accent-cyan);
+}
+
+.pred-item-header {
+    padding: 10px 14px !important;
+    margin: 0 !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.pred-item-body {
+    display: none;
+    padding: 12px 18px 14px 18px;
+    border-top: 1px dashed var(--border-soft);
+    background: rgba(10, 3, 5, 0.65);
+    font-size: 14px;
+}
+
+.pred-match-list {
+    margin: 6px 0 10px 0;
+    padding-left: 20px;
+    line-height: 1.55;
+}
+
+.pred-match-list li {
+    margin-bottom: 4px;
+}
+</style>
+
+<div id="table80-container" class="kp-module-section">
+    <h2 class="collapsible-heading collapsed" onclick="toggleCollapsible('table80-body', this)">
+        &#x1F52E; PREDICTION MODULE
+    </h2>
+
+    <div id="table80-body" class="collapsible-body">
+
+        <div class="kp-control-bar" style="justify-content: space-between;">
+            <div style="color: var(--text-dim); font-size: 13.5px; font-weight: 700;">
+                &#x2139; Matches Natal Shortened Effective Links against 500+ Life Event Rules (Planets &amp; 12 Cusps).
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <button type="button" id="t80-generate-btn" class="action-btn btn-fetch" onclick="generateTable80Manual()">
+                    &#x1F680; Generate Predictions
+                </button>
+                <button type="button" class="action-btn" onclick="toggleAllPredictionCards(true)" style="background: linear-gradient(to bottom, #ca8a04, #713f12); color: #fff;">
+                    Expand All
+                </button>
+                <button type="button" class="action-btn btn-clear" onclick="toggleAllPredictionCards(false)">
+                    Collapse All
+                </button>
+            </div>
+        </div>
+
+        <div id="table80-content-area" style="display: none;"></div>
+
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   SHORTENED EFFECTIVE LINKS CORE ENGINE (computeTable10Row)
+   Shared by Prediction Module & Shortened Effective Links
+   ========================================================= */
+var T10_INCLUDE_SSL         = false;
+var T10_ADD_STARLORD        = true;
+var T10_ADD_SUBLORD         = false;
+var T10_ADD_SUBSUB          = false;
+window.T10_EXCLUDE_SUBSUB_RULE = false;
+
+function computeTable10Row(p, excludeSublordForGraphs = false) {
+    let kp = getPlanetKPLords(p);
+    if (!kp) return "";
+
+    let shift = getPivotShift();
+
+    let pValsRaw   = getHBValuesRaw(p) || [];
+    let sValsRaw   = kp.star ? (getHBValuesRaw(kp.star) || []) : [];
+    let subValsRaw = kp.sub  ? (getHBValuesRaw(kp.sub)  || []) : [];
+    let sslValsRaw = [];
+
+    let includeSSL = false;
+    if (kp.ssl) {
+        let isSslUntenanted = false;
+        if (typeof formatHBPlanet === "function") {
+            let formattedSsl = formatHBPlanet(kp.ssl);
+            if (formattedSsl && formattedSsl.includes("$")) {
+                isSslUntenanted = true;
+            }
+        }
+        if (isSslUntenanted && kp.star && kp.sub && kp.star === kp.sub) {
+            includeSSL = true;
+        }
+    }
+
+    if (typeof T10_INCLUDE_SSL !== "undefined" && T10_INCLUDE_SSL) {
+        includeSSL = true;
+    }
+
+    if (kp.ssl && (kp.ssl === p || kp.ssl === kp.star || kp.ssl === kp.sub)) {
+        includeSSL = false;
+    }
+
+    if (includeSSL && kp.ssl) {
+        sslValsRaw = getHBValuesRaw(kp.ssl) || [];
+    }
+
+    let strongNumsRaw = [];
+    if (typeof formatHBPlanet === "function") {
+        if (formatHBPlanet(p)?.includes("$")) strongNumsRaw.push(...pValsRaw);
+        if (kp.star && formatHBPlanet(kp.star)?.includes("$")) strongNumsRaw.push(...sValsRaw);
+        if (kp.sub  && formatHBPlanet(kp.sub)?.includes("$"))  strongNumsRaw.push(...subValsRaw);
+        if (includeSSL && kp.ssl && formatHBPlanet(kp.ssl)?.includes("$")) strongNumsRaw.push(...sslValsRaw);
+    }
+
+    const unrotate   = (arr) => arr.map(v => ((v + shift - 1) % 12) + 1);
+    const uniqueSort = (arr) => [...new Set(arr)].sort((a, b) => a - b);
+
+    let pVals      = uniqueSort(unrotate(pValsRaw));
+    let sVals      = uniqueSort(unrotate(sValsRaw));
+    let subVals    = uniqueSort(unrotate(subValsRaw));
+    let sslVals    = uniqueSort(unrotate(sslValsRaw));
+    let strongNums = uniqueSort(unrotate(strongNumsRaw));
+
+    let pS   = pVals.join(",");
+    let stS  = sVals.join(",");
+    let subS = subVals.join(",");
+    let sslS = sslVals.join(",");
+
+    let finalArrBase = [];
+
+    if (pS === "3,6,12" && stS === "1,7" && subS === "") finalArrBase = [1, 3, 7];
+    else if (pS === "5,8,11" && stS === "9" && subS === "8" && sslS === "3,6,12") finalArrBase = [5, 8, 11];
+    else if (pS === "1,4,10" && stS === "2" && subS === "1" && sslS === "5,8,11") finalArrBase = [1, 4, 10];
+    else if (pS === "1,7" && stS === "5,8,11" && subS === "2,4,10") finalArrBase = [1, 4, 7, 10];
+    else if (pS === "" && stS === "11" && subS === "2,4,8,10" && sslS === "5") finalArrBase = [2, 5, 8, 11];
+    else if (pS === "6,12" && stS === "11" && subS === "6,12") finalArrBase = [6, 12];
+    else if (stS === "3,9" && subS === "6,12") finalArrBase = [3, 6, 9, 12];
+    else if (stS === "5,8,11" && subS === "1,4,10" && sslS === "2") finalArrBase = [2, 5, 8, 11];
+    else if (pS === "5,8,11" && stS === "6,12" && subS === "") finalArrBase = [6, 8, 12];
+    else if (pS === "1,4,10" && stS === "2" && subS === "1") finalArrBase = [1, 4, 10];
+    else if (pS === "2,4,8,10" && stS === "5" && subS === "5") finalArrBase = [2, 5, 8];
+    else if (pS === "1" && stS === "10" && subS === "4") finalArrBase = [1, 4, 10];
+    else if (pS === "2,4,10" && stS === "1,7" && subS === "2,4,10") finalArrBase = [1, 4, 7, 10];
+    else if (stS === "3,6,12" && subS === "5,8,11") finalArrBase = [6, 8, 12];
+    else if (pS === "2,3,5,8" && stS === "10" && subS === "10") finalArrBase = [2, 5, 8];
+    else if (pS === "3,8" && stS === "9" && subS === "4" && sslS === "6,11,12") finalArrBase = [4, 6, 8, 12];
+    else if (pS === "" && stS === "11" && subS === "3,9") finalArrBase = [3, 9, 11];
+    else if (pS === "3,6,12" && stS === "1,7" && subS === "12") finalArrBase = [1, 3, 7];
+    else if (pS === "2,6,8,12" && stS === "8" && subS === "1") finalArrBase = [2, 6, 8, 12];
+    else if (pS === "5" && stS === "2,4,8,10" && subS === "" && sslS === "4,8,12") finalArrBase = [2, 4, 8, 10, 12];
+    else if (pS === "2,4,8,10" && stS === "2,8,9" && subS === "7" && sslS === "4,8,12") finalArrBase = [2, 4, 8, 10, 12];
+    else if (pS === "4,8,12" && stS === "" && subS === "2,4,8,10" && sslS === "7") finalArrBase = [2, 4, 8, 10, 12];
+    else if (pS === "4,8,12" && stS === "11" && subS === "3,9") finalArrBase = [3, 9, 11];
+    else if (pS === "11" && stS === "4,8,12" && subS === "3,9") finalArrBase = [3, 9, 11];
+    else if (stS === "4,8,12" && subS === "3,9" && sslS === "3,9") finalArrBase = [3, 9];
+    else if (pS === "2,9" && stS === "4,8" && subS === "7,10") finalArrBase = [4, 7, 10];
+    else if (pS === "1,5,7,11" && stS === "2,9" && subS === "2,4,8,10") finalArrBase = [1, 4, 7, 10];
+    else if (pS === "5" && stS === "2,4,8,10" && subS === "6,12") finalArrBase = [2, 4, 6, 8, 10, 12];
+    else {
+        let all      = uniqueSort([...pVals, ...sVals, ...subVals]);
+        let evens    = all.filter(n => n % 2 === 0);
+        let odds     = all.filter(n => n % 2 !== 0);
+        let allEvens = evens;
+        let allOdds  = odds;
+
+        const hasAny = (arr, numsList) => numsList.some(n => arr.includes(n));
+
+        let patterns = [
+            { id: 1, group: [1, 4, 7, 10], matches: all.filter(n => [1, 4, 7, 10].includes(n)), rank: 1 },
+            { id: 2, group: [2, 5, 8, 11], matches: all.filter(n => [2, 5, 8, 11].includes(n)), rank: 2 },
+            { id: 3, group: [3, 6, 9, 12], matches: all.filter(n => [3, 6, 9, 12].includes(n)), rank: 3 }
+        ];
+
+        let getScore = (matches) => {
+            let score = 0;
+            matches.forEach(n => {
+                if (strongNums.includes(n))   score += 1000;
+                else if (subVals.includes(n)) score += 600;
+                else if (sVals.includes(n))   score += 200;
+                else if (pVals.includes(n))   score += 100;
+            });
+            return score;
+        };
+
+        patterns.forEach(pat => pat.score = getScore(pat.matches));
+
+        let activePatterns  = patterns.filter(pat => pat.matches.length > 0);
+        let strongAttackers = activePatterns.filter(pat => pat.matches.length >= 2 || pat.matches.some(n => strongNums.includes(n)));
+        let eliminatedIds   = new Set();
+
+        strongAttackers.forEach(attacker => {
+            if (attacker.id === 1) eliminatedIds.add(3);
+            if (attacker.id === 2) eliminatedIds.add(1);
+            if (attacker.id === 3) eliminatedIds.add(2);
+        });
+
+        if (eliminatedIds.size > 0 && eliminatedIds.size < activePatterns.length) {
+            patterns.forEach(pat => {
+                if (eliminatedIds.has(pat.id)) pat.score = -1000;
+            });
+        }
+
+        patterns.sort((a, b) => {
+            if (a.score !== b.score) return b.score - a.score;
+            if (b.matches.length !== a.matches.length) return b.matches.length - a.matches.length;
+            return a.rank - b.rank;
+        });
+
+        let bestPattern = patterns[0];
+
+        let strongEvensCount = evens.filter(n => strongNums.includes(n)).length;
+        let strongOddsCount  = odds.filter(n => strongNums.includes(n)).length;
+        let weakEvensCount   = evens.filter(n => !strongNums.includes(n)).length;
+        let weakOddsCount    = odds.filter(n => !strongNums.includes(n)).length;
+
+        let allValsWithDupes = [...pVals, ...sVals, ...subVals];
+        if (includeSSL && sslVals.length > 0) {
+            allValsWithDupes.push(...sslVals);
+        }
+        let rawEvensCount = allValsWithDupes.filter(n => n % 2 === 0).length;
+        let rawOddsCount  = allValsWithDupes.filter(n => n % 2 !== 0).length;
+
+        let pStrong  = pVals.filter(n => strongNums.includes(n));
+        let sSubWeak = [...sVals, ...subVals].filter(n => !strongNums.includes(n));
+        let pPattern = patterns.find(pat => pStrong.filter(n => pat.group.includes(n)).length >= 2);
+
+        let patternOverride = false;
+        if (patterns[0].matches.length >= 3) {
+            let tieExists = patterns.filter(pat => pat.matches.length === patterns[0].matches.length).length > 1;
+            if (!tieExists && patterns[0].matches.some(n => strongNums.includes(n))) {
+                patternOverride = true;
+            }
+        }
+
+        let massiveParityDominance = (evens.length >= odds.length + 3) || (odds.length >= evens.length + 3);
+        let pStrongEvens  = pStrong.filter(n => n % 2 === 0).length;
+        let pStrongOdds   = pStrong.filter(n => n % 2 !== 0).length;
+        let sSubWeakEvens = sSubWeak.filter(n => n % 2 === 0).length;
+        let sSubWeakOdds  = sSubWeak.filter(n => n % 2 !== 0).length;
+
+        let isSameParityCombine = false;
+        if (pStrong.length > 0) {
+            if (pStrongEvens === pStrong.length && sSubWeakEvens >= 2) isSameParityCombine = true;
+            if (pStrongOdds === pStrong.length && sSubWeakOdds >= 2)   isSameParityCombine = true;
+        }
+
+        if (strongEvensCount > 0 && strongEvensCount === evens.length && weakOddsCount === odds.length && strongOddsCount === 0 && !patternOverride && rawEvensCount >= rawOddsCount) {
+            finalArrBase = allEvens;
+        } else if (strongOddsCount > 0 && strongOddsCount === odds.length && weakEvensCount === evens.length && strongEvensCount === 0 && !patternOverride && rawOddsCount >= rawEvensCount) {
+            finalArrBase = allOdds;
+        } else if (rawEvensCount > rawOddsCount) {
+            finalArrBase = allEvens;
+        } else if (rawOddsCount > rawEvensCount) {
+            finalArrBase = allOdds;
+        } else if (pPattern && sSubWeak.length > 0 && !sSubWeak.some(n => pPattern.group.includes(n)) && !isSameParityCombine && !massiveParityDominance) {
+            finalArrBase = pPattern.matches.filter(n => pStrong.includes(n));
+        } else if (bestPattern.matches.length === 4 && hasAny(all, bestPattern.group)) {
+            finalArrBase = bestPattern.matches;
+        } else if (evens.length >= odds.length + 3) {
+            finalArrBase = allEvens;
+        } else if (odds.length >= evens.length + 3) {
+            finalArrBase = allOdds;
+        } else if (bestPattern.matches.length >= 3 && hasAny(all, bestPattern.group)) {
+            let hasStrongNum = bestPattern.matches.some(n => strongNums.includes(n));
+            if (hasStrongNum) finalArrBase = bestPattern.matches;
+            else if (evens.length >= odds.length + 2) finalArrBase = allEvens;
+            else if (odds.length >= evens.length + 2) finalArrBase = allOdds;
+            else finalArrBase = bestPattern.matches;
+        } else if (evens.length >= odds.length + 2) {
+            finalArrBase = allEvens;
+        } else if (odds.length >= evens.length + 2) {
+            finalArrBase = allOdds;
+        } else if (evens.length === 1 && odds.length === 1) {
+            let e = evens[0];
+            let o = odds[0];
+            let killersMap = {
+                1: [8, 12], 2: [9, 1], 3: [10, 2], 4: [11, 3],
+                5: [12, 4], 6: [1, 5], 7: [2, 6], 8: [3, 7],
+                9: [4, 8], 10: [5, 9], 11: [6, 10], 12: [7, 11]
+            };
+
+            let eIsStrong = strongNums.includes(e);
+            let oIsStrong = strongNums.includes(o);
+            let eKillsO   = killersMap[o] && killersMap[o].includes(e);
+            let oKillsE   = killersMap[e] && killersMap[e].includes(o);
+
+            if (eKillsO && !oKillsE) {
+                finalArrBase = (eIsStrong || !oIsStrong) ? allEvens : allOdds;
+            } else if (oKillsE && !eKillsO) {
+                finalArrBase = (oIsStrong || !eIsStrong) ? allOdds : allEvens;
+            } else {
+                if (o === 1 && e === 2) finalArrBase = allOdds;
+                else if (e === 2 && o === 3) finalArrBase = allEvens;
+                else if (o === 3 && e === 4) finalArrBase = allOdds;
+                else if (e === 4 && o === 5) finalArrBase = allEvens;
+                else if (o === 5 && e === 6) finalArrBase = allOdds;
+                else if (e === 6 && o === 7) finalArrBase = allEvens;
+                else if (o === 7 && e === 8) finalArrBase = allOdds;
+                else if (e === 8 && o === 9) finalArrBase = allEvens;
+                else if (o === 9 && e === 10) finalArrBase = allOdds;
+                else if (e === 12 && o === 1) finalArrBase = allEvens;
+                else finalArrBase = allEvens;
+            }
+        } else if (subVals.length > 0) {
+            let subEvens = subVals.filter(n => n % 2 === 0).length;
+            let subOdds  = subVals.filter(n => n % 2 !== 0).length;
+            if (subEvens > subOdds) finalArrBase = allEvens;
+            else if (subOdds > subEvens) finalArrBase = allOdds;
+            else finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
+        } else if (sVals.length > 0) {
+            let sEvens = sVals.filter(n => n % 2 === 0).length;
+            let sOdds  = sVals.filter(n => n % 2 !== 0).length;
+            if (sEvens > sOdds) finalArrBase = allEvens;
+            else if (sOdds > sEvens) finalArrBase = allOdds;
+            else finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
+        } else {
+            finalArrBase = (odds.length > evens.length) ? allOdds : allEvens;
+        }
+    }
+
+    const rotate = (arr) => arr.map(v => ((v - shift - 1 + 12) % 12) + 1);
+    let finalArrPivot = uniqueSort(rotate(finalArrBase));
+    let baseResult    = finalArrPivot.join(",");
+
+    let additions = [];
+    let baseFullPatterns = [];
+    let standardPatterns = [[1, 4, 7, 10], [2, 5, 8, 11], [3, 6, 9, 12]];
+
+    for (let pat of standardPatterns) {
+        if (pat.every(n => finalArrPivot.includes(n))) {
+            baseFullPatterns.push(pat);
+        }
+    }
+
+    function addRotatedTopping(rotatedVals) {
+        if (!rotatedVals || rotatedVals.length === 0) return;
+        let vals = uniqueSort(rotatedVals);
+        if (baseFullPatterns.length > 0) {
+            vals = vals.filter(n => baseFullPatterns.some(pat => pat.includes(n)));
+        }
+        if (vals.length > 0) {
+            let str = vals.join(",");
+            let isSubset = vals.every(n => finalArrPivot.includes(n));
+            if (str && !additions.includes(str) && str !== baseResult && !isSubset) {
+                additions.push(str);
+            }
+        }
+    }
+
+    if (includeSSL && sslVals.length > 0 && !window.T10_EXCLUDE_SUBSUB_RULE) {
+        addRotatedTopping(rotate(sslVals));
+    }
+
+    let T3 = window.__T3_CACHE__;
+    let chain = [p];
+    if (kp.star) chain.push(kp.star);
+    if (kp.sub)  chain.push(kp.sub);
+
+    if (T3) {
+        chain.forEach(ent => {
+            if (T3[ent]) {
+                let entSubVals  = String(T3[ent].sub  || "").split(",").filter(Boolean).map(Number);
+                let entSslVals  = String(T3[ent].ssl  || "").split(",").filter(Boolean).map(Number);
+                let entStarVals = String(T3[ent].star || "").split(",").filter(Boolean).map(Number);
+
+                if (T10_ADD_SUBLORD && !excludeSublordForGraphs && entSubVals.length > 0) {
+                    let leftOut = entSubVals.filter(n => !finalArrPivot.includes(n));
+                    if (leftOut.length > 0) addRotatedTopping(leftOut);
+                }
+
+                if (T10_ADD_STARLORD) {
+                    if ((subVals.length > 0 || sslVals.length > 0) && sVals.length > 0) {
+                        addRotatedTopping(entStarVals);
+                    }
+                } else if (T10_ADD_SUBSUB) {
+                    if (!includeSSL && entSslVals.length > 0 && !window.T10_EXCLUDE_SUBSUB_RULE) {
+                        addRotatedTopping(entSslVals);
+                    }
+                }
+            }
+        });
+    }
+
+    if (additions.length > 0) {
+        return baseResult + (baseResult ? " + " : "") + additions.join(" + ");
+    }
+
+    return baseResult;
+}
+
+/* =========================================================
+   PREDICTION MODULE CSV DATABASE & MATCHING ENGINE
+   ========================================================= */
+const PREDICTION_CSV_DATA = `
+"Health Good",,1,"1,3,5,7,9,11"
+"Health Bad",,1,"2,4,6,10"
+"Health Very Bad",,1,"6,8,12"
+"Gaining Status, Respect",,1,"10,11"
+"Success In Self Efforts",,1,11
+"Body Accustomed/Adapted To Anything",,1,"2,11"
+"Longevity - Medium Period",,1,"2,7"
+"Life",,1,"2,7,11"
+"Life",,1,"2,7,9"
+"Tendency To Fight Always",,1,"2,8"
+"Murders","MA,SA",1,"2,8"
+"Body Averting To Anything",,1,"2,8,12"
+"Good Person",,1,"3,5,7,9,11"
+"Courageous Person",,1,"3,6"
+"Famous Person",,1,"3,6,10"
+"Tendency To Create Peace Always",,1,"3,7"
+"Coward",,1,"3,8"
+"Longevity - Short Period",,1,"3,8"
+"Aversion To Education (Illiterate Person)",,1,"3,8"
+"Running Away From Native",,1,"3,8,12"
+"Living Outside Of One's Own Residence",,1,"3,9"
+"Person Living Alone",,1,"3,9"
+"Person Living In Joint Family",,1,"4,10"
+"Not Addicted To Anything","SA,KE",1,"4,6"
+"No Interest Towards Sexual Affairs","SA,KE",1,"4,6,8,10"
+"Accidents","MA,SA",1,"4,8"
+"Highly Educated Person",,1,"4,9,11"
+"Good Health",,1,"5,11"
+"For Smooth Functioning Of Parts Of Body Referring To Health",,1,"5,11"
+"Addicted To Drugs, Liquor, Women","VE,MA",1,"5,7"
+"Womanizer","VE,MA",1,"5,7,9,11"
+"Lost Status Of Famous Person",,1,"5,8,10"
+"Life With Sufferings",,1,"5,8,12"
+"Confident Person",,1,"5,9"
+"Longevity - Long Life",,1,"5,9"
+"Person Leading Independent",,1,6
+"Diseases",,1,6
+"Dislike Harmony, Unity, With Others",,1,"6,10"
+"Successful Life",,1,"6,11"
+"Life With Lots Of Diseases",,1,"6,8,12"
+"Person Living As Dependent With Others",,1,7
+"Adjustable With Others (Accord, Unity)",,1,"7,11"
+"Suicides",,1,8
+"Does Not Possess Any Capacity For Doing Research",,1,"8,11"
+"Run Away From Living Place",,1,"8,12"
+"Scholar And Authority In Research Field",,1,"9,12"
+"Creul Person",,1,"2,4,6,8,10,12"
+"Passive Income",,2,"1,3,5,7,9,11"
+"Active Income",,2,"2,4,6,8,10,12"
+"Rich Person","JU,VE",2,"2,4,6,10"
+"Rich Enjoying Life",,2,"1,3,5,7,9,11"
+"Money Worries",,2,"8,12"
+"Money Very Bad",,2,8
+"Wealth Strong",,2,"2,4,6,10"
+"For Free Flow Of Fund Cash Flow From Blockage",,2,4
+"Cash Deposits With Someone Else For Safety",,2,7
+"Cash Held Up / Stalled Outside",,2,8
+"Fund & Cash Flow - Blockage (Liability)",,2,9
+"Business Started With Cash As Investment",,2,10
+"Excess / Abnormal Monetary Receipts",,2,11
+"Moneytary Income, Not To Be Returned",,2,11
+"Cash/Fund Savings As Investments",,2,12
+"Small Debts",,2,"1,3"
+"Investments",,2,"10,12"
+"Small Debts",,2,"3,11"
+"For Selling Gold And Other Ornaments",,2,"3,12"
+"Separation Of Someone From Family",,2,"3,12"
+"Loss In Gold & Jewelry Business",,2,"3,5,9"
+"Exchange Of Transaction, Cash Into Cheque",,2,"3,6"
+"For Running Gold Jewelry Business",,2,"4,10"
+"Visit Of Relatives",,2,"4,11"
+"Scholarships",,2,"4,11"
+"Augmenting Gold Ornaments",,2,"4,12"
+"Purchase Of Households",,2,"4,6,11"
+"To Achieve For Scholarship",,2,"4,9"
+"Money Not Returned Back To Lender",,2,"5,11"
+"Parts Of Body Pertaining To 2nd Bhava To Be In Healthier Condition",,2,"5,11"
+"Expenditure For Goods",,2,"5,11,12"
+"Money Pledged For Gambling Purposes",,2,"5,12"
+"For Healthy Eye, Tooth, Throat",,2,"5,7,11"
+"Fluctuating Fund Flow (Unsteady)",,2,"5,9"
+"Money Issued As Donations (Gifts)",,2,"5,9"
+"Loss In Business, Started With Cash As Investment",,2,"5,9"
+"Steady Fund Flow",,2,"6,10"
+"Evade / Elude From Income Tax Dept",,2,"6,11"
+"Borrowings",,2,"6,11"
+"Money Banking Transactions",,2,"6,12"
+"Loans",,2,"6,8,11"
+"Eye, Tooth, Throat Troubles/Sufferings",,2,"6,8,12"
+"To Receive Help / Assistance From Others",,2,"7,11"
+"Loss Of Jewelry Items Due To Robbery",,2,"7,12"
+"To Be Land Up In Trouble With Income Tax Dept",,2,"7,12"
+"Receiving Donations/Gifts/Compliments",,2,"8,11"
+"Insurance Claims","SA",2,"8,11"
+"Swindling Of Others Jewelries By Bad Means",,2,"8,12"
+"Unnecessary Expenses / Expenditure",,2,"8,12"
+"To Go Out By Walk",,3,3
+"To Have Strong Will Power",,3,6
+"Deception Through Money Order",,3,8
+"Letter Correspondence",,3,9
+"To Shift From One Location To Another (Dislocation)",,3,9
+"To Involve In The Profession Of Broker",,3,10
+"Short Journeys",,3,11
+"Transfers",,3,"10,11"
+"Sale Of Properties",,3,"11,12"
+"Letter Correspondence",,3,"2,11"
+"Money Orders",,3,"2,11"
+"To Remain / Stay In The Same Place/Location",,3,"2,4"
+"Receipt/Collection Of Cheques",,3,"2,6"
+"Obstruction In Journey",,3,"2,8"
+"Obstruction In Dislocation",,3,"2,8"
+"Cheque Payments",,3,"2,8,12"
+"To Receive Money Order",,3,"2,9"
+"For Journey / Travelling",,3,"3,9"
+"Unable To File / Register A Suit",,3,"5,10"
+"To Act As A Commission Broker",,3,"5,10"
+"Pilgrimage By Foot",,3,"5,9"
+"For Smooth Functioning Of Part Of Body Covering Under 3rd Bhava",,3,"5,9,11"
+"To Become A Document Writer",,3,"6,10"
+"Filing A Suit",,3,"6,11"
+"Unable To Communicate Through Telephone",,3,"6,8"
+"Mental Disorder / Or Depressed Condition",,3,"6,8"
+"Heart Attack",,3,"6,8"
+"Diseases In Ear (S) / Nose",,3,"6,8,10"
+"Loss Of Sensation (Numbness) / Nervous Debility",,3,"6,8,12"
+"To Succeed In Obtaining Tenders",,3,"6,9,11"
+"To Sign Surety Documents",,3,"7,11"
+"News - True, Real And Factual In Nature",,3,"7,11"
+"Telephone Communications",,3,"7,9"
+"For Cancelation Of Contracts / Agreements",,3,"8,10"
+"Fake / Forgery Documents",,3,"8,10"
+"Unable To Correspond Through Letter",,3,"8,12"
+"Trouble Due To Standby As Surety",,3,"8,12"
+"False News / Communications",,3,"8,12"
+"To Lose Energy From One's Body",,3,"8,12"
+"To Install Telephone Booths / Center",,3,"9,10"
+"To Sign Contracts / Agreements",,3,"9,11"
+"To Ascertain For Original Documents",,3,"9,11"
+"Long Journeys",,3,"9,11"
+"Receipt Of Cheques",,3,"9,11"
+"Communications",,3,"9,11"
+"Agreements",,3,"9,11"
+"Negotiations",,3,"9,11"
+"To Perform As A Secret Agent /Or A As Spy",,3,"9,12"
+"For Foreign Travel",,3,"9,12"
+"Small Loan",,6,3
+"Marriage Within Relatives","MA",4,"1,3,5,7,9,11"
+"Rent Income Good",,4,"2,4,6,10"
+"Rent Enjoy Property No Income",,4,"5,9"
+"Rent Problems Litigation",,4,"8,12"
+"Property Loss","MA,VE",4,"5,8"
+"Property Never Buy",,4,"3,11"
+"Property Worries",,4,"8,12"
+"Real Estate Business","MA,VE",4,"2,4,6,10"
+"Real Estate Loss","MA,VE",4,"5,9"
+"Real Estate Problems","MA,VE",4,"8,12"
+"Property Good","MA",4,"2,4,6,10"
+"Property Bad","MA",4,"1,3,7,11"
+"Property Litigation","MA",4,"8,12"
+"Vehicle Accident Damage",,4,"6,8,12"
+"Vehicle Safe",,4,"1,3,5,7,9,11"
+"To Purchase Vehicles",,4,6
+"Vehicle Accident",,4,8
+"Productive Part Damaged",,4,8
+"Production Oriented Profession",,4,10
+"Moderate Level Education",,4,11
+"Land","MA",4,11
+"Cycle","SA",4,11
+"Motor Cycle","MA,VE,JU",4,11
+"Heavy Vehicles","MA,VE,MO",4,11
+"To Purchase Landed Properties",,4,12
+"Agricultural Land","MO,MA",4,"10,11"
+"To Purchase A Constructed House",,4,"10,12"
+"House","MA,VE",4,"11,12"
+"Hired Articles",,4,"2,6"
+"Agriculture",,4,"2,6,10"
+"Stable Properties",,4,"2,6,12"
+"Obstacles In Moderate Level Education",,4,"3,10"
+"Encumbrance In Properties",,4,"3,11"
+"Sale Of Landed Properties",,4,"3,12"
+"Sale Of Vehicles",,4,"3,12"
+"Sale Of Household Articles",,4,"3,12"
+"Productive Part Removal",,4,"3,12"
+"Sale Of House","VE",4,"3,12"
+"Unstable Properties",,4,"3,6,12"
+"Missing Of Vehicles",,4,"3,8,12"
+"To Purchase A Leased House",,4,"3,9"
+"Factory Lock Out",,4,"3,9"
+"Production Oriented Profession -Lockout",,4,"3,9"
+"To Purchase Leased Land",,4,"3,9"
+"Sale Of Heavy Vehicles",,4,"3,9,12"
+"Interchanging Of Vehicles",,4,"3,9,12"
+"Productive Part Replacement",,4,"3,9,12"
+"Factory Strike",,4,"5,10"
+"To Purchase Household Articles",,4,"5,11"
+"Pleasure Vehicles","MA,VE,JU",4,"5,11"
+"To Purchase Heavy Vehicles",,4,"6,10"
+"Employed In Factories/ Industries",,4,"6,10"
+"Engineer",,4,"6,10"
+"Architect",,4,"6,10"
+"Lower Grade School Teacher","VE",4,"6,10"
+"Furnitures, Cosmetics",,4,"6,11"
+"To Rent A House",,4,"6,12"
+"Daily Paid Worker In Factories",,4,"6,8"
+"Constructed House",,4,"6,9,11"
+"Vehicle Damaged",,4,"8,11"
+"Higher Level Education",,4,"9,11"
+"Ph.D/ Research Scholar",,4,"9,11,12"
+"Child Birth No Childlessness","JU",5,"4,12"
+"Child Birth 100% Good","JU",5,"1,3,5,7,9,11"
+"Child Birth Strong","JU",5,"3,7,11"
+"Child Birth Average","JU",5,"2,6,10"
+"Child Birth Very Bad","JU",5,"4,8,12"
+"Love Marriage Strong",,5,"1,3,5,7,9,11"
+"Love Breakup",,5,"4,8,12"
+"Politics Success","SU",5,"2,6,10"
+"Politics Failure","SU",5,"1,5,9"
+"First Night",,5,11
+"Child Short-Lived",,5,12
+"Blood Cells In Spoiling Condition",,5,12
+"Popular/Famous Astrologer",,5,"1,10"
+"To Get Trained In Arts",,5,"1,11"
+"Clearing Debts",,5,"1,11"
+"Healthy Life",,5,"1,11"
+"Disease Due To Blood Cells",,5,"1,6"
+"Spiritual Life","SA,KE",5,"10,11"
+"Fine Arts","VE",5,"10,11"
+"Professional Astrologer",,5,"2,10"
+"Gambling House",,5,"2,10"
+"To Gain In Gambling",,5,"2,11"
+"Child Birth",,5,"2,11"
+"Black Money",,5,"2,11"
+"Menopause (An End To Menses Cycle)",,5,"2,4,6"
+"To Do Commission Business",,5,"2,6"
+"To Work As Assistant Under Astrologer",,5,"2,6"
+"Winning Gambles/Races",,5,"2,6,11"
+"Priest Of A Temple",,5,"2,9"
+"Artist",,5,"3,10"
+"Lottery Business",,5,"3,10"
+"Blood Donation",,5,"3,12"
+"Sports Man (Player)",,5,"3,6,11"
+"To Lose One's Consciousness; To Affect One's Deep Knowledge",,5,"3,8,12"
+"For Regular Menstrual Cycle",,5,"3,9"
+"Love Failure",,5,"4,10"
+"Delivery Of Unhealthy Child",,5,"4,10"
+"To Teach Arts",,5,"4,10"
+"Divorce In Love Marriage",,5,"4,10"
+"Teacher In Astrology",,5,"4,10"
+"Sculptor",,5,"4,10"
+"For Irregular Menstrual Cycle",,5,"4,10"
+"To Become An Ascetic; Saint; (Reclusive Life)","SA",5,"4,10"
+"Ones Failure Life In Cine Field",,5,"4,10,12"
+"To Quit Politics",,5,"4,9"
+"Ones Successful Life In Cine Field",,5,"6,10"
+"To Be A Winner In Sports",,5,"6,11"
+"Winning Games",,5,"6,11"
+"Feast And Festivals",,5,"6,11"
+"Delivery Of Twins",,5,"7,11"
+"Illicit Love Affairs",,5,"7,11"
+"Love Marriage",,5,"7,11"
+"Obscene /Indecent Actor",,5,"8,10"
+"To Lose In Gambling",,5,"8,12"
+"Humiliated Due To Obscene/Indecent",,5,"8,12"
+"Abnormal Menstrual Bleeding",,5,"8,12"
+"Rape","MA",5,"8,12"
+"Giving Bribes",,5,"8,12"
+"To Have Healthy Blood Cells",,5,"9,11"
+"Researcher In Astrology",,5,"9,11"
+"Temple Trustee",,5,"9,11"
+"Illegal Affairs",,5,"9,11"
+"Indirect Love Affairs",,5,"9,12"
+"Job Monthly Income",,6,"2,4,6,10"
+"Job Enjoyment More Money Less",,6,"1,3,7,11"
+"Job No Money",,6,"5,9"
+"Job Heavy Loss",,6,"8,12"
+"Loan",,6,"2,4,6,10"
+"Heavy Loan",,6,8
+"Loan Repayment Easy",,6,"3,7,11"
+"Loan Not Possible",,6,"1,5,9"
+"Loan Blocked",,6,12
+"Inner Job Nature",,6,"1,3,5,7,9,11"
+"Hardworking Job",,6,"2,4,6,8,10,12"
+"Diseases Frequent","SU",6,"6,8,12"
+"Recovery From Disease",,6,1
+"Disease",,6,1
+"Secret Activities Of Partner",,6,5
+"To Win In Law Suits (Litigations)",,6,11
+"Winning Opponents",,6,11
+"Divorce",,6,12
+"Winning Litigation",,6,"1,11"
+"Medical Treatment To Diseases",,6,"1,12"
+"Borrow Money To Re-Pay Previous Loan",,6,"1,2"
+"Operation/Surgery",,6,"1,3,8,12"
+"Troublesome Disease",,6,"1,8"
+"Damage To Organ By Diseases",,6,"1,8"
+"Self Unconsciousness",,6,"1,8,12"
+"Borrowing (To Get Loan)",,6,"2,10"
+"Service - As An Employee",,6,"2,10"
+"Clearing Debts By Borrowings",,6,"2,11,12"
+"Money Borrowed For Other Transaction(S)",,6,"2,12"
+"Purchase Of Food Items & Related Materials",,6,"2,4"
+"Problem In Loan Transactions",,6,"2,9"
+"To Get Hand Loan (Money Without Interest)",,6,"3,11"
+"Problem Due To Hand Loan",,6,"3,8"
+"Airborne Disease (Vada)",,6,"3,8"
+"To Do Catering Business (Cooking Work)",,6,"4,10"
+"Disease Which Is Incurable",,6,"4,10"
+"Purchase Of New Dress Materials",,6,"4,11"
+"Purchase Second Hand (Used) Articles/Items",,6,"4,8"
+"To Remain Sick Permanently",,6,"4,8"
+"Life-Long Diseases",,6,"4,8"
+"Hereditary Disease",,6,"4,9"
+"To Recover From Disease",,6,"5,11"
+"Purchase Of Medicines",,6,"5,11"
+"To Attend A Feast",,6,"5,11"
+"Relief From Diseases",,6,"5,11"
+"To Recover From Coma Stage",,6,"5,7,11"
+"Return Of Borrowings (Loan Pay Back)",,6,"5,8,12"
+"Unsuccessful In Borrowing (Failure)",,6,"5,9"
+"To Relieve From Troublesome Disease",,6,"7,11"
+"Worker(S) On Daily Wages",,6,"8,10"
+"To Get Huge Loan",,6,"8,10"
+"To Work As Apprentice (Learner)",,6,"8,10"
+"Marriage Outside Caste",,7,"6,8,12"
+"Marriage Early","VE",7,"1,3,5,7,9,11"
+"Marriage Average",,7,"2,4,10"
+"Marriage Delayed",,7,"6,8,12"
+"Unmarried Possibility",,7,"6,12"
+"Second Marriage","VE,MA",7,"4,6,8,12"
+"Marriage Harmony Good","VE",7,"1,3,5,7,9,11"
+"Marriage Public Recognition",,7,"1,3,5,7,9,11"
+"Marriage Weak Recognition",,7,"2,4,6,10"
+"Guest Arrival",,7,4
+"Hidden / Indirect Enemies",,7,12
+"Marriage",,7,"5,7,11"
+"Religious Related Union Agreement",,7,"1,5,9"
+"Customer",,7,"10,11"
+"Catch Hold Of Thief",,7,"2,11"
+"To Bring Others Into Our Self Control",,7,"2,11"
+"Second Child",,7,"2,11"
+"Thief",,7,"2,12"
+"Giver Of Bank Loan",,7,"2,6,9,11"
+"To Exit / Abandon From A Contract",,7,"2,8"
+"Arguments/Debates",,7,"2,8"
+"Co-Operative Union Agreement",,7,"3,5,9,11"
+"Separation From Partnership Business",,7,"3,6,9"
+"To Enter / Get Into A Contract",,7,"3,9"
+"Temporary Separation",,7,"3,9"
+"Commercial Unions",,7,"3,9"
+"Party Of Agreement",,7,"3,9,11"
+"Partnership In Business",,7,"4,10"
+"Separation / Failure In Negotiation",,7,"4,10"
+"Ever Unsatisfied Person",,7,"4,10"
+"Troubles From Guest",,7,"4,12"
+"To Recover From Contagious Disease",,7,"5,11"
+"To Act As Mediator / Negotiator",,7,"5,11"
+"Union Agreement",,7,"5,11"
+"Business Partner",,7,"5,11"
+"Failure To Bring Others Into Our Self Control",,7,"5,8"
+"To Win/Success Over Enemies",,7,"6,11"
+"Divorce",,7,"6,12"
+"Troubles From Enemies",,7,"8,12"
+"To Elect / Select Non-Confidant(S)",,7,"8,12"
+"Enemies",,7,"8,12"
+"To Elect/Select Confidant(S)",,7,"9,11"
+"One Who Indulges In Multiple Affairs",,7,"9,11"
+"Major Accident",,8,"6,8,12"
+"Accident Avoided",,8,"1,3,5,7,9,11"
+"Major Surgery",,8,"2,4,6,8,10,12"
+"Natural Death",,8,8
+"Clearing Debts",,8,12
+"Unexpected Happiness",,8,"1,11"
+"Unexpected Sorrow / Grief",,8,"1,12"
+"Unexpected Hidden Life",,8,"1,12"
+"Unexpected Escape From Death",,8,"1,2"
+"Gain Due To Unexpected Love Affairs",,8,"1,2,5"
+"Recovery From Unexpected Sudden Disease",,8,"1,5,11"
+"Unexpected Sudden Disease",,8,"1,6"
+"Unexpected Sufferings Due To Pains /Agony",,8,"1,8"
+"Unexpected Sudden Suicide",,8,"1,8"
+"Unexpected Fruition Of Bribe/Corrupt Money",,8,"2,10"
+"Sudden Gains",,8,"2,11"
+"Unexpected Profits Of Money",,8,"2,11"
+"Unexpected Loss From Insurance Amount",,8,"2,12"
+"Unexpected Losses",,8,"2,12"
+"Unexpected Eye Affect (Affliction)",,8,"2,4,8"
+"Unexpected Fruition Of Insurance Amount",,8,"2,6"
+"Heavy Loan",,8,"2,6,11"
+"Unexpected Restraints In Cash Flow",,8,"2,9"
+"Unexpected Sudden Death",,8,"3,10"
+"Unexpected Dispute/Encumbrance From Properties",,8,"3,11"
+"Unexpected Mental Satisfaction",,8,"3,11"
+"Unexpected Loss Of Possession",,8,"3,12"
+"Unexpected Run Away (Escape) From Living Place",,8,"3,12"
+"Unexpected Mental Illness (Disease)",,8,"3,6"
+"Unexpected Contract Agreement",,8,"3,7,9"
+"Unexpected Mental Disorder / Suffering",,8,"3,8"
+"Unexpected Break In Contract",,8,"3,9"
+"Unexpected Separation From Love Affairs",,8,"4,10"
+"Unexpected Encumbrance In Hereditary Properties",,8,"4,11"
+"Unexpected Purchase Of Properties",,8,"4,12"
+"Unexpected Accidents",,8,"4,12"
+"Unexpected Escape From Accident",,8,"4,7"
+"Unexpected Accident",,8,"4,8"
+"Unexpected Fruition Of Hereditary Properties",,8,"4,9"
+"Trouble From Unexpected Immoral Affairs",,8,"4,9"
+"Escape From Unexpected Humiliation",,8,"5,11"
+"Unexpected Love Affairs",,8,"5,11"
+"Spoiling Name & Fame",,8,"5,12"
+"Loss Due To Unexpected Love Affairs",,8,"5,12"
+"Unexpected Humiliation",,8,"5,8"
+"Unexpected Immoral Affairs",,8,"5,9"
+"Unexpected Sudden Labour Strike",,8,"5,9"
+"Unexpected Sudden Fruition Of Employment",,8,"6,10"
+"Sudden Gifts",,8,"6,11"
+"Unexpected Sudden Separation (Divorce)",,8,"6,12"
+"Unexpected Sudden Marriage",,8,"7,11"
+"Unexpected Trouble / Incommode From Partner",,8,"7,8"
+"Unexpected Higher Education",,8,"9,11"
+"Unexpected Sudden Research Activity",,8,"9,12"
+"Second Marriage Possible",,9,"1,3,5,7,9,11"
+"Second Marriage Not Possible",,9,"4,6,10,12"
+"Higher Education Break",,9,"8,12"
+"Higher Education Not Used",,9,"5,9"
+"Higher Education Career Link",,9,"2,4,6,10"
+"Higher Education Different Field",,9,"1,3,7,11"
+"Foreign Job","RA,MO",9,"2,4,6,10"
+"Hereditary Disease",,9,6
+"Second Marriage",,9,7
+"Higher Education",,9,11
+"Long Journey",,9,12
+"Immoral / Illegal Affairs",,9,12
+"Secret Links / Relationships",,9,12
+"Change In Profession",,9,"10,12"
+"To Perform Export Business",,9,"10,12"
+"Success In Reasearches",,9,"11,12"
+"Child Birth Third Child",,9,"2,11"
+"Fortune",,9,"2,11"
+"Father Rejoining Family",,9,"2,11"
+"To Be Employed In Financial Institutions",,9,"2,6,10"
+"Trouble In Obtaining Hereditary Vehicles & Business Assets",,9,"3,10"
+"Fruition/Possession Of Hereditary Succession Rights",,9,"3,11"
+"To Obtain Lease / Contract Agreement",,9,"3,11"
+"Reception Of Information",,9,"3,11"
+"To Perform As Secret Agent / Cid",,9,"3,12"
+"For Pilgrimage",,9,"3,7"
+"Trouble In Obtaining Lease/Contract Agreement",,9,"3,8"
+"Loss Of Hereditary Succession Rights",,9,"3,8,12"
+"To Obtain Hereditary Vehicles & Business Assets",,9,"4,10"
+"To Lose First Respect (Hereditary)",,9,"4,10"
+"To Do One's Service As A Professor",,9,"4,10"
+"Job /Service Related To One's Education",,9,"4,10"
+"Visit Of Unknown",,9,"4,11"
+"Fruition Of Hereditary Properties",,9,"4,12"
+"Trouble Due To Immoral / Illegal Affairs With Lover",,9,"4,12"
+"To Receive First Respect (Hereditary)",,9,"5,11"
+"Relief From Disease Due To Divine Grace",,9,"5,11"
+"To Perform Divine Service",,9,"5,11"
+"To Become A Trusted Political Leader",,9,"5,11"
+"To Repay/ Settle Hereditary Loans",,9,"5,12"
+"Termination Of Foreign Service/Job At Abroad",,9,"5,8"
+"Getting Punished Due To Divine Judgment / Action",,9,"5,8,12"
+"Employment/Service Opportunity In Abroad",,9,"6,10"
+"Hereditary Loan Burden",,9,"6,12"
+"Involvement In Secret Research",,9,"6,12"
+"Obstruction In Second Marriage",,9,"6,8"
+"Loss Of Hereditary Treasure /Wealth",,9,"8,11"
+"Obstruction In Higher Education",,9,"8,12"
+"Job /Service Without Any Rank And Position",,10,5
+"Trouble Through Profession / Service",,10,5
+"No Growth In Business / Profession (Stagnation)",,10,8
+"Fraudulent Business (Intended To Deceive The Clients)",,10,8
+"Frequent Shutdown Of Business Units",,10,9
+"Job/Service With Rank And Position",,10,"1,6"
+"Business Deadlock (Standstill)",,10,"1,7"
+"Profession/Service With Huge Enormous Income",,10,"2,11"
+"Multiple Service / Job Activities",,10,"2,12"
+"Business Investors / Capitalists",,10,"2,12"
+"Commission Business",,10,"2,3,11"
+"To Run Brothel House (Prostitution)",,10,"2,5,9"
+"Service","ME,VE",10,"2,6"
+"Daily Labour","SA",10,"2,6"
+"Permanent Job / Service",,10,"2,6"
+"Sustained Growth For Ever In Business / Service",,10,"2,6"
+"Promotion In Job",,10,"2,6,11"
+"Job/Service Inclines To Accept Bribery/Corruption",,10,"2,8"
+"Cashier",,10,"2,8"
+"Outdoor Bussiness",,10,"3,12"
+"Job With Frequent Displacements / Transfers",,10,"3,12"
+"Production Of Materials",,10,"3,4"
+"Production & Sales Jobs",,10,"3,4,12"
+"Lady Broker",,10,"3,5,7,9,11"
+"Distraint/Seizure Of Business Unit / Industry",,10,"3,5,8,12"
+"Self Bussiness",,10,"3,7"
+"Coordinator / Mason's Supervisor",,10,"3,7"
+"Commercial Center Rent",,10,"3,7,12"
+"Production Oriented Business Profession/Service",,10,"4,10"
+"Doing Business As Hoarder",,10,"4,12"
+"Job / Service Based On Daily Wages",,10,"4,6"
+"Joint Business Venture With Others",,10,"4,7"
+"Business Competitions",,10,"4,7"
+"Temporary Job / Service",,10,"5,8"
+"Break In Service / Job",,10,"5,9"
+"Unemployed / Unable To Get Any Service",,10,"5,9"
+"Second Profession",,10,"6,12"
+"Accountants & Auditors",,10,"6,12"
+"Surgeons",,10,"6,8"
+"Break In Profession",,10,"7,11"
+"Doing Business On One's Name For The Sake Of One's Close Aide",,10,"7,12"
+"Trouble Through Large Business Units/ Industries",,10,"8,12"
+"Illegal Business Activity",,10,"8,12"
+"Retirement",,10,"9,12"
+"Satisfaction Of Desires",,11,1
+"Bore Well Water Found","MO",11,4
+"Favourable Situation To One On Satisfactory Events",,11,5
+"Suffering From Vitamin Deficiency (A Kind Of Disease)",,11,6
+"Troubles / Lose Arise Due To Greedy Action",,11,"8,12"
+"To Reach Status Rank, And Cadre As Per One's Wish",,11,"1,10"
+"Happy/Blissful Man",,11,"1,11"
+"To Fulfill One's Self Desire",,11,"1,11"
+"Satisfactory Child Birth As Per One's Wish",,11,"1,5"
+"Successful Man In All Aspects Of One's Life",,11,"1,6"
+"Frustration Due To One's Self Desire",,11,"1,8"
+"To Get Prestigious Post As Per One's Wish",,11,"1,9"
+"Develop One's Wish To End With Greedy Action",,11,"2,12"
+"House Sold For Good Price",,11,"2,6"
+"Fructification Of Job / Service As Per Own Wish",,11,"2,6"
+"Winning Any Girl Love",,11,"2,7"
+"Return From Foreign Country",,11,"2,8"
+"Happy Moments Through Friends",,11,"3,5"
+"Accord / Integration Among Unions",,11,"3,5,9"
+"Successful In Self Desires / One's Expectation",,11,"3,6"
+"Attachment With A Person As Per One's Own Wish /Liking",,11,"3,7"
+"Sufferings Through Friends",,11,"3,8"
+"Feeling Happy Through Son-In-Law/ Daughter-In-Law",,11,"3,9"
+"Unhappy Man",,11,"4,10"
+"Troubles Through Daughter-In-Law, Son-In-Law",,11,"4,10"
+"Rejection In Love With Someone To Whom One Has Shown Her Love Earlier",,11,"4,10"
+"Dissatisfactory Child Birth Against One's Wish",,11,"4,10"
+"Unable To Fix Marriage With Someone As Per Own Wish",,11,"4,6,10"
+"Getting Business Partner As Per Own Wish / Liking",,11,"4,7,10"
+"No Knowledge In Learning Art Of Any Kind / Branch",,11,"4,8"
+"Troubles Through Illegal Affairs",,11,"4,8"
+"Forfeit /To Lose From One's Prestigious Post",,11,"4,8"
+"Dissolutions / Disintegration Among Unions",,11,"4,8,10"
+"Recovery From Vitamin Deficiency (A Kind Of Disease)",,11,"5,10"
+"Sprightly Man (Jolly, Highly Spirited)",,11,"5,11"
+"Marriage With Someone As Per Own Liking",,11,"5,7"
+"Child Birth For Wife",,11,"5,8"
+"Failure In Self Desires /One's Expectation",,11,"5,8"
+"Dissatisfactory Business Partner",,11,"5,8,12"
+"To Obtain Wisdom On Interested / Favourite Art(S)",,11,"5,9"
+"Unable To Get The Chance For A Desired Job",,11,"5,9"
+"Illegal Affairs With A Person Of One's Own Liking",,11,"5,9"
+"Attachment With A Person One Who Dislikes",,11,"6,10"
+"Unfavourable Situation To One On Satisfactory Events",,11,"6,8"
+"Very Good Contender In All Divisions Of Life",,11,"8,12"
+"Unable To Fructify One's Own Wishes",,11,"8,12"
+"Profit Through Investments",,12,2
+"Troubles Through Investments",,12,7
+"Secret Threatening By Someone",,12,7
+"Impediments In Research Study",,12,8
+"To Accomplish Research Study",,12,9
+"To Perform Secret Business",,12,10
+"Man Of Hidden Attitude",,12,"1,11"
+"Secret Diseases",,12,"1,6"
+"Separation Of Secret Agent From Oneself",,12,"1,6"
+"Secret Agents / Spy",,12,"1,7"
+"To Spoil Name & Fame",,12,"1,8"
+"Troubles Through Hidden Attitude",,12,"1,8"
+"Danger Due To Secrets",,12,"1,8"
+"Investment In Business",,12,"2,10"
+"Income Tax Troubles",,12,"2,5,8"
+"To Obtain Secret Loan",,12,"2,6"
+"Recovery Of Money (Lost)",,12,"2,6,11"
+"Secret Looting",,12,"2,8"
+"Return To Motherland / From Abroad",,12,"2,8"
+"To Undergo Secret Abortion",,12,"3,10"
+"To Retain The Secrets Secretly",,12,"3,10"
+"To Forgo The Hidden Article From One's Hand",,12,"3,12"
+"Secret Delivery (Child Birth)",,12,"3,5"
+"Sale Of Products Bussiness",,12,"3,6"
+"Trouble In Holding Unauthorized Illegal Stock Items",,12,"3,7"
+"Troubles Through Secret Communications, Contacts",,12,"3,8"
+"To Capture / Steal One's Secret",,12,"3,8"
+"Absconding",,12,"3,8,12"
+"Imprisonment","RA",12,"3,8,9"
+"Secret Communications / Contacts",,12,"3,9"
+"To Reside In Foreign Country / Abroad",,12,"3,9"
+"Success In Secret Planning",,12,"4,10"
+"Investment In Buildings Land",,12,"4,11"
+"Success In Secret Plans",,12,"4,11"
+"Benami Properties",,12,"4,6"
+"Problems In Secret Marriage",,12,"4,6"
+"Unauthorized Holding Of Stocks Illegally",,12,"4,6"
+"Trouble In Secret Planning",,12,"4,7"
+"Trouble In Benami Properties",,12,"4,7"
+"Trouble Through Secret Love Affairs",,12,"4,7"
+"Troubles Through Secret Illegal Relationships",,12,"4,7"
+"Secret Love Affairs",,12,"5,11"
+"To Recover From Secret Diseases",,12,"5,11"
+"To Make Settlement/Repayment Of Secret Loan",,12,"5,11"
+"To Come Out Of Secret Acts",,12,"5,11"
+"For Secret Marriage",,12,"5,7"
+"Clearing Debts",,12,"5,8"
+"Unavailability Of Secret Works",,12,"5,9"
+"Secret Illegal Relationships",,12,"5,9"
+"To Establish Secret Works / Tasks",,12,"6,10"
+"Impediments In Secret Loan",,12,"7,8"
+"To Expose Outward One's Secret Act",,12,"7,8"
+"Secret Dangers",,12,"7,8"
+"Being Caught During Adulterating",,12,"7,9"
+"Adulterating In Business",,12,"8,10"
+"To Incur Loss From Investments",,12,"8,12"
+"To Bring Out The Secret Into Spotlight",,12,"9,11"
+"Body Part Replacement",,12,"2,4,6,8,10,12"
+`;
+
+let PREDICTION_RULES = [];
+
+function parsePredictionRow(rowText) {
+    let insideQuote = false;
+    let columns = [];
+    let currentWord = "";
+
+    for (let i = 0; i < rowText.length; i++) {
+        let char = rowText[i];
+        if (char === '"') {
+            insideQuote = !insideQuote;
+        } else if (char === ',' && !insideQuote) {
+            columns.push(currentWord.trim().replace(/"/g, ''));
+            currentWord = "";
+        } else {
+            currentWord += char;
+        }
+    }
+    columns.push(currentWord.trim().replace(/"/g, ''));
+    return columns;
+}
+
+function initPredictionEngine() {
+    if (PREDICTION_RULES.length > 0) return;
+    const lines = PREDICTION_CSV_DATA.split(/\r?\n/);
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line || line.includes("Events Of Life")) continue;
+
+        let parts = parsePredictionRow(line);
+        if (parts.length >= 4) {
+            let event      = parts[0];
+            let planetsStr = parts[1] || "";
+            let cuspStr    = parts[2] || "";
+            let housesStr  = parts[3] || "";
+
+            if (event && housesStr) {
+                let houses = housesStr.split(/[, ]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+                PREDICTION_RULES.push({
+                    event: event,
+                    planetsStr: planetsStr,
+                    cusp: cuspStr ? parseInt(cuspStr, 10) : null,
+                    houses: houses
+                });
+            }
+        }
+    }
+}
+
+function renderMatchGroups(fullMatches, partialGroups) {
+    let out = "";
+    if (fullMatches.length > 0) {
+        out += `<div style="color:#86efac; margin-top:6px; margin-bottom:8px;"><b style="color:#22c55e;">Full Combinations (${fullMatches.length}):</b>
+        <ul class="pred-match-list"><li>${fullMatches.join('</li><li>')}</li></ul></div>`;
+    }
+
+    let keys = Object.keys(partialGroups).map(Number).sort((a, b) => b - a);
+    keys.forEach(k => {
+        if (partialGroups[k].length > 0) {
+            out += `<div style="color:#fdba74; margin-top:6px; margin-bottom:8px;"><b style="color:#f97316;">${k} Digit Matching (${partialGroups[k].length}):</b>
+            <ul class="pred-match-list"><li>${partialGroups[k].join('</li><li>')}</li></ul></div>`;
+        }
+    });
+    return out;
+}
+
+function renderPlanetPredictions() {
+    let html = "";
+    let planetsList = getPivotSortedPlanets();
+
+    planetsList.forEach((p, index) => {
+        let fullEffStr = computeTable10Row(p);
+        let rawNumbers = fullEffStr.match(/\d+/g);
+        let eff = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
+
+        let fullMatches = [];
+        let partialGroups = {};
+
+        PREDICTION_RULES.forEach(r => {
+            let intersection = r.houses.filter(h => eff.includes(h));
+            let matchLen = intersection.length;
+            if (matchLen < 2) return;
+
+            let hint    = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
+            let cuspRef = r.cusp ? ` <span style="color:#a8a29e; font-size:12px;">(from Cusp ${r.cusp})</span>` : "";
+
+            if (matchLen === r.houses.length && r.houses.length > 0) {
+                fullMatches.push(`<span style="color:#facc15; font-weight:700;">${r.event}</span>${cuspRef} <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
+            } else {
+                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
+                partialGroups[matchLen].push(`<span style="color:#e2e8f0;">${r.event}</span>${cuspRef} <span style="color:#94a3b8; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
+            }
+        });
+
+        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
+        let pSafeId = `planet-collapser-${index}`;
+
+        if (groupHTML) {
+            html += `
+            <div class="pred-item-card planet-card">
+                <h4 class="collapsible-heading collapsed pred-item-header" onclick="toggleCollapsible('${pSafeId}', this)">
+                    <span><span style="color:var(--accent-emerald);">${markPlanet(p)}</span> &nbsp;<span style="color:var(--text-gold); font-size:13.5px;">[${fullEffStr}]</span></span>
+                </h4>
+                <div id="${pSafeId}" class="collapsible-body pred-item-body">
+                    ${groupHTML}
+                </div>
+            </div>`;
+        }
+    });
+
+    return html || "<div style='color:var(--text-dim); text-align:center; padding:12px;'>No matching combinations found for Planets (Minimum 2 digits).</div>";
+}
+
+function renderCuspalPredictions() {
+    if (!cuspsData || cuspsData.length === 0) {
+        return "<div style='color:var(--text-dim); text-align:center; padding:12px;'>Load or Fetch a Chart first.</div>";
+    }
+    let html = "";
+    let baseCusps = [...cuspsData].sort((a, b) => a.bhava - b.bhava);
+
+    baseCusps.forEach(c => {
+        let bhava      = c.bhava;
+        let csl        = c.subLord;
+        let fullEffStr = computeTable10Row(csl);
+        let rawNumbers = fullEffStr.match(/\d+/g);
+        let eff        = rawNumbers ? [...new Set(rawNumbers.map(Number))].filter(n => n > 0 && n <= 12) : [];
+
+        let fullMatches   = [];
+        let partialGroups = {};
+
+        PREDICTION_RULES.forEach(r => {
+            if (r.cusp !== bhava) return;
+            let intersection = r.houses.filter(h => eff.includes(h));
+            let matchLen     = intersection.length;
+            if (matchLen === 0) return;
+
+            let hint = r.planetsStr ? ` <span style="color:#c084fc; font-size:12px;">(Hint: ${r.planetsStr})</span>` : "";
+
+            if (matchLen === r.houses.length && r.houses.length > 0) {
+                fullMatches.push(`<span style="color:#facc15; font-weight:700;">${r.event}</span> <span style="color:#94a3b8; font-size:12px;">[Full: ${r.houses.join(',')}]</span>${hint}`);
+            } else {
+                if (!partialGroups[matchLen]) partialGroups[matchLen] = [];
+                partialGroups[matchLen].push(`<span style="color:#e2e8f0;">${r.event}</span> <span style="color:#94a3b8; font-size:12px;">[Partial: ${intersection.join(',')} / ${r.houses.join(',')}]</span>${hint}`);
+            }
+        });
+
+        let groupHTML = renderMatchGroups(fullMatches, partialGroups);
+        let cSafeId = `cusp-collapser-${bhava}`;
+
+        if (groupHTML) {
+            html += `
+            <div class="pred-item-card cusp-card">
+                <h4 class="collapsible-heading collapsed pred-item-header" onclick="toggleCollapsible('${cSafeId}', this)">
+                    <span><span style="color:var(--accent-cyan);">Cusp ${bhava} &mdash; ${markPlanet(csl)}</span> &nbsp;<span style="color:var(--text-gold); font-size:13.5px;">[${fullEffStr}]</span></span>
+                </h4>
+                <div id="${cSafeId}" class="collapsible-body pred-item-body">
+                    ${groupHTML}
+                </div>
+            </div>`;
+        }
+    });
+
+    return html || "<div style='color:var(--text-dim); text-align:center; padding:12px;'>No matching combinations found for Cusps.</div>";
+}
+
+function toggleAllPredictionCards(expand) {
+    const area = document.getElementById("table80-content-area");
+    if (!area || area.style.display === "none") return;
+
+    area.querySelectorAll(".pred-item-body").forEach(b => {
+        b.style.display = expand ? "block" : "none";
+    });
+    area.querySelectorAll(".pred-item-header").forEach(h => {
+        h.classList.toggle("open", expand);
+        h.classList.toggle("collapsed", !expand);
+    });
+}
+
+function generateTable80Manual() {
+    if (!cuspsData || cuspsData.length === 0) {
+        alert("Please Load or Fetch a Chart first before generating predictions.");
+        return;
+    }
+
+    const btn         = document.getElementById("t80-generate-btn");
+    const contentArea = document.getElementById("table80-content-area");
+    if (!contentArea) return;
+
+    if (btn) {
+        btn.innerHTML = "&#x23F3; Calculating...";
+        btn.disabled  = true;
+    }
+
+    setTimeout(() => {
+        try {
+            initPredictionEngine();
+
+            contentArea.innerHTML = `
+                <div class="pred-section-card">
+                    <h3 class="collapsible-heading open pred-card-header" onclick="toggleCollapsible('planets-matcher-body', this)">
+                        &#x1FA90; PLANETS MATCHER
+                    </h3>
+                    <div id="planets-matcher-body" class="collapsible-body" style="display: block; padding-top: 14px; border: none; background: transparent; box-shadow: none;">
+                        ${renderPlanetPredictions()}
+                    </div>
+                </div>
+
+                <div class="pred-section-card">
+                    <h3 class="collapsible-heading open pred-card-header" onclick="toggleCollapsible('cuspal-matcher-body', this)">
+                        &#x1F3DB; CUSPAL MATCHER (1 TO 12 BHAVAS)
+                    </h3>
+                    <div id="cuspal-matcher-body" class="collapsible-body" style="display: block; padding-top: 14px; border: none; background: transparent; box-shadow: none;">
+                        ${renderCuspalPredictions()}
+                    </div>
+                </div>
+            `;
+            contentArea.style.display = "block";
+
+            if (btn) {
+                btn.innerHTML = "&#x1F504; Re-Calculate Predictions";
+                btn.disabled  = false;
+            }
+        } catch (err) {
+            console.error("Prediction Module Error:", err);
+            if (btn) {
+                btn.innerHTML = "&#x26A0; Try Again";
+                btn.disabled  = false;
+            }
+        }
+    }, 40);
+}
+</script>
+<!-- PREDICTION MODULE -->
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- PLANET → STAR → SUB → SUB-SUB -->
+<style>
+/* =========================================================
+   PLANET → STAR → SUB → SUB-SUB STYLES
+   ========================================================= */
+.psss-planet-card {
+    background: linear-gradient(180deg, #1a060b 0%, #0d0306 100%);
+    border: 1.5px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-card), var(--glow-gold);
+}
+
+.psss-planet-card:last-child {
+    margin-bottom: 0;
+}
+
+.psss-planet-banner {
+    font-size: 16.5px !important;
+    font-weight: 900 !important;
+    color: var(--accent-saffron) !important;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, rgba(255, 159, 28, 0.14) 0%, rgba(26, 6, 11, 0.95) 50%, rgba(255, 159, 28, 0.14) 100%) !important;
+    padding: 10px !important;
+    border-bottom: 2px solid var(--border-gold) !important;
+}
+</style>
+
+<div id="table5-content" class="kp-module-section"></div>
+
+<script>
+/* =========================================================
+   PLANET → STAR → SUB → SUB-SUB ENGINE
+   ========================================================= */
+function sortHouseString(str) {
+    if (!str || str === "") return "";
+    return String(str).split(",").map(Number).filter(n => !isNaN(n) && n > 0).sort((a, b) => a - b).join(",");
+}
+
+function buildPlanetStarSubChainModule() {
+    const container = document.getElementById("table5-content");
+    if (!container) return;
+
+    const existingBody = document.getElementById("table5-body");
+    const isOpen = existingBody ? (existingBody.style.display === "block") : false;
+
+    if (!cuspsData || cuspsData.length === 0) {
+        container.innerHTML = `
+            <div id="anchor-table5"></div>
+            <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
+                onclick="toggleSection('table5-body', this)">
+                &#x1F517; PLANET &rarr; STAR &rarr; SUB &rarr; SUB-SUB
+            </h2>
+            <div id="table5-body" class="collapsible-content" style="display: ${isOpen ? 'block' : 'none'};">
+                <div style="padding: 16px; text-align: center; color: var(--text-dim); font-weight: 700;">
+                    Load or Fetch a Chart to view the Planet &rarr; Star &rarr; Sub &rarr; Sub-Sub Chain.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    /* Ensure __T3_CACHE__ is populated even if Planetary House Significations is placed lower in DOM */
+    if (typeof updateT3CacheGlobal === "function" && (!window.__T3_CACHE__ || Object.keys(window.__T3_CACHE__).length === 0)) {
+        updateT3CacheGlobal();
+    }
+
+    const t3 = window.__T3_CACHE__ || {};
+    const displayPlanets = getPivotSortedPlanets();
+    const janma = resolveTaraJanmaPlanet();
+
+    let cardsHtml = "";
+
+    displayPlanets.forEach(p => {
+        let kp = getPlanetKPLords(p);
+        if (!kp) return;
+
+        let kpSubKP = getPlanetKPLords(kp.sub);
+        let kpSSLKP = getPlanetKPLords(kp.ssl);
+
+        let starOfSub    = kpSubKP ? kpSubKP.star : null;
+        let starOfSubSub = kpSSLKP ? kpSSLKP.star : null;
+
+        let chainRows = [
+            { label: "Planet",          planet: p,            data: t3[p],            lvlClass: "lvl-planet" },
+            { label: "Star Lord",       planet: kp.star,      data: t3[kp.star],      lvlClass: "lvl-planet" },
+            { label: "Sub Lord",        planet: kp.sub,       data: t3[kp.sub],       lvlClass: "lvl-sub"    },
+            { label: "Star of Sub",     planet: starOfSub,    data: t3[starOfSub],    lvlClass: "lvl-sub"    },
+            { label: "Sub-Sub Lord",    planet: kp.ssl,       data: t3[kp.ssl],       lvlClass: "lvl-subsub" },
+            { label: "Star of Sub-Sub", planet: starOfSubSub, data: t3[starOfSubSub], lvlClass: "lvl-subsub" }
+        ];
+
+        cardsHtml += `
+        <div class="psss-planet-card">
+            <table style="margin-top: 0;">
+                <thead>
+                    <tr>
+                        <th colspan="8" class="psss-planet-banner">
+                            ${markPlanet(p)}
+                        </th>
+                    </tr>
+                    <tr>
+                        <th style="width: 15%;">Entity</th>
+                        <th style="width: 16%;">Planet</th>
+                        <th style="width: 13%;">Sub</th>
+                        <th style="width: 13%;">Sub-Sub</th>
+                        <th style="width: 13%;">Star</th>
+                        <th style="width: 11%;">Sign</th>
+                        <th style="width: 8%;">Placement</th>
+                        <th style="width: 11%;">Tara</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        chainRows.forEach(r => {
+            let pName = r.planet || "";
+            cardsHtml += `
+                    <tr class="${r.lvlClass}">
+                        <td style="font-weight: 700;">${r.label}</td>
+                        <td><b>${pName ? markPlanet(pName) : ""}</b></td>
+                        <td class="sub-num" style="font-weight: 800; color: #38bdf8;">${sortHouseString(r.data?.sub)}</td>
+                        <td class="ssl-num" style="font-weight: 800; color: #39ff14;">${sortHouseString(r.data?.ssl)}</td>
+                        <td class="star-num" style="font-weight: 800; color: #facc15;">${sortHouseString(r.data?.star)}</td>
+                        <td>${sortHouseString(r.data?.sign)}</td>
+                        <td style="font-weight: 900;">${r.data?.place || ""}</td>
+                        <td style="font-weight: 800; color: #fde68a;">${pName ? computeTaraIndex(janma, pName) : ""}</td>
+                    </tr>
+            `;
+        });
+
+        cardsHtml += `
+                </tbody>
+            </table>
+        </div>
+        `;
+    });
+
+    container.innerHTML = `
+        <div id="anchor-table5"></div>
+        <h2 class="collapsible-heading ${isOpen ? 'open' : 'collapsed'}"
+            onclick="toggleSection('table5-body', this)">
+            &#x1F517; PLANET &rarr; STAR &rarr; SUB &rarr; SUB-SUB
+        </h2>
+
+        <div id="table5-body" class="collapsible-content" style="display: ${isOpen ? 'block' : 'none'};">
+
+            <div class="kp-control-bar" style="justify-content: flex-start;">
+                <label style="font-weight: 800; color: var(--text-gold); gap: 10px;">
+                    <span>&#x2728; Tara Reference :</span>
+                    <select id="taraSelect_mirror" style="min-width: 180px;"></select>
+                </label>
+            </div>
+
+            ${cardsHtml}
+
+        </div>
+    `;
+
+    /* Bidirectional Sync Between Master Tara Dropdown & Mirror */
+    const masterTara = document.getElementById("taraSelect");
+    const mirrorTara = document.getElementById("taraSelect_mirror");
+    if (masterTara && mirrorTara) {
+        mirrorTara.innerHTML = masterTara.innerHTML;
+        mirrorTara.value     = masterTara.value;
+
+        mirrorTara.onchange = () => {
+            masterTara.value = mirrorTara.value;
+            masterTara.dispatchEvent(new Event("change"));
+        };
+    }
+}
+
+/* Keep legacy function alias so buildCuspalChart() & Tara listeners call it seamlessly */
+var buildTable4 = buildPlanetStarSubChainModule;
+
+document.addEventListener("DOMContentLoaded", () => {
+    buildPlanetStarSubChainModule();
+});
+</script>
+<!-- PLANET → STAR → SUB → SUB-SUB -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- PLANETS & 12 CUSPAL ALL LEVEL INNER & OUTER DIVIDER -->
+<style>
+/* =========================================================
+   ALL LEVEL INNER & OUTER DIVIDER — STYLES
+   ========================================================= */
+.all-level-divider-controlGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.all-level-divider-card {
+    background: linear-gradient(180deg, #1d080d 0%, #110407 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.all-level-divider-cardTitle {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    border-bottom: 1px dashed var(--border-soft);
+    padding-bottom: 7px;
+    margin-bottom: 10px;
+}
+
+.all-level-divider-subHeading {
+    color: var(--text-gold);
+    font-size: 15.5px;
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin: 22px 0 10px 0;
+    padding: 8px 14px;
+    background: linear-gradient(90deg, rgba(177, 18, 38, 0.38) 0%, rgba(20, 6, 10, 0.85) 65%, transparent 100%);
+    border-left: 4px solid var(--accent-saffron);
+    border-radius: 4px;
+    text-align: left;
+}
+
+.all-level-divider-tableWrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 8px;
+}
+
+.all-level-divider-table {
+    margin-top: 0 !important;
+    min-width: 920px;
+    border-collapse: collapse;
+}
+
+.all-level-divider-table th,
+.all-level-divider-table td {
+    padding: 9px 10px !important;
+    vertical-align: middle;
+}
+
+.divider-gap-col {
+    border: none !important;
+    background: rgba(8, 2, 4, 0.95) !important;
+    width: 14px !important;
+    min-width: 14px !important;
+    padding: 0 !important;
+}
+
+.divider-entity-cell {
+    font-weight: 900;
+    color: var(--text-gold);
+    background: #120407 !important;
+    white-space: nowrap;
+}
+
+.divider-links-cell {
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    font-weight: 900;
+    color: #e9d5ff;
+    background: rgba(88, 28, 135, 0.14) !important;
+    letter-spacing: 0.4px;
+}
+
+.divider-out-head {
+    color: #fdba74 !important;
+}
+
+.divider-in-head {
+    color: #86efac !important;
+}
+
+.divider-head-sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+}
+
+.divider-out-cell {
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    font-weight: 800;
+    color: #fdba74;
+}
+
+.divider-in-cell {
+    font-family: "Consolas", "Segoe UI Mono", monospace;
+    font-weight: 800;
+    color: #6ee7b7;
+}
+</style>
+
+<div id="all-level-inner-outer-divider-module" class="kp-module-section"></div>
+
+<script>
+/* =========================================================
+   ALL LEVEL INNER & OUTER DIVIDER — ENGINE
+   ========================================================= */
+window.T11_INC_PLANET = (window.T11_INC_PLANET !== undefined) ? window.T11_INC_PLANET : true;
+window.T11_INC_STARLORD = (window.T11_INC_STARLORD !== undefined) ? window.T11_INC_STARLORD : true;
+window.T11_INC_SUBLORD = (window.T11_INC_SUBLORD !== undefined) ? window.T11_INC_SUBLORD : true;
+window.T11_INC_STAR_OF_SUB = (window.T11_INC_STAR_OF_SUB !== undefined) ? window.T11_INC_STAR_OF_SUB : false;
+window.T11_INC_SUBSUB = (window.T11_INC_SUBSUB !== undefined) ? window.T11_INC_SUBSUB : false;
+window.T11_INC_STAR_OF_SUBSUB = (window.T11_INC_STAR_OF_SUBSUB !== undefined) ? window.T11_INC_STAR_OF_SUBSUB : false;
+
+window.T11_COL_SUB  = (window.T11_COL_SUB  !== undefined) ? window.T11_COL_SUB  : true;
+window.T11_COL_SSL  = (window.T11_COL_SSL  !== undefined) ? window.T11_COL_SSL  : false;
+window.T11_COL_STAR = (window.T11_COL_STAR !== undefined) ? window.T11_COL_STAR : true;
+
+const UNIVERSAL_PLANET_DIVIDER_RULES = {
+    outG: [2, 4, 6, 8, 10, 12],
+    outA: [3, 7, 11],
+    outB: [1, 5, 9],
+    inG:  [1, 3, 5, 7, 9, 11],
+    inA:  [2, 6, 10],
+    inB:  [4, 8, 12]
+};
+
+const UNIVERSAL_CUSP_DIVIDER_RULES = {
+    1:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
+    2:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
+    3:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
+    4:  { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] },
+    5:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [2, 6, 10], inB: [4, 8, 12] },
+    6:  { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
+    7:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
+    8:  { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] },
+    9:  { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [2, 6, 10], inB: [4, 8, 12] },
+    10: { outA: [1, 3, 7, 11], outB: [5, 9],    inA: [2, 6, 10], inB: [4, 8, 12] },
+    11: { outA: [3, 7, 11],    outB: [1, 5, 9], inA: [4, 8, 12], inB: [2, 6, 10] },
+    12: { outA: [1, 5, 9],     outB: [3, 7, 11],inA: [2, 6, 10], inB: [4, 8, 12] }
+};
+
+const UNIVERSAL_CUSP_OUT_GOOD = [2, 4, 6, 8, 10, 12];
+const UNIVERSAL_CUSP_IN_GOOD  = [1, 3, 5, 7, 9, 11];
+
+/* Expose shared divider constants safely for any other divider modules */
+window.PLANET_DIVIDER = UNIVERSAL_PLANET_DIVIDER_RULES;
+window.CUSP_DIVIDER   = UNIVERSAL_CUSP_DIVIDER_RULES;
+
+function parseDividerHouseList(str) {
+    if (!str) return [];
+    return String(str)
+        .split(/[,>+ ]+/)
+        .map(Number)
+        .filter(n => !isNaN(n) && n >= 1 && n <= 12);
+}
+
+function intersectDividerRuleSet(valStr, ruleArr) {
+    const nums = Array.isArray(valStr) ? valStr : parseDividerHouseList(valStr);
+    const res  = nums.filter(n => ruleArr.includes(n));
+    const out  = [...new Set(res)].sort((a, b) => a - b).join(",");
+    return out === "" ? "—" : out;
+}
+
+function buildUniversalDividerHeaderCells(isPlanetTable) {
+    const outG = "2,4,6,8,10,12";
+    const outA = isPlanetTable ? "3,7,11" : "Bhava Rule";
+    const outB = isPlanetTable ? "1,5,9"  : "Bhava Rule";
+
+    const inG  = "1,3,5,7,9,11";
+    const inA  = isPlanetTable ? "2,6,10" : "Bhava Rule";
+    const inB  = isPlanetTable ? "4,8,12" : "Bhava Rule";
+
+    return `
+        <th>Entity</th>
+        <th>Combined Links</th>
+        <th class="divider-gap-col"></th>
+        <th class="divider-out-head">OUT = GOOD<span class="divider-head-sub">${outG}</span></th>
+        <th class="divider-out-head">OUT = AVG<span class="divider-head-sub">${outA}</span></th>
+        <th class="divider-out-head">OUT = BAD<span class="divider-head-sub">${outB}</span></th>
+        <th class="divider-gap-col"></th>
+        <th class="divider-in-head">IN = GOOD<span class="divider-head-sub">${inG}</span></th>
+        <th class="divider-in-head">IN = AVG<span class="divider-head-sub">${inA}</span></th>
+        <th class="divider-in-head">IN = BAD<span class="divider-head-sub">${inB}</span></th>
+    `;
+}
+
+function buildUniversalDividerDataRow(entityLabel, linksStr, isPlanetTable, cuspRuleObj = null) {
+    const outG = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outG : UNIVERSAL_CUSP_OUT_GOOD;
+    const outA = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outA : cuspRuleObj.outA;
+    const outB = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.outB : cuspRuleObj.outB;
+
+    const inG  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inG  : UNIVERSAL_CUSP_IN_GOOD;
+    const inA  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inA  : cuspRuleObj.inA;
+    const inB  = isPlanetTable ? UNIVERSAL_PLANET_DIVIDER_RULES.inB  : cuspRuleObj.inB;
+
+    return `
+        <tr>
+            <td class="divider-entity-cell">${entityLabel}</td>
+            <td class="divider-links-cell">${linksStr || "—"}</td>
+            <td class="divider-gap-col"></td>
+            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outG)}</td>
+            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outA)}</td>
+            <td class="divider-out-cell">${intersectDividerRuleSet(linksStr, outB)}</td>
+            <td class="divider-gap-col"></td>
+            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inG)}</td>
+            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inA)}</td>
+            <td class="divider-in-cell">${intersectDividerRuleSet(linksStr, inB)}</td>
+        </tr>
+    `;
+}
+
+function computeAllLevelDividerMatrixRow(planetName) {
+    const cache = window.__T3_CACHE__;
+    if (!cache) return "";
+
+    const kp = getPlanetKPLords(planetName);
+    if (!kp) return "";
+
+    const starOfSub = getPlanetKPLords(kp.sub)?.star || null;
+    const starOfSSL = getPlanetKPLords(kp.ssl)?.star || null;
+
+    const entitiesToScan = [];
+
+    if (window.T11_INC_PLANET && planetName) entitiesToScan.push(planetName);
+    if (window.T11_INC_STARLORD && kp.star) entitiesToScan.push(kp.star);
+    if (window.T11_INC_SUBLORD && kp.sub) entitiesToScan.push(kp.sub);
+    if (window.T11_INC_STAR_OF_SUB && starOfSub) entitiesToScan.push(starOfSub);
+    if (window.T11_INC_SUBSUB && kp.ssl) entitiesToScan.push(kp.ssl);
+    if (window.T11_INC_STAR_OF_SUBSUB && starOfSSL) entitiesToScan.push(starOfSSL);
+
+    const combinedArr = [];
+
+    entitiesToScan.forEach(ent => {
+        const d = cache[ent];
+        if (!d) return;
+        if (window.T11_COL_SUB)  combinedArr.push(...parseDividerHouseList(d.sub));
+        if (window.T11_COL_SSL)  combinedArr.push(...parseDividerHouseList(d.ssl));
+        if (window.T11_COL_STAR) combinedArr.push(...parseDividerHouseList(d.star));
+    });
+
+    return [...new Set(combinedArr)].sort((a, b) => a - b).join(",");
+}
+
+function handleAllLevelEntityToggle(level, isChecked) {
+    /* Cascading levels: 1=Planet, 2=Star Lord, 3=Sub Lord, 4=Sub-Sub */
+    if (isChecked) {
+        if (level >= 1) window.T11_INC_PLANET = true;
+        if (level >= 2) window.T11_INC_STARLORD = true;
+        if (level >= 3) window.T11_INC_SUBLORD = true;
+        if (level >= 4) window.T11_INC_SUBSUB = true;
+    } else {
+        if (level <= 1) window.T11_INC_PLANET = false;
+        if (level <= 2) window.T11_INC_STARLORD = false;
+        if (level <= 3) {
+            window.T11_INC_SUBLORD = false;
+            window.T11_INC_STAR_OF_SUB = false; // Turns off Star of Sub if Sublord/Planet is unchecked
+        }
+        if (level <= 4) {
+            window.T11_INC_SUBSUB = false;
+            window.T11_INC_STAR_OF_SUBSUB = false; // Turns off Star of Sub-Sub if Sub-Sub/Planet is unchecked
+        }
+    }
+
+    if (document.getElementById('t11_chk_1')) document.getElementById('t11_chk_1').checked = window.T11_INC_PLANET;
+    if (document.getElementById('t11_chk_2')) document.getElementById('t11_chk_2').checked = window.T11_INC_STARLORD;
+    if (document.getElementById('t11_chk_3')) document.getElementById('t11_chk_3').checked = window.T11_INC_SUBLORD;
+    if (document.getElementById('t11_chk_4')) document.getElementById('t11_chk_4').checked = window.T11_INC_SUBSUB;
+    if (document.getElementById('t11_chk_opt_1')) document.getElementById('t11_chk_opt_1').checked = window.T11_INC_STAR_OF_SUB;
+    if (document.getElementById('t11_chk_opt_2')) document.getElementById('t11_chk_opt_2').checked = window.T11_INC_STAR_OF_SUBSUB;
+
+    refreshAllLevelDividerBodiesOnly();
+}
+
+function refreshAllLevelDividerBodiesOnly() {
+    const planetsBody = document.getElementById("all-level-divider-planets-tbody");
+    const cuspsBody   = document.getElementById("all-level-divider-cusps-tbody");
+    if (!planetsBody || !cuspsBody) return;
+
+    const orderedPlanets = getPivotSortedPlanets();
+    let planetRowsHtml   = "";
+
+    orderedPlanets.forEach(p => {
+        const effStr    = computeAllLevelDividerMatrixRow(p);
+        const shortName = markPlanet(p).split(" ")[0];
+        planetRowsHtml += buildUniversalDividerDataRow(shortName, effStr, true);
+    });
+    planetsBody.innerHTML = planetRowsHtml;
+
+    let cuspRowsHtml = "";
+    if (cuspsData && cuspsData.length > 0) {
+        const pivotHouse = getPivotHouse();
+        const baseCusps  = [...cuspsData].sort((a, b) => a.bhava - b.bhava);
+        let startIdx     = baseCusps.findIndex(c => c.bhava === pivotHouse);
+        if (startIdx < 0) startIdx = 0;
+
+        for (let i = 0; i < 12; i++) {
+            const c         = baseCusps[(startIdx + i) % 12];
+            const bhava     = i + 1;
+            const csl       = c.subLord;
+            const shortName = markPlanet(csl).split(" ")[0];
+            const label     = `${bhava} - ${shortName}`;
+            const rules     = UNIVERSAL_CUSP_DIVIDER_RULES[bhava];
+            const effStr    = computeAllLevelDividerMatrixRow(csl);
+            cuspRowsHtml   += buildUniversalDividerDataRow(label, effStr, false, rules);
+        }
+    }
+    cuspsBody.innerHTML = cuspRowsHtml;
+}
+
+function renderAllLevelInnerOuterDividerModule() {
+    const container = document.getElementById("all-level-inner-outer-divider-module");
+    if (!container) return;
+
+    const existingBody = document.getElementById("all-level-inner-outer-divider-body");
+    const wasOpen = existingBody ? (existingBody.style.display === "block") : false;
+
+    if (!cuspsData || cuspsData.length === 0) {
+        container.innerHTML = `
+            <h2 class="collapsible-heading ${wasOpen ? 'open' : 'collapsed'}"
+                onclick="toggleCollapsible('all-level-inner-outer-divider-body', this)">
+                &#x2696; PLANETS &amp; 12 CUSPAL ALL LEVEL INNER &amp; OUTER DIVIDER
+            </h2>
+            <div id="all-level-inner-outer-divider-body" class="collapsible-body" style="display: ${wasOpen ? 'block' : 'none'};">
+                <div style="padding: 16px; text-align: center; color: var(--text-dim); font-weight: 700;">
+                    Load or Fetch a Chart to view Planets &amp; 12 Cuspal All Level Inner &amp; Outer Divider.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <h2 class="collapsible-heading ${wasOpen ? 'open' : 'collapsed'}"
+            onclick="toggleCollapsible('all-level-inner-outer-divider-body', this)">
+            &#x2696; PLANETS &amp; 12 CUSPAL ALL LEVEL INNER &amp; OUTER DIVIDER
+        </h2>
+
+        <div id="all-level-inner-outer-divider-body" class="collapsible-body" style="display: ${wasOpen ? 'block' : 'none'};">
+
+            <div style="background: rgba(250, 204, 21, 0.08); border: 1px solid var(--border-gold); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; color: var(--text-main); font-size: 13px; font-weight: 700;">
+                &#x2139;&#xFE0F; <b>Note:</b> This table is based on the <b>Planet &rarr; Star &rarr; Sub &rarr; Sub-Sub</b> table, pulling and combining house significations based on your selected entities and level filters below.
+            </div>
+
+            <div class="all-level-divider-controlGrid">
+                <div class="all-level-divider-card">
+                    <div class="all-level-divider-cardTitle">1. Select Source Levels (Entities)</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" id="t11_chk_1" ${window.T11_INC_PLANET ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(1, this.checked)">
+                            <span>Planet</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" id="t11_chk_2" ${window.T11_INC_STARLORD ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(2, this.checked)">
+                            <span>Star Lord</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" id="t11_chk_3" ${window.T11_INC_SUBLORD ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(3, this.checked)">
+                            <span>Sub Lord</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" id="t11_chk_4" ${window.T11_INC_SUBSUB ? "checked" : ""}
+                                onchange="handleAllLevelEntityToggle(4, this.checked)">
+                            <span>Sub-Sub</span>
+                        </label>
+                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
+                            <input type="checkbox" id="t11_chk_opt_1" ${window.T11_INC_STAR_OF_SUB ? "checked" : ""}
+                                onchange="window.T11_INC_STAR_OF_SUB = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span style="color: #fbbf24;">Star of Sub (Opt)</span>
+                        </label>
+                        <label class="mcp-toggle-pill" style="border-color: rgba(251, 191, 36, 0.3);">
+                            <input type="checkbox" id="t11_chk_opt_2" ${window.T11_INC_STAR_OF_SUBSUB ? "checked" : ""}
+                                onchange="window.T11_INC_STAR_OF_SUBSUB = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span style="color: #fbbf24;">Star of Sub-Sub (Opt)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="all-level-divider-card">
+                    <div class="all-level-divider-cardTitle">2. Select Signification Columns to Extract</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" ${window.T11_COL_SUB ? "checked" : ""}
+                                onchange="window.T11_COL_SUB = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span>Sublord Column</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" ${window.T11_COL_SSL ? "checked" : ""}
+                                onchange="window.T11_COL_SSL = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span>Sub-Sub Column</span>
+                        </label>
+                        <label class="mcp-toggle-pill">
+                            <input type="checkbox" ${window.T11_COL_STAR ? "checked" : ""}
+                                onchange="window.T11_COL_STAR = this.checked; refreshAllLevelDividerBodiesOnly();">
+                            <span>Starlord Column</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="all-level-divider-subHeading" style="margin-top: 8px;">
+                1. Planets All-Level Inner &amp; Outer Divider
+            </div>
+            <div class="all-level-divider-tableWrap">
+                <table class="all-level-divider-table">
+                    <thead>
+                        <tr>${buildUniversalDividerHeaderCells(true)}</tr>
+                    </thead>
+                    <tbody id="all-level-divider-planets-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="all-level-divider-subHeading" style="margin-top: 26px;">
+                2. 12 Cuspal Sublords All-Level Inner &amp; Outer Divider
+            </div>
+            <div class="all-level-divider-tableWrap">
+                <table class="all-level-divider-table">
+                    <thead>
+                        <tr>${buildUniversalDividerHeaderCells(false)}</tr>
+                    </thead>
+                    <tbody id="all-level-divider-cusps-tbody"></tbody>
+                </table>
+            </div>
+
+        </div>
+    `;
+
+    refreshAllLevelDividerBodiesOnly();
+}
+
+/* Extend Factory Reset Safely for All-Level Divider Flags */
+(function hookAllLevelDividerReset() {
+    if (typeof window.resetAllTogglesToDefault === "function" && !window.resetAllTogglesToDefault.__allLevelHooked) {
+        const _origReset = window.resetAllTogglesToDefault;
+        window.resetAllTogglesToDefault = function() {
+            _origReset.apply(this, arguments);
+            window.T11_INC_PLANET         = true;
+            window.T11_INC_STARLORD       = true;
+            window.T11_INC_SUBLORD        = true;
+            window.T11_INC_STAR_OF_SUB    = false;
+            window.T11_INC_SUBSUB         = false;
+            window.T11_INC_STAR_OF_SUBSUB = false;
+            window.T11_COL_SUB            = true;
+            window.T11_COL_SSL            = false;
+            window.T11_COL_STAR           = true;
+        };
+        window.resetAllTogglesToDefault.__allLevelHooked = true;
+    }
+})();
+
+/* Order-Independent Orchestrator Aliases */
+window.buildTable11Divider = renderAllLevelInnerOuterDividerModule;
+window.renderTable11Inner  = refreshAllLevelDividerBodiesOnly;
+
+document.addEventListener("DOMContentLoaded", () => {
+    renderAllLevelInnerOuterDividerModule();
+});
+</script>
+<!-- PLANETS & 12 CUSPAL ALL LEVEL INNER & OUTER DIVIDER -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- H1 MASTER WRAPPER: EFFECTIVE LINKS SPLITTER -->
 <!-- EFFECTIVE LINKS TABLE — [ 1,4,7,10 ] • [ 2,5,8,11 ] • [ 3,6,9,12 ] -->
 <style>
 /* =========================================================
@@ -16438,7 +16457,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- EFFECTIVE LINKS TABLE — [ 1,5,9 ] • [ 2,6,10 ] • [ 3,7,11 ] • [ 4,8,12 ] -->
 
-
+<!-- H1 MASTER WRAPPER: EFFECTIVE LINKS SPLITTER -->
 
 
 
